@@ -1,0 +1,4 @@
+!is ('!is')
+WHITE_SPACE (' ')
+! ('!')
+id ('isX')

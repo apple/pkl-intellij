@@ -1,0 +1,759 @@
+/**
+ * Copyright © 2024 Apple Inc. and the Pkl project authors. All rights reserved.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     https://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+{
+  generate = [java="11" names="long" visitor-value="R"]
+
+  parserClass = "org.pkl.intellij.parser.PklParser"
+  extends = "org.pkl.intellij.psi.PklAstWrapperPsiElement"
+
+  psiClassPrefix = "Pkl"
+  psiImplClassSuffix = "Impl"
+  psiPackage = "org.pkl.intellij.psi"
+  psiImplPackage = "org.pkl.intellij.psi.impl"
+
+  elementTypeHolderClass = "org.pkl.intellij.psi.PklElementTypes"
+  elementTypeClass = "org.pkl.intellij.psi.PklElementType"
+  tokenTypeClass = "org.pkl.intellij.psi.PklTokenType"
+  consumeTokenMethod("recover.*")="consumeTokenFast"
+
+  implements(".*") = "org.pkl.intellij.psi.PklElement"
+  implements(".*BinExpr") = "org.pkl.intellij.psi.PklBinExpr"
+  mixin(".*BinExpr") = "org.pkl.intellij.psi.PklBinExprBase"
+  extends(".*Type") = type
+  extends(".*Expr|.*Literal") = expr
+
+  tokens = [
+    ABSTRACT   = 'abstract'
+    AMENDS     = 'amends'
+    AS         = 'as'
+    CLASS_KEYWORD = 'class'
+    CONST      = 'const'
+    ELSE       = 'else'
+    EXTENDS    = 'extends'
+    EXTERNAL   = 'external'
+    FALSE      = 'false'
+    FIXED      = 'fixed'
+    FUNCTION   = 'function'
+    HIDDEN     = 'hidden'
+    IF         = 'if'
+    IMPORT_KEYWORD  = 'import'
+    IMPORT_GLOB = 'import*'
+    IN         = 'in'
+    IS         = 'is'
+    LET        = 'let'
+    LOCAL      = 'local'
+    MODULE     = 'module'
+    NEW        = 'new'
+    NOTHING    = 'nothing'
+    NULL       = 'null'
+    OPEN       = 'open'
+    OUT        = 'out'
+    OUTER      = 'outer'
+    READ       = 'read'
+    READ_GLOB  = 'read*'
+    READ_OR_NULL = 'read?'
+    SUPER      = 'super'
+    THIS       = 'this'
+    THROW      = 'throw'
+    TRACE      = 'trace'
+    TRUE       = 'true'
+    TYPEALIAS  = 'typealias'
+    UNKNOWN    = 'unknown'
+
+    // reserved keywords
+    PROTECTED = 'protected'
+    OVERRIDE  = 'override'
+    RECORD    = 'record'
+    DELETE    = 'delete'
+    CASE      = 'case'
+    SWITCH    = 'switch'
+    VARARG    = 'vararg'
+
+    LPAREN    = '('
+    RPAREN    = ')'
+    LBRACE    = '{'
+    RBRACE    = '}'
+    LBRACK    = '['
+    RBRACK    = ']'
+    LPRED     = '[['
+    RPRED     = ']]'
+    COMMA     = ','
+    DOT       = '.'
+    QDOT      = '?.'
+    COALESCE  = '??'
+    NON_NULL  = '!!'
+    SPREAD    = '...'
+    QSPREAD   = '...?'
+
+    AT        = '@'
+    ASSIGN    = '='
+    GT        = '>'
+    LT        = '<'
+    NOT       = '!'
+    QUESTION  = '?'
+    COLON     = ':'
+    ARROW     = '->'
+    EQUAL     = '=='
+    NOT_EQUAL = '!='
+    LTE       = '<='
+    GTE       = '>='
+    AND       = '&&'
+    OR        = '||'
+    PLUS      = '+'
+    MINUS     = '-'
+    POW       = '**'
+    MUL       = '*'
+    DIV       = '/'
+    INT_DIV   = '~/'
+    MOD       = '%'
+    UNION     = '|'
+    PIPE      = '|>'
+
+    // The following regular expressions are used in live preview mode only!
+    IDENTIFIER = 'regexp:[a-zA-Z_$][0-9a-zA-Z_$]*'
+    NUMBER = 'regexp:[0-9]*'
+
+    WHITE_SPACE = 'regexp:[ ;\t\r\n]+'
+    // If a line break or semicolon is followed by '(', '[', or '-',
+    // lexer emits WHITE_SPACE + SEP + TOKEN instead of WHITE_SPACE + TOKEN,
+    // where SEP is an empty token signaling the line break or semicolon separator.
+    // (WHITE_SPACE is not visible to parser rules, but nevertheless an important part of the parse tree.)
+    SEP = ';'
+    SHEBANG_COMMENT = 'SHEBANG_COMMENT'
+    DOC_COMMENT_LINE = 'regexp:///[^\r\n]*'
+    LINE_COMMENT = 'regexp://[^\r\n]*'
+    BLOCK_COMMENT = 'regexp:/\*(.|[\r\n])*?\*/'
+
+    // In preview mode, a valid single line string must start with a 's"' followed by zero or more '#' characters and
+    // end with a '"'. For example, s"####".
+    STRING_START = 'regexp:s"'
+    STRING_END = 'regexp:"'
+
+    // In preview mode, a valid multi-line string literal must start with '"""' followed by an LF, followed by zero or
+    // more '#' characters followed by a '"""' on a new line. For example,
+    // """
+    // ##
+    // """
+    ML_STRING_START = 'regexp:"""\n'
+    ML_STRING_END = 'regexp:"""'
+
+    // Must use a character that is not matched by the IDENTIFIER regexp.
+    STRING_CHARS = 'regexp:#+'
+    CHAR_ESCAPE = 'regexp:\\[trn]'
+    UNICODE_ESCAPE = 'regexp:\\u\{[0-9A-Fa-f]+}'
+    INVALID_ESCAPE = 'INVALID_ESCAPE'
+    INTERPOLATION_START = 'regexp:\\\('
+    INTERPOLATION_END = 'regexp:\)'
+  ]
+}
+
+module ::= SHEBANG_COMMENT? moduleDeclaration? importList moduleMemberList
+
+importList ::= import* {
+  methods = [
+    elements = "import"
+  ]
+}
+
+moduleMemberList ::= moduleMember* {
+  methods = [
+    elements = "moduleMember"
+  ]
+}
+
+moduleMember ::= class | typeAlias | classProperty | classMethod {
+  recoverWhile = recoverModuleMember
+  implements = "org.pkl.intellij.psi.PklModuleMemberEx"
+  mixin = "org.pkl.intellij.psi.PklModuleMemberBase"
+}
+
+private recoverModuleMember ::= !('@' | 'class' | DOC_COMMENT_LINE | IDENTIFIER
+  | abstract | external | function | hidden | local | fixed | const | open | typealias)
+
+moduleDeclaration ::= docComment? annotationList moduleHeader {
+  pin = 3
+  implements = [
+    "org.pkl.intellij.psi.PklDocCommentOwner"
+    "org.pkl.intellij.psi.PklModifierListOwner"
+    "com.intellij.psi.PsiQualifiedNamedElement"
+    "com.intellij.psi.PsiNameIdentifierOwner"
+  ]
+  mixin = "org.pkl.intellij.psi.PklModuleDeclarationBase"
+  methods = [
+    extendsAmendsClause = "moduleExtendsAmendsClause"
+  ]
+}
+
+docComment ::= DOC_COMMENT_LINE+ {
+  implements = "com.intellij.psi.PsiDocCommentBase"
+  mixin = "org.pkl.intellij.psi.PklDocCommentBase"
+}
+
+private moduleHeader ::= fullModuleHeader | moduleExtendsAmendsClause
+private fullModuleHeader ::= modifierList 'module' qualifiedIdentifier moduleExtendsAmendsClause? { pin = 2 }
+
+annotationList ::= annotation* {
+  implements = "org.pkl.intellij.psi.PklAnnotationListEx"
+  mixin = "org.pkl.intellij.psi.PklAnnotationListBase"
+}
+
+modifierList ::= (external | abstract | open | local | hidden | fixed | const)* {
+  mixin = "org.pkl.intellij.psi.PklModifierListBase"
+  implements = "org.pkl.intellij.psi.PklModifierListEx"
+}
+
+moduleExtendsAmendsClause ::= (extends | amends) moduleUri { pin = 1 }
+
+import ::= ('import' | 'import*') moduleUri (as IDENTIFIER)? {
+  pin = 1
+  recoverWhile = recoverImport
+  implements = ["org.pkl.intellij.psi.PklSuppressWarningsTarget"; "org.pkl.intellij.psi.PklImportBase"]
+  methods = [
+    moduleUri = "moduleUri"
+  ]
+}
+
+private recoverImport ::= !('@' | 'class' | 'import' | 'import*' | DOC_COMMENT_LINE | IDENTIFIER
+  | abstract | external | function | hidden | local | open | typealias | fixed | const)
+
+moduleUri ::= stringConstant {
+  mixin = "org.pkl.intellij.psi.PklModuleUriBase"
+  stubClass = "org.pkl.intellij.stubs.PklModuleUriStub"
+  elementTypeFactory = "org.pkl.intellij.stubs.PklStubsKt.factory"
+  implements = "PklModuleUriEx"
+}
+
+class ::= docComment? annotationList classHeader classBody? {
+  pin = 3
+  extends = moduleMember
+  implements = [
+    "org.pkl.intellij.psi.PklTypeDef"
+    "org.pkl.intellij.psi.PklClassEx"
+  ]
+  mixin = "org.pkl.intellij.psi.PklClassBase"
+  methods = [
+    body = "classBody"
+    extendsClause = "classExtendsClause"
+  ]
+}
+
+private classHeader ::= modifierList 'class' IDENTIFIER typeParameterList? classExtendsClause? {
+  pin = 2
+}
+
+classExtendsClause ::= extends (moduleType | declaredType) { pin = 1 }
+
+// Pinning the opening delimiter considerably improves the editing experience inside a class body that's missing a closing brace:
+// Error messages unrelated to the closing brace are more accurate and auto-indentation works correctly.
+// (However, IntelliJ tries hard to insert the closing brace beforehand, so this improvement may not be so relevant in practice.)
+// The missing closing brace itself is only reported at EOF (good message, bad locality).
+// Omitting the pin results in different tradeoffs.
+// For comparison, `objectBody` also pins its opening delimiter.
+classBody ::= '{' classMember* '}' {
+  pin = 1
+  implements = "org.pkl.intellij.psi.PklClassBodyEx"
+  mixin = "org.pkl.intellij.psi.PklClassBodyBase"
+  methods = [
+    classMember = ""
+  ]
+}
+
+classMember ::= classProperty | classMethod {
+  recoverWhile = recoverClassMember
+  extends = moduleMember
+  mixin = "org.pkl.intellij.psi.PklClassMemberBase"
+}
+
+private recoverClassMember ::= !('@' | 'class' | '}' | DOC_COMMENT_LINE | IDENTIFIER
+  | abstract | external | function | hidden | local | open | typealias | fixed | const)
+
+typeAlias ::= docComment? annotationList typeAliasHeader '=' type  {
+  pin = 3
+  extends = moduleMember
+  implements = "org.pkl.intellij.psi.PklTypeDef"
+  mixin = "org.pkl.intellij.psi.PklTypeAliasBase"
+  methods = [
+    body = "type"
+  ]
+}
+
+private typeAliasHeader ::= modifierList typealias IDENTIFIER typeParameterList? {
+  pin = 2
+  implements = "org.pkl.intellij.psi.PklTypeDefHeader"
+}
+
+classProperty ::= docComment? annotationList modifierList propertyName (objectBody+ | classPropertyAssign | typeAnnotation) {
+  pin = 4 // with pin = 5, `foo` alone won't be recognized as class property and completion won't work
+  extends = classMember
+  implements = [
+    "org.pkl.intellij.psi.PklProperty"
+    "org.pkl.intellij.psi.PklTypeDefOrProperty"
+    "org.pkl.intellij.psi.PklModuleMember"
+    "org.pkl.intellij.psi.PklObjectBodyListOwner"
+  ]
+  mixin = "org.pkl.intellij.psi.PklClassPropertyBase"
+}
+
+propertyName ::= IDENTIFIER {
+  implements = "org.pkl.intellij.psi.PklIdentifierOwner"
+  mixin = "org.pkl.intellij.psi.PklPropertyNameBase"
+}
+
+private classPropertyAssign ::= typeAnnotation? '=' expr { pin = 2 }
+
+classMethod ::= docComment? annotationList methodHeader ('=' expr)? {
+  pin = 3
+  extends = classMember
+  implements = [
+    "org.pkl.intellij.psi.PklModuleMember"
+    "org.pkl.intellij.psi.PklMethod"
+    "org.pkl.intellij.psi.PklTypeParameterListOwner"
+  ]
+  mixin = "org.pkl.intellij.psi.PklClassMethodBase"
+  methods = [
+    parameterList = "functionParameterList"
+    returnType = "type"
+    body = "expr"
+  ]
+}
+
+// make sure we can deal with `pkl.base#read()` found in older stdlibs
+// even though `read` is now a keyword
+private methodHeader ::= modifierList function (IDENTIFIER | read) typeParameterList? functionParameterList typeAnnotation? { pin = 2 }
+
+functionParameterList ::= SEP? '(' (typedIdentifier (',' typedIdentifier)*)? ')' {
+  pin('.*') = 2
+  implements = "org.pkl.intellij.psi.PklParameterList"
+  methods = [
+    elements = "typedIdentifier"
+  ]
+}
+
+// Couldn't find a good way to handle errors here. Example:
+// a { b, <caret>
+objectBodyParameterList ::= typedIdentifier (',' typedIdentifier)* '->' {
+  implements = "org.pkl.intellij.psi.PklParameterList"
+  methods = [
+    elements = "typedIdentifier"
+  ]
+}
+
+typedIdentifier ::= IDENTIFIER typeAnnotation? {
+  implements = "org.pkl.intellij.psi.PklNavigableElement"
+  mixin = "org.pkl.intellij.psi.PklTypedIdentifierBase"
+}
+
+// No SEP allowed before '(' to avoid ambiguity between `foo(1)` and `foo;(1)` in object literal.
+argumentList ::= '(' (expr (',' expr)*)? ')' {
+  pin(".*") = 1
+  methods = [
+    elements = "expr"
+  ]
+}
+
+// For some reason, things go haywire when adding a recover for `annotation`.
+// For example, `class Foo {}` no longer parses.
+annotation ::= '@' typeName objectBody? {
+  pin = 1
+  implements = "org.pkl.intellij.psi.PklObjectBodyOwner"
+}
+
+qualifiedIdentifier ::= IDENTIFIER ('.' IDENTIFIER)*
+
+private typeAnnotation ::= ':' type { pin = 1 }
+
+typeParameterList ::= '<' typeParameter (',' typeParameter)* '>' {
+  pin(".*") = 1
+  methods = [
+    elements = "typeParameter"
+  ]
+}
+
+typeParameter ::= (in | out)? IDENTIFIER {
+  implements = "org.pkl.intellij.psi.PklNavigableElement"
+  mixin = "org.pkl.intellij.psi.PklTypeParameterBase"
+}
+
+// This pinning pattern, which is also used for other delimited comma-separated lists,
+// works fairly well but isn't fully correct:
+// When a token is missing after the pinned opening delimiter, `follow(typeArgumentList)` is
+// among the suggestions (but should not be).
+// Example:
+// x: Foo<Bar,
+// Suggestions include:
+// '='
+// (If we don't pin at all, the above example gives a much worse error.)
+typeArgumentList ::= '<' type (',' type)* '>' {
+  pin(".*") = 1
+  methods = [
+    elements = "type"
+  ]
+}
+
+type ::= unknownType
+  | nothingType
+  | moduleType
+  | stringLiteralType
+  | declaredType
+  | functionType // must come before parenthesizedType
+  | parenthesizedType
+  | unionType
+  | defaultType
+  | nullableType
+  | constrainedType { recoverWhile = recoverType }
+
+private recoverType ::= !('!!' | '!' | '!=' | '%' | '&&' | '(' | ')' | '*' | '**' | '+' | ',' | '-' | '->' | '.' | '/'
+   | ':' | '<' | '<=' | '=' | '==' | '>' | '>=' | '?' | '?.' | '??' | '@' | '[' | '[['
+   | ']' | ']]' | 'class' | 'else' | 'import' | 'import*' | 'module' | 'read' | 'read?' | 'read*' | '{' | '|' | '|>'
+   | '||' | '}' | '~/' | DOC_COMMENT_LINE | IDENTIFIER | INTERPOLATION_END | ML_STRING_START | NUMBER | SEP
+   | STRING_START | abstract | amends | as | const | else | expr | extends | external | false | for | function | hidden
+   | if | in | is | let | local | new | null | open | fixed | outer | super | this | throw | trace | true | typealias
+   | when)
+
+unknownType ::= unknown
+
+nothingType ::= nothing
+
+moduleType ::= 'module' { mixin = "PklModuleTypeBase" }
+
+stringLiteralType ::= stringConstant
+
+declaredType ::= typeName typeArgumentList?
+
+typeName ::= (moduleName '.')? simpleTypeName {
+  methods = [
+    simpleName = "simpleTypeName"
+  ]
+}
+
+moduleName ::= IDENTIFIER { mixin = "org.pkl.intellij.psi.PklModuleNameBase" }
+
+simpleTypeName ::= IDENTIFIER {
+  implements = "org.pkl.intellij.psi.PklIdentifierOwner"
+  mixin = "org.pkl.intellij.psi.PklSimpleTypeNameBase"
+}
+
+parenthesizedType ::= SEP? '(' type ')'
+
+nullableType ::= type '?'
+
+constrainedType ::= type typeConstraintList
+
+typeConstraintList ::= SEP? '(' expr (',' expr)* ')' {
+  pin(".*") = 2
+  methods = [
+    elements = "expr"
+  ]
+}
+
+unionType ::= type '|' type {
+  methods = [
+    leftType = "/type[0]"
+    rightType = "/type[1]"
+  ]
+}
+
+defaultType ::= '*' type
+
+// Causes the following warning if `functionTypeParameterList` isn't its own non-private rule:
+// BNF_RULE:functionType: binary or n-ary expression cannot have prefix, treating as ATOM
+functionType ::= functionTypeParameterList '->' type
+
+functionTypeParameterList ::= SEP? '(' (type (',' type)*)? ')' {
+  pin(".*") = 2
+  methods = [
+    elements = "type"
+  ]
+}
+
+expr ::= functionLiteral
+  | readExpr
+  | importExpr
+  | traceExpr
+  | throwExpr
+  | letExpr
+  | ifExpr
+  | nullCoalesceBinExpr
+  | pipeBinExpr
+  | logicalOrBinExpr
+  | logicalAndBinExpr
+  | equalityBinExpr
+  | typeTestExpr
+  | typeCastExpr
+  | comparisonBinExpr
+  | additiveBinExpr
+  | multiplicativeBinExpr
+  | exponentiationBinExpr
+  | logicalNotExpr
+  | unaryMinusExpr
+  | nonNullAssertionExpr
+  | subscriptBinExpr
+  | qualifiedAccessExpr
+  | superSubscriptExpr
+  | superAccessExpr
+  | amendExpr
+  | newExpr
+  | stringLiteral
+  | mlStringLiteral
+  | numberLiteral
+  | falseLiteral
+  | trueLiteral
+  | nullLiteral
+  | unqualifiedAccessExpr // needs to come before variableExpr
+  | moduleExpr
+  | outerExpr
+  | thisExpr
+  | parenthesizedExpr { recoverWhile = recoverExpr }
+
+private recoverExpr ::= !('!!' | '!' | '!=' | '%' | '&&' | '(' | ')' | '*' | '**' | '+' | ',' | '-' | '->' | '.' | '/'
+  | '...' | '...?' | ':' | '<' | '<=' | '=' | '==' | '>' | '>=' | '?' | '?.' | '??' | '@' | '[' | '[['
+  | ']' | ']]' | 'class' | 'else' | 'import' | 'import*' | 'module' | 'read' | 'read?' | 'read*' | '{' | '|' | '|>'
+  | '||' | '}' | '~/' | DOC_COMMENT_LINE | IDENTIFIER | INTERPOLATION_END | ML_STRING_START | NUMBER | SEP
+  | STRING_START | abstract | amends | as | else | extends | external | false | for | function | hidden | if | in
+  | is | let | local | new | null | open | outer | super | this | throw | trace | true | typealias | when)
+
+unqualifiedAccessName ::= IDENTIFIER {
+  implements = "org.pkl.intellij.psi.PklIdentifierOwner"
+  mixin = "org.pkl.intellij.psi.PklUnqualifiedAccessNameBase"
+}
+
+qualifiedAccessName ::= IDENTIFIER {
+  implements = "org.pkl.intellij.psi.PklIdentifierOwner"
+  mixin = "org.pkl.intellij.psi.PklQualifiedAccessNameBase"
+}
+
+superAccessName ::= IDENTIFIER {
+  implements = "org.pkl.intellij.psi.PklIdentifierOwner"
+  mixin = "org.pkl.intellij.psi.PklSuperAccessNameBase"
+}
+
+unqualifiedAccessExpr ::= unqualifiedAccessName argumentList? {
+  implements = "org.pkl.intellij.psi.PklAccessExpr"
+  mixin = "org.pkl.intellij.psi.PklUnqualifiedAccessExprBase"
+  methods = [ memberName = "unqualifiedAccessName" ]
+}
+parenthesizedExpr ::= SEP? '(' expr ')'
+thisExpr ::= this
+outerExpr ::= outer
+moduleExpr ::= 'module' { mixin = "PklModuleExprBase" }
+numberLiteral ::= NUMBER
+nullLiteral ::= null
+trueLiteral ::= true
+falseLiteral ::= false
+stringLiteral ::= STRING_START stringContent STRING_END { methods = [ content = "stringContent" ] }
+mlStringLiteral ::= ML_STRING_START stringContent ML_STRING_END { methods = [ content = "stringContent" ] }
+amendExpr ::= expr objectBody {
+  implements = "org.pkl.intellij.psi.PklObjectBodyOwner"
+  methods = [ parentExpr = "expr" ]
+}
+newExpr ::= new type? objectBody { pin = 1; implements = "org.pkl.intellij.psi.PklObjectBodyOwner" }
+superAccessExpr ::= super '.' superAccessName argumentList? {
+  implements = "org.pkl.intellij.psi.PklAccessExpr"
+  mixin = "org.pkl.intellij.psi.PklSuperAccessExprBase"
+  methods = [ memberName = "superAccessName" ]
+}
+superSubscriptExpr ::= super SEP? subscript
+qualifiedAccessExpr ::= expr ('.' | '?.') qualifiedAccessName argumentList? { // not sure what/how to pin here
+  implements = "org.pkl.intellij.psi.PklAccessExpr"
+  mixin = "org.pkl.intellij.psi.PklQualifiedAccessExprBase"
+  methods = [
+    receiverExpr = "expr"
+    memberName = "qualifiedAccessName"
+  ]
+}
+subscriptBinExpr ::= expr subscript
+// separate rule to prevent `subscriptBinExpr` from being treated as infix expression
+// no SEP allowed before '[' to avoid ambiguity between `foo[bar]` and `foo; [bar] = ...` in object literal
+private subscript ::= '[' expr ']'
+unaryMinusExpr ::= SEP? '-' expr
+nonNullAssertionExpr ::= expr '!!'
+logicalNotExpr ::= '!' expr
+exponentiationBinExpr ::= expr '**' expr { rightAssociative = true }
+multiplicativeBinExpr ::= expr ('*' | '/' | '~/' | '%') expr
+// No SEP allowed before '-' to avoid ambiguity between `1 - 2` and `1; -2` in object literal.
+additiveBinExpr ::= expr ('+' | '-') expr
+comparisonBinExpr ::= expr ('<' | '>' | '<=' | '>=') expr
+typeTestExpr ::= expr is type { methods = [ operator = "is" ] }
+typeCastExpr ::= expr as type { methods = [ operator = "as" ] }
+equalityBinExpr ::= expr ('==' | '!=') expr
+logicalAndBinExpr ::= expr '&&' expr
+logicalOrBinExpr ::= expr '||' expr
+pipeBinExpr ::= expr '|>' expr
+nullCoalesceBinExpr ::= expr '??' expr { rightAssociative = true }
+// TODO: causes the following warning:
+// BNF_RULE:ifExpr: unexpected cardinality ANY_NUMBER of expr, treating as ATOM
+ifExpr ::= if SEP? '(' expr ')' expr else expr {
+  pin = 1
+  methods = [
+    conditionExpr = "/expr[0]"
+    thenExpr = "/expr[1]"
+    elseExpr = "/expr[2]"]
+}
+// TODO: causes the following warning:
+// BNF_RULE:letExpr: binary or n-ary expression cannot have prefix, treating as ATOM
+// support both new and old syntax.
+// the rule is too permissive in that it allows mixing of new and old syntax.
+// but when separating the two cases, `let (x = 1 <caret>` produces many errors instead of a single one (pin problem?).
+// also, having two separate rules doesn't work for some reason.
+letExpr ::= let '('? typedIdentifier '=' expr (')' | in) expr {
+  pin = 1
+  methods = [
+    varExpr = "/expr[0]"
+    bodyExpr = "/expr[1]"
+  ]
+}
+
+throwExpr ::= throw '(' expr ')'
+traceExpr ::= trace '(' expr ')'
+importExpr ::= ('import' | 'import*') ('(' moduleUri ')' | moduleUri) {
+  implements = "org.pkl.intellij.psi.PklImportBase"
+  methods = [
+    moduleUri = "moduleUri"
+  ]
+}
+
+readExpr ::= ('read' | 'read*' | 'read?') '(' expr ')' {
+  implements = "org.pkl.intellij.psi.PklSuppressWarningsTarget"
+}
+
+functionLiteral ::= functionParameterList '->' expr {
+  implements = "org.pkl.intellij.psi.PklParameterListOwner"
+  methods = [
+    parameterList = "functionParameterList"
+  ]
+}
+
+// By pinning the opening delimiter, a missing matching closing delimiter of a property amend
+// is reported correctly as such, albeit only at EOF, which is often the wrong location.
+// A side effect of this pinning is that `follow(objectMember)` grows by/becomes `follow(expr)`.
+objectBody ::= '{' objectBodyParameterList? objectMember* '}' {
+  pin = 1
+  implements = "org.pkl.intellij.psi.PklObjectBodyEx"
+  mixin = "org.pkl.intellij.psi.PklObjectBodyBase"
+  methods = [
+    parameterList = "objectBodyParameterList"
+    objectMember = ""
+  ]
+}
+
+objectMember ::= objectProperty | objectMethod | objectEntry | memberPredicate | forGenerator | whenGenerator | objectElement | objectSpread {
+  recoverWhile = recoverObjectMember
+  mixin = "org.pkl.intellij.psi.PklObjectMemberBase"
+}
+
+// See comment for `objectBody`.
+private recoverObjectMember ::= recoverExpr
+
+objectProperty ::= modifierList propertyName (objectPropertyAssign | objectPropertyAmend+) {
+  extends = objectMember
+  implements = [
+    "org.pkl.intellij.psi.PklProperty"
+    "org.pkl.intellij.psi.PklNavigableElement"
+    "org.pkl.intellij.psi.PklObjectBodyListOwner"
+  ]
+  mixin = "org.pkl.intellij.psi.PklObjectPropertyBase"
+}
+
+private objectPropertyAssign ::= typeAnnotation? '=' expr { pin = 2 }
+
+private objectPropertyAmend ::= objectBody !(infixOp) { pin = 1 }
+
+// If `objectBody` is followed by an operator of a left-recursive expression rule, it is in fact an `objectElement`.
+// (Only a few of these operators are semantically valid.)
+// We are considering to change Pkl's grammar to avoid this problem.
+private infixOp ::= '.' | '.?' | '[' | '**' | '*' | '/' | '~/' | '%' | '+' | '-'
+  | '<' | '>' | '<=' | '>=' | 'is' | 'as' | '==' | '!=' | '&&' | '||' | '|>' | '??'
+
+objectMethod ::= methodHeader '=' expr {
+  pin = 1
+  extends = objectMember
+  implements = "org.pkl.intellij.psi.PklMethod"
+  mixin = "org.pkl.intellij.psi.PklObjectMethodBase"
+  methods = [
+    parameterList = "functionParameterList"
+    returnType = "type"
+    body = "expr"
+  ]
+}
+
+objectEntry ::= SEP? '[' expr ']' (objectMemberAssign | objectBody+) {
+  pin = 2
+  extends = objectMember
+  implements = [
+    "org.pkl.intellij.psi.PklObjectBodyListOwner"
+    "org.pkl.intellij.psi.PklSuppressWarningsTarget"
+  ]
+  methods = [
+    keyExpr = "/expr[0]"
+    valueExpr = "/expr[1]"
+  ]
+}
+
+private objectMemberAssign ::= '=' expr { pin = 1 }
+
+memberPredicate ::= SEP? '[[' expr ']]' (objectMemberAssign | objectBody+) {
+  pin = 2
+  extends = objectMember
+  implements = [
+    "org.pkl.intellij.psi.PklObjectBodyListOwner"
+    "org.pkl.intellij.psi.PklSuppressWarningsTarget"
+  ]
+  methods = [
+    conditionExpr = "/expr[0]"
+    valueExpr = "/expr[1]"
+  ]
+}
+
+forGenerator ::= for '(' typedIdentifier (',' typedIdentifier)? in expr ')' objectBody {
+  pin = 1
+  extends = objectMember
+  implements = "org.pkl.intellij.psi.PklSuppressWarningsTarget"
+  methods = [
+    keyValueVars = "typedIdentifier"
+    iterableExpr = "expr"
+  ]
+}
+
+whenGenerator ::= when '(' expr ')' (objectBody ('else' objectBody)?) {
+  pin = 1
+  extends = objectMember
+  methods = [
+    conditionExpr = "expr"
+    thenBody = "/objectBody[0]"
+    elseBody = "/objectBody[1]"
+  ]
+}
+
+objectSpread ::= ('...' | '...?') expr {
+  extends = objectMember
+}
+
+objectElement ::= expr {
+  extends = objectMember
+  implements = "org.pkl.intellij.psi.PklSuppressWarningsTarget"
+}
+
+stringConstant ::= STRING_START stringConstantContent STRING_END {
+  methods = [
+    content = "stringConstantContent"
+  ]
+}
+
+stringConstantContent ::= (STRING_CHARS | CHAR_ESCAPE | UNICODE_ESCAPE)*
+
+stringContent ::= (STRING_CHARS | CHAR_ESCAPE | UNICODE_ESCAPE | INTERPOLATION_START expr INTERPOLATION_END)* {
+  mixin = "org.pkl.intellij.psi.PklStringContentBase"
+}

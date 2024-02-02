@@ -1,0 +1,11 @@
+= Code Refactoring
+
+* Select menu:Refactor[Rename...] to rename any of the following:
+** class
+** method
+** property
+** method parameter
+** lambda parameter
+** object body parameter
+** let variable
+** for variable

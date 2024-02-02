@@ -1,0 +1,104 @@
+= Development
+
+== Roadmap
+
+* [ ] fix TODOs in lexer and parser grammars
+* [ ] highlight Pkldoc
+* [x] navigate to modules with `module:` uris (search on project class path)
+* [x] navigate to modules with `http(s):` uris
+* [x] complete module uris
+* [x] complete keywords (context-sensitive)
+* [x] complete methods and properties
+* [x] documentation support (e.g., quick documentation popup)
+* [x] collapse module doc comment by default (often very large)
+* [x] go to class/symbol
+* [ ] evaluate Pkl module via run configuration
+* [ ] implement PSI stubs and stub indexing, improve Go To Class/Symbol
+* additional highlighting/checking via annotator, e.g.:
+** [ ] highlight annotations
+** [ ] check multi-line string invariants (leading/trailing newline, valid indentation)
+** [x] check validity of modifiers, flag duplicate modifiers
+* navigate to/complete elements in
+** [x] lexical scope
+** [x] pkl.base
+*** [x] take pkl.base module from IntelliJ module class path
+** [x] imported modules (take stdlib modules from the same places as pkl.base)
+** [x] amended/extended module (may not have `module.` qualifier when referenced from root scope)
+* implement any other feature listed in the https://www.jetbrains.org/intellij/sdk/docs/reference_guide/custom_language_support.html[custom language support] guide
+* [x] rename refactoring
+
+== Setup
+
+* Install {uri-jdk}[JDK 11]
+* Install {uri-intellij}[IntelliJ IDEA]
+** Install Grammar-Kit plugin
+** To import the project into IntelliJ, go to File->Open and select the project's root directory.
+If the project is opened but not imported, look for a popup in the lower right corner
+and click its "Import Gradle Project" link.
+
+== Build Commands
+
+`./gradlew build` performs a full build.
+
+`./gradlew runIde` starts a fresh IDE with the plugin installed.
+
+== Debugging
+
+To debug the plugin, go to the _runIde_ task in the Gradle window and debug it.
+
+== Release
+
+Before a release, run Code->Inspect Code->Whole Project (at least) for pkl-hub project and check the results.
+
+The release CI build publishes the plugin zip but doesn't update the plugin update site.
+To update the plugin update site, edit `updatePlugins.xml` on gh-pages branch.
+
+== Resources
+
+=== General
+
+* http://www.jetbrains.org/intellij/sdk/docs/welcome.html
+* https://github.com/JetBrains/Grammar-Kit
+** https://github.com/JetBrains/Grammar-Kit/tree/master/resources/messages/attributeDescriptions
+* https://www.plugin-dev.com/intellij/
+* https://github.com/antlr/antlr4-intellij-adaptor/blob/master/doc/plugin-dev-notes.md
+* https://developerlife.com/2021/03/13/ij-idea-plugin-advanced/
+
+=== Build
+
+* https://github.com/JetBrains/gradle-intellij-plugin
+** https://github.com/JetBrains/gradle-intellij-plugin/blob/master/FAQ.md
+* https://github.com/JetBrains/gradle-grammar-kit-plugin
+
+=== Dynamic Plugin Reloading
+
+. Start dev instance
+. Make a code change
+. Run `./gw prepareSandbox`
+. Plugin reloads automatically
+
+=== Tutorial
+
+* https://medium.com/@shan1024/custom-language-plugin-development-for-intellij-idea-part-01-d6a41ab96bc9
+* https://medium.com/@shan1024/custom-language-plugin-development-for-intellij-idea-part-02-f948a078dc81
+* https://medium.com/@shan1024/custom-language-plugin-development-for-intellij-idea-part-03-2bfcc7f1517
+* https://medium.com/@shan1024/custom-language-plugin-development-for-intellij-idea-part-04-df2f3ce88b30
+
+=== General Purpose Language Plugins
+
+built with Grammar-Kit.
+
+* https://github.com/intellij-rust/intellij-rust (written in Kotlin)
+* https://github.com/JetBrains/intellij-plugins/tree/master/Dart
+* https://github.com/go-lang-plugin-org/go-lang-idea-plugin
+* https://github.com/klazuka/intellij-elm
+
+=== Special Purpose Language Plugins
+
+* https://github.com/databricks/intellij-jsonnet
+* https://github.com/intellij-rust/intellij-rust/tree/master/intellij-toml
+
+=== Community
+
+* https://jetbrains-platform.slack.com
+* https://intellij-support.jetbrains.com/hc/en-us/community/topics/200366979-IntelliJ-IDEA-Open-API-and-Plugin-Development

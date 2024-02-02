@@ -1,0 +1,4 @@
+= Code Formatting
+
+* Select menu:Code[Reformat Code] to reformat existing code.
+* Select menu:Preferences[Editor > Code Style > Pkl] to customize formatting options.

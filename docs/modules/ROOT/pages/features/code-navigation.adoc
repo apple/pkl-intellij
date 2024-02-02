@@ -1,0 +1,37 @@
+== Code Navigation
+
+The following code navigation features are supported:
+
+* menu:Navigate[Class] footnote:stdlib[Currently only for Pkl standard library.]
+* menu:Navigate[Symbol] footnote:stdlib[]
+* menu:Navigate[Declaration or Usages]
+* menu:Navigate[Type Declaration]
+* menu:Navigate[File Structure]
+* menu:Edit[Find > Find Usages] footnote:[Currently limited to Pkl files located under a source root.]
+
+=== Module URIs
+
+menu:Navigate[Declaration] can also be used on module URIs of _amends_, _extends_, or _import_ clauses.
+
+The following URI schemes are supported:
+
+\file://foo/bar.pkl ::
+A module on the local file system.
+pkl:json ::
+A Pkl standard library module.
+If a _pkl-core_ or _pkl-config-java-all_ Jar is present on the class path of the current IntelliJ module,
+the standard library module contained in that Jar is used.
+Otherwise, the standard library module bundled with the Pkl IntelliJ plugin is used.
+modulepath:/foo/bar.pkl ::
+A module on the class path of the current IntelliJ module.
+_modulepath:/foo/bar.pkl_ maps to class path resource _foo/bar.pkl_.
+package://example.com/package@1.0.0#/bar.pkl ::
+A module published within a _package_.
+\https://example.com/foobar.pkl ::
+A module loaded over HTTPS.
+foo/bar.pkl::
+A module resolved relative to the originating module.
+If the originating module is located under an IntelliJ source root, the referenced module is resolved as _modulepath:_ module.
+Otherwise, the referenced module is resolved as `file:` module.
+
+Except for `https:` URIs, all of the above URIs support code completion.

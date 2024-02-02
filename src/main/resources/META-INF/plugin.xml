@@ -1,0 +1,164 @@
+<!-- See comments in `org.pkl.intellij.psi.PklStdLib` for why a restart is required. -->
+<idea-plugin require-restart="true">
+  <id>org.pkl</id>
+  <name>Pkl</name>
+  <!--  language=html -->
+  <description><![CDATA[
+    <p>
+      Language support for <a href="https://github.com/apple/pkl">Pkl</a>.
+      Compatible with <strong>IntelliJ 2023.1</strong> or higher and <strong>Pkl 0.25</strong> or higher.
+    </p>
+    <p>
+      Features:
+    <ul>
+      <li>Code editing and navigation</li>
+      <li>Code formatting</li>
+      <li>Code completion</li>
+      <li>Syntax checking and highlighting</li>
+      <li>Type and constraint checking</li>
+    </ul>
+    </p>
+    ]]></description>
+  <!-- language=html -->
+  <change-notes><![CDATA[
+    <b>0.26.0</b>
+    <ul>
+      <li>First release</li>
+    </ul>
+    ]]></change-notes>
+  <vendor email="pkl-oss@group.apple.com" url="https://pkl-lang.org">Pkl</vendor>
+  <depends>com.intellij.modules.lang</depends>
+  <depends>com.intellij.modules.platform</depends>
+  <depends>org.intellij.intelliLang</depends>
+  <depends>org.intellij.plugins.markdown</depends>
+
+  <extensions defaultExtensionNs="com.intellij">
+    <additionalLibraryRootsProvider
+        implementation="org.pkl.intellij.packages.PklAdditionalLibraryRootsProvider"/>
+    <stubElementTypeHolder class="org.pkl.intellij.psi.PklElementTypes" externalIdPrefix="pkl." />
+    <projectConfigurable parentId="language"
+                         instance="org.pkl.intellij.settings.PklSettingsConfigurable"
+                         id="org.pkl.intellij.settings.PklSettingsConfigurable"
+                         displayName="Pkl"
+                         nonDefaultProject="false" />
+    <stubIndex implementation="org.pkl.intellij.stubs.PklModuleUriIndex" />
+    <projectViewNestingRulesProvider implementation="org.pkl.intellij.projectView.PklProjectViewNestingRulesProvider" />
+    <projectViewNodeDecorator implementation="org.pkl.intellij.projectView.PklProjectViewNodeDecorator" />
+    <generatedSourcesFilter implementation="org.pkl.intellij.PklGeneratedSourcesFilter" />
+    <fileType name="Pkl" implementationClass="org.pkl.intellij.PklFileType"
+              fieldName="INSTANCE" language="Pkl" extensions="pkl;pcf" fileNames="PklProject"/>
+    <externalIconProvider key="PklProject" implementationClass="org.pkl.intellij.packages.PklExternalSystemIconProvider"/>
+    <editorNotificationProvider implementation="org.pkl.intellij.notification.PklSyncProjectNotificationProvider" />
+    <editorNotificationProvider implementation="org.pkl.intellij.notification.PklToolchainNotificationProvider" />
+    <lang.parserDefinition language="Pkl" implementationClass="org.pkl.intellij.PklParserDefinition"/>
+    <lang.syntaxHighlighterFactory language="Pkl"
+                                   implementationClass="org.pkl.intellij.PklSyntaxHighlighterFactory"/>
+    <lang.braceMatcher language="Pkl" implementationClass="org.pkl.intellij.PklBraceMatcher"/>
+    <lang.commenter language="Pkl" implementationClass="org.pkl.intellij.PklCommenter"/>
+    <lang.foldingBuilder language="Pkl" implementationClass="org.pkl.intellij.PklFoldingBuilder"/>
+    <lang.formatter language="Pkl" implementationClass="org.pkl.intellij.formatter.PklFormattingModelBuilder"/>
+    <lang.findUsagesProvider language="Pkl" implementationClass="org.pkl.intellij.PklFindUsagesProvider"/>
+    <lang.psiStructureViewFactory language="Pkl" implementationClass="org.pkl.intellij.PklStructureViewFactory"/>
+    <lang.documentationProvider language="Pkl" implementationClass="org.pkl.intellij.documentation.PklDocumentationProvider"/>
+    <lang.elementManipulator forClass="org.pkl.intellij.psi.PklSimpleTypeName"
+                             implementationClass="org.pkl.intellij.psi.PklIdentifierOwnerManipulator"/>
+    <lang.elementManipulator forClass="org.pkl.intellij.psi.PklPropertyName"
+                             implementationClass="org.pkl.intellij.psi.PklIdentifierOwnerManipulator"/>
+    <lang.elementManipulator forClass="org.pkl.intellij.psi.PklUnqualifiedAccessName"
+                             implementationClass="org.pkl.intellij.psi.PklIdentifierOwnerManipulator"/>
+    <lang.elementManipulator forClass="org.pkl.intellij.psi.PklQualifiedAccessName"
+                             implementationClass="org.pkl.intellij.psi.PklIdentifierOwnerManipulator"/>
+    <lang.elementManipulator forClass="org.pkl.intellij.psi.PklSuperAccessName"
+                             implementationClass="org.pkl.intellij.psi.PklIdentifierOwnerManipulator"/>
+    <lang.namesValidator language="Pkl" implementationClass="org.pkl.intellij.PklNamesValidator"/>
+    <lang.importOptimizer language="Pkl" implementationClass="org.pkl.intellij.PklImportOptimizer"/>
+    <lang.refactoringSupport language="Pkl" implementationClass="org.pkl.intellij.PklRefactoringSupportProvider"/>
+
+    <regExpLanguageHost forClass="org.pkl.intellij.psi.impl.PklStringContentImpl"
+                        implementationClass="org.pkl.intellij.regex.PklRegexLanguageHost"/>
+    <multiHostInjector implementation="org.pkl.intellij.regex.PklStringLiteralInjector"/>
+    <annotator language="Pkl" implementationClass="org.pkl.intellij.annotator.PklDeprecationAnnotator"/>
+    <annotator language="Pkl" implementationClass="org.pkl.intellij.annotator.PklDuplicatePropertyAnnotator"/>
+    <annotator language="Pkl" implementationClass="org.pkl.intellij.annotator.PklStringLiteralAnnotator"/>
+    <annotator language="Pkl" implementationClass="org.pkl.intellij.annotator.PklMemberAnnotator"/>
+    <annotator language="Pkl" implementationClass="org.pkl.intellij.annotator.PklExprAnnotator"/>
+    <annotator language="Pkl" implementationClass="org.pkl.intellij.annotator.PklModuleUriAndVersionAnnotator"/>
+    <annotator language="Pkl" implementationClass="org.pkl.intellij.annotator.PklExtendsClauseAnnotator"/>
+    <annotator language="Pkl" implementationClass="org.pkl.intellij.annotator.PklTypeNameAnnotator"/>
+    <annotator language="Pkl" implementationClass="org.pkl.intellij.annotator.PklHighlightingAnnotator"/>
+    <!-- Not used for now because all Pkl features are supported in all versions -->
+    <!-- <annotator language="Pkl" implementationClass="org.pkl.intellij.annotator.PklUnsupportedFeatureAnnotator"/> -->
+    <annotator language="Pkl" implementationClass="org.pkl.intellij.annotator.PklReservedKeywordAnnotator"/>
+    <annotator language="Pkl" implementationClass="org.pkl.intellij.annotator.PklIgnoreAnnotator"/>
+    <annotator language="Pkl" implementationClass="org.pkl.intellij.annotator.PklTypeAnnotator"/>
+    <annotator language="Pkl" implementationClass="org.pkl.intellij.annotator.PklProjectAnnotator"/>
+    <completion.contributor language="Pkl"
+                            implementationClass="org.pkl.intellij.completion.PklCompletionContributor"/>
+    <completion.confidence language="Pkl"
+                           implementationClass="org.pkl.intellij.completion.PklCompletionConfidence"
+                           order="first"/>
+    <typedHandler implementation="org.pkl.intellij.completion.PklAutoPopupHandler"/>
+    <codeInsight.parameterInfo language="Pkl" implementationClass="org.pkl.intellij.PklParameterInfoHandler"/>
+    <codeInsight.typeInfo language="Pkl" implementationClass="org.pkl.intellij.PklExprTypeProvider"/>
+    <codeInsight.lineMarkerProvider language="Pkl"
+                                    implementationClass="org.pkl.intellij.marker.PklSuperdefinitionLineMarkerProvider"/>
+    <codeInsight.lineMarkerProvider language="Pkl"
+                                    implementationClass="org.pkl.intellij.marker.PklRecursiveCallLineMarkerProvider"/>
+    <typeDeclarationProvider implementation="org.pkl.intellij.PklTypeDeclarationProvider"/>
+    <declarationRangeHandler key="org.pkl.intellij.psi.PklModule"
+                             implementationClass="org.pkl.intellij.PklDeclarationRangeHandler"/>
+    <declarationRangeHandler key="org.pkl.intellij.psi.PklClass"
+                             implementationClass="org.pkl.intellij.PklDeclarationRangeHandler"/>
+    <declarationRangeHandler key="org.pkl.intellij.psi.PklTypeAlias"
+                             implementationClass="org.pkl.intellij.PklDeclarationRangeHandler"/>
+    <declarationRangeHandler key="org.pkl.intellij.psi.PklClassMethod"
+                             implementationClass="org.pkl.intellij.PklDeclarationRangeHandler"/>
+    <declarationRangeHandler key="org.pkl.intellij.psi.PklClassProperty"
+                             implementationClass="org.pkl.intellij.PklDeclarationRangeHandler"/>
+    <declarationRangeHandler key="org.pkl.intellij.psi.PklObjectMethod"
+                             implementationClass="org.pkl.intellij.PklDeclarationRangeHandler"/>
+    <declarationRangeHandler key="org.pkl.intellij.psi.PklObjectProperty"
+                             implementationClass="org.pkl.intellij.PklDeclarationRangeHandler"/>
+    <quoteHandler fileType="Pkl" className="org.pkl.intellij.PklQuoteHandler"/>
+    <enterHandlerDelegate implementation="org.pkl.intellij.PklDocCommentEnterHandler"/>
+    <enterHandlerDelegate implementation="org.pkl.intellij.PklAmendExprEnterHandler"/>
+    <gotoClassContributor implementation="org.pkl.intellij.PklGoToClassContributor"/>
+    <gotoSymbolContributor implementation="org.pkl.intellij.PklGoToSymbolContributor"/>
+    <codeStyleSettingsProvider implementation="org.pkl.intellij.codestyle.PklCodeStyleSettingsProvider"/>
+    <langCodeStyleSettingsProvider
+        implementation="org.pkl.intellij.codestyle.PklLanguageCodeStyleSettingsProvider"/>
+    <elementDescriptionProvider implementation="org.pkl.intellij.PklDescriptionProvider"/>
+    <colorSettingsPage implementation="org.pkl.intellij.color.PklColorSettingsPage" />
+    <localInspection shortName="pkl.UnusedLocalDefinitions" displayName="Unused local definitions"
+                     groupName="Pkl" enabledByDefault="true" level="WARNING" language="Pkl"
+                     implementationClass="org.pkl.intellij.PklUnusedLocalDefinitionsInspection"/>
+  </extensions>
+
+  <actions>
+    <action id="Pkl.NewPklFile" class="org.pkl.intellij.action.PklCreateFileAction">
+      <add-to-group group-id="NewGroup" anchor="before" relative-to-action="NewFile"/>
+    </action>
+    <action id="Pkl.NewPklProject" class="org.pkl.intellij.action.PklCreateProjectAction">
+      <add-to-group group-id="NewGroup" anchor="before" relative-to-action="NewFile"/>
+    </action>
+    <action id="Pkl.DownloadPackagesForPklProject" class="org.pkl.intellij.action.PklDownloadPackagesForPklProjectAction"/>
+    <action id="Pkl.ShowSyncError" class="org.pkl.intellij.action.PklShowSyncErrorAction"/>
+    <action id="Pkl.OpenSettingsPanelAction" class="org.pkl.intellij.action.PklOpenSettingsPanelAction"/>
+    <group id="Pkl" text="Pkl" popup="true" compact="true" icon="/org/pkl/intellij/logo.svg">
+      <action
+          id="Pkl.SyncPklProjects"
+          class="org.pkl.intellij.action.PklSyncProjectsAction"
+          text="Sync Projects"
+          description="Synchronizes PklProject metadata with IntelliJ"
+          icon="AllIcons.Actions.BuildLoadChanges"/>
+      <action
+        id="Pkl.UnsyncPklProjects"
+        class="org.pkl.intellij.action.PklUnsyncProjectsAction"
+        text="Unsync Projects"
+        description="Clears all IntelliJ metadata related to projects"
+        icon="AllIcons.Actions.ForceRefresh"/>
+      <add-to-group group-id="ToolsMenu" anchor="last"/>
+    </group>
+  </actions>
+
+</idea-plugin>

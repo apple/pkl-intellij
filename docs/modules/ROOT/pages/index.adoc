@@ -1,0 +1,8 @@
+= IntelliJ Plugin
+
+The IntelliJ plugin provides Pkl language support for the IntelliJ Platform (IntelliJ IDEA, GoLand, PyCharm, etc.).
+It requires [[min-intellij-version]]**IntelliJ 2023.1** or higher and supports **Pkl 0.25** and higher.
+
+* xref:installation.adoc[Installation]
+* xref:highlights.adoc[Highlights]
+* xref:features/index.adoc[Features]

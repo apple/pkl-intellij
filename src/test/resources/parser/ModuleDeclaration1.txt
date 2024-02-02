@@ -1,0 +1,14 @@
+Module(0,8)
+  ModuleDeclaration(0,8)
+    AnnotationList(0,0)
+      <empty list>
+    ModifierList(0,0)
+      <empty list>
+    PsiElement(module)('module')(0,6)
+    PsiWhiteSpace(' ')(6,7)
+    QualifiedIdentifier(7,8)
+      PsiElement(IDENTIFIER)('X')(7,8)
+  ImportList(8,8)
+    <empty list>
+  ModuleMemberList(8,8)
+    <empty list>

@@ -1,0 +1,17 @@
+Module(0,17)
+  ModuleDeclaration(0,17)
+    DocComment(0,8)
+      PsiElement(DOC_COMMENT_LINE)('/// docs')(0,8)
+    PsiWhiteSpace('\n')(8,9)
+    AnnotationList(9,9)
+      <empty list>
+    ModifierList(9,9)
+      <empty list>
+    PsiElement(module)('module')(9,15)
+    PsiWhiteSpace(' ')(15,16)
+    QualifiedIdentifier(16,17)
+      PsiElement(IDENTIFIER)('X')(16,17)
+  ImportList(17,17)
+    <empty list>
+  ModuleMemberList(17,17)
+    <empty list>

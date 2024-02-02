@@ -1,0 +1,21 @@
+Module(0,29)
+  PsiWhiteSpace('\t')(0,1)
+  ModuleDeclaration(1,29)
+    DocComment(1,10)
+      PsiElement(DOC_COMMENT_LINE)('/// line1')(1,10)
+    PsiWhiteSpace('\n')(10,11)
+    AnnotationList(11,11)
+      <empty list>
+    ModuleExtendsAmendsClause(11,29)
+      PsiElement(amends)('amends')(11,17)
+      PsiWhiteSpace(' ')(17,18)
+      ModuleUri(18,29)
+        StringConstant(18,29)
+          PsiElement(STRING_START)('"')(18,19)
+          StringConstantContent(19,28)
+            PsiElement(STRING_CHARS)('other.pkl')(19,28)
+          PsiElement(STRING_END)('"')(28,29)
+  ImportList(29,29)
+    <empty list>
+  ModuleMemberList(29,29)
+    <empty list>

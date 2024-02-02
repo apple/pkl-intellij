@@ -1,0 +1,7 @@
+= Code Validation
+
+The following errors are reported:
+
+* Syntax errors
+* Duplicate property definitions
+* Recursive property references

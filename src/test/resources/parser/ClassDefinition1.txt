@@ -1,0 +1,13 @@
+Module(0,18)
+  ImportList(0,0)
+    <empty list>
+  ModuleMemberList(0,18)
+    Class(Foo)(0,18)
+      AnnotationList(0,0)
+        <empty list>
+      ModifierList(0,8)
+        PsiElement(abstract)('abstract')(0,8)
+      PsiWhiteSpace(' ')(8,9)
+      PsiElement(class)('class')(9,14)
+      PsiWhiteSpace(' ')(14,15)
+      PsiElement(IDENTIFIER)('Foo')(15,18)

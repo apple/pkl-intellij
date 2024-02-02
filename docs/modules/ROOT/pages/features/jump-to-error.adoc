@@ -1,0 +1,20 @@
+= Jump To Error
+
+Navigate from a stack trace to the error location in IntelliJ.
+
+Create or edit  _~/.pkl/settings.pkl_ to contain:
+
+[source,javascript]
+----
+amends "pkl:settings"
+editor = Idea
+----
+
+Pkl stack traces now contain `idea://` URLs:
+
+[source,shell]
+----
+at prod#pod.volumeRoot (idea://open?file=/prod.pkl&line=1)
+----
+
+Double-click a URL while holding down the _Command_ key to navigate to the error location in IntelliJ.

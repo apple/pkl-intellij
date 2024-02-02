@@ -1,0 +1,40 @@
+= Highlights
+
+== Code Completion (Config Structure)
+
+image::config-structure-completion.gif[Config Structure Completion]
+
+== Code Completion (Module URIs)
+
+image::module-uri-completion.gif[Module URI Completion]
+
+== Navigation
+
+image::navigation.gif[Navigation]
+
+== Go to Class/Symbol
+
+image::go-to-class-symbol.gif[Go to Class/Symbol]
+
+== Name Checking
+
+image::name-checking.png[Name Checking]
+
+== Type Checking
+
+image::type-checking.png[Type Checking]
+
+== Constraint Checking
+
+image::constraint-checking.png[Constraint Checking]
+
+== Regex Checking
+
+image::regex-checking.png[Regex Checking]
+
+== Type Inference
+
+image::type-inference.gif[Type Inference]
+
+
+

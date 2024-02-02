@@ -1,0 +1,17 @@
+Module(0,18)
+  ModuleDeclaration(0,18)
+    AnnotationList(0,0)
+      <empty list>
+    ModuleExtendsAmendsClause(0,18)
+      PsiElement(amends)('amends')(0,6)
+      PsiWhiteSpace(' ')(6,7)
+      ModuleUri(7,18)
+        StringConstant(7,18)
+          PsiElement(STRING_START)('"')(7,8)
+          StringConstantContent(8,17)
+            PsiElement(STRING_CHARS)('other.pkl')(8,17)
+          PsiElement(STRING_END)('"')(17,18)
+  ImportList(18,18)
+    <empty list>
+  ModuleMemberList(18,18)
+    <empty list>

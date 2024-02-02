@@ -1,0 +1,51 @@
+= Code Editing
+
+== General
+
+* When pressing _Enter_, the next line is indented automatically.
+* Typing an opening delimiter such as `{` or `"` automatically inserts the corresponding closing delimiter.
+* Use menu:Code[Comment with Line/Block Comment] to comment or uncomment code.
+
+== View Options
+
+* menu:View[Quick Definition]
+* menu:View[Quick Documentation]
+* menu:View[Parameter Info]
+* menu:View[Type Info]
+* menu:View[Context Info]
+
+== Code Completion
+
+Code completion is supported for:
+
+* config structure
++
+[source]
+----
+foo {
+  ba<complete here>
+}
+----
+* module, type, property, and method references
++
+[source]
+----
+import "pkl:math"
+
+pi = ma<complete here>
+name: Str<complete here>
+name2 = na<complete here>
+reversed = name.rev<complete here>
+----
+* module URIs in _amends_, _extends_, and _import_ clauses
++
+[source,javascript]
+----
+amends "<complete here>"
+----
+* string literals with "enum" types
++
+[source,javascript]
+----
+verb: "GET"|"PUT"|"POST" = "p<complete here>"
+----

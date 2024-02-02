@@ -1,0 +1,23 @@
+Module(0,28)
+  ImportList(0,0)
+    <empty list>
+  ModuleMemberList(0,28)
+    ClassMethod(readme)(0,28)
+      AnnotationList(0,0)
+        <empty list>
+      ModifierList(0,0)
+        <empty list>
+      PsiElement(function)('function')(0,8)
+      PsiWhiteSpace(' ')(8,9)
+      PsiElement(IDENTIFIER)('readme')(9,15)
+      FunctionParameterList(15,28)
+        PsiElement(()('(')(15,16)
+        TypedIdentifier(16,27)
+          PsiElement(IDENTIFIER)('uri')(16,19)
+          PsiElement(:)(':')(19,20)
+          PsiWhiteSpace(' ')(20,21)
+          DeclaredType(21,27)
+            TypeName(21,27)
+              SimpleTypeName(21,27)
+                PsiElement(IDENTIFIER)('String')(21,27)
+        PsiElement())(')')(27,28)

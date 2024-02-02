@@ -1,0 +1,20 @@
+Module(0,17)
+  ImportList(0,0)
+    <empty list>
+  ModuleMemberList(0,17)
+    ClassMethod(foo)(0,17)
+      AnnotationList(0,0)
+        <empty list>
+      ModifierList(0,0)
+        <empty list>
+      PsiElement(function)('function')(0,8)
+      PsiWhiteSpace(' ')(8,9)
+      PsiElement(IDENTIFIER)('foo')(9,12)
+      FunctionParameterList(12,17)
+        PsiElement(()('(')(12,13)
+        TypedIdentifier(13,14)
+          PsiElement(IDENTIFIER)('a')(13,14)
+        PsiElement(,)(',')(14,15)
+        TypedIdentifier(15,16)
+          PsiElement(IDENTIFIER)('b')(15,16)
+        PsiElement())(')')(16,17)

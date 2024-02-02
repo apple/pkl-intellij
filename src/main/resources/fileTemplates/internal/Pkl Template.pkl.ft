@@ -1,0 +1,5 @@
+@ModuleInfo { minPklVersion = "${PKL_VERSION}" }
+module #if (${PACKAGE_NAME} && ${PACKAGE_NAME} != "")${PACKAGE_NAME}.${NAME}
+#else${NAME}
+#end
+

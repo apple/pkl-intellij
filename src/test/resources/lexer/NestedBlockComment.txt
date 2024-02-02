@@ -1,0 +1,1 @@
+block_comment ('/* b1 /* b2 */ */')

@@ -1,0 +1,24 @@
+= Pkl IntelliJ Plugin
+
+:experimental:
+:uri-docs: https://pkl-lang.org/intellij/current
+:uri-docs-installation: {uri-docs}/installation.html
+:uri-docs-features: {uri-docs}/features/
+:uri-github-issue: https://github.com/apple/pkl-intellij/issues/new
+:uri-github-discussions: https://github.com/apple/pkl-intellij/discussions
+:uri-intellij: https://www.jetbrains.com/idea/download/
+:uri-jdk: https://adoptopenjdk.net/releases.html
+
+Pkl language support for the IntelliJ Platform.
+Compatible with **IntelliJ 2023.1** or higher and **Pkl 0.25.0** or higher.
+
+== Documentation
+
+Follow {uri-docs-installation}[installation instructions] and check out the {uri-docs-features}[feature overview].
+
+== Community
+
+We'd love to hear from you!
+
+* Create an issue on {uri-github-issue}[GitHub]
+* Ask a question on {uri-github-discussions}[GitHub Discussions]

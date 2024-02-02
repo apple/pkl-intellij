@@ -1,0 +1,17 @@
+= Features
+
+xref:features/syntax-highlighting.adoc[Syntax Highlighting]::
+Automatic syntax highlighting and checking.
+xref:features/code-editing.adoc[Code Editing]::
+All the basics.
+Extensive auto-completion support.
+xref:features/code-folding.adoc[Code Folding]::
+Collapse and expand object and class definitions.
+xref:features/code-formatting.adoc[Code Formatting]::
+Reformat existing code.
+xref:features/code-navigation.adoc[Code Navigation]::
+Extensive navigation support.
+xref:features/code-validation.adoc[Code Validation]::
+Find errors quickly.
+xref:features/jump-to-error.adoc[Jump to Error]::
+Click a stack trace URL to jump to the error location in IntelliJ.

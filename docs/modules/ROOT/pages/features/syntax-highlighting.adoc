@@ -1,0 +1,3 @@
+= Syntax Highlighting
+
+Code syntax is automatically checked and highlighted as you type.

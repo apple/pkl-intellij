@@ -1,0 +1,17 @@
+Module(0,20)
+  ModuleDeclaration(0,20)
+    AnnotationList(0,0)
+      <empty list>
+    ModuleExtendsAmendsClause(0,20)
+      PsiElement(extends)('extends')(0,7)
+      PsiWhiteSpace(' ')(7,8)
+      ModuleUri(8,20)
+        StringConstant(8,20)
+          PsiElement(STRING_START)('"')(8,9)
+          StringConstantContent(9,19)
+            PsiElement(STRING_CHARS)('module.uri')(9,19)
+          PsiElement(STRING_END)('"')(19,20)
+  ImportList(20,20)
+    <empty list>
+  ModuleMemberList(20,20)
+    <empty list>

@@ -1,0 +1,3 @@
+= Code Folding
+
+Collapse and expand object and class definitions by clicking the icons in the gutter.
