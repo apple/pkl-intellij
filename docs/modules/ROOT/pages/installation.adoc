@@ -1,8 +1,8 @@
 = Installation
 
-. Select menu:Preferences[Plugins > ⚙ > Manage Plugin Repositories].
+. Select menu:Settings[Plugins > ⚙ > Manage Plugin Repositories].
 . Add https://github.com/apple/pkl-intellij/releases/latest/download/updatePlugins.xml to the list of custom plugin repositories.
-. Select menu:Preferences[Plugins > Marketplace].
+. Select menu:Settings[Plugins > Marketplace].
 . Search for and install the _pkl_ plugin.
 
 You will be notified when a new plugin version is available.
