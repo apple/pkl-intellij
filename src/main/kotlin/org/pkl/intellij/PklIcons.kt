@@ -21,7 +21,7 @@ import com.intellij.util.PlatformIcons
 import javax.swing.Icon
 
 object PklIcons {
-  val FILE: Icon = loadIcon("/org/pkl/intellij/file.svg")
+  val FILE: Icon = loadIcon("/org/pkl/intellij/logo.svg")
   val DIRECTORY: Icon = PlatformIcons.FOLDER_ICON
 
   val CLASS: Icon = loadIcon("/org/pkl/intellij/class.svg")
