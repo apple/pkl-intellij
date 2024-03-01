@@ -20,6 +20,7 @@ jflex = "1.7.0-1"
 # use same version that ships with `intellijSinceBuild`
 # https://plugins.jetbrains.com/docs/intellij/kotlin.html#kotlin-standard-library
 kotlin = "1.7.0"
+kotlinSerialization = "1.9.0"
 # bump when kotlin version bumps
 kotlinx = "1.5.1"
 # fallback if stdlib isn't found in IntelliJ project dependencies
@@ -35,4 +36,5 @@ kotlinReflect = { group = "org.jetbrains.kotlin", name = "kotlin-reflect", versi
 grammarKit = { id = "org.jetbrains.grammarkit", version.ref = "grammarKitPlugin" }
 intelliJ = { id = "org.jetbrains.intellij", version.ref = "intellijPlugin" }
 kotlin = { id = "org.jetbrains.kotlin.jvm", version.ref = "kotlin" }
+kotlin-serialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlinSerialization" }
 spotless = { id = "com.diffplug.spotless", version.ref = "spotless" }
