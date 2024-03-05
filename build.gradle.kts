@@ -9,11 +9,10 @@ plugins {
   idea
 
   alias(libs.plugins.kotlin)
+  alias(libs.plugins.kotlin.serialization)
   alias(libs.plugins.grammarKit)
   alias(libs.plugins.intelliJ)
   alias(libs.plugins.spotless)
-
-  kotlin("plugin.serialization") version "1.9.0"
 }
 
 repositories {
