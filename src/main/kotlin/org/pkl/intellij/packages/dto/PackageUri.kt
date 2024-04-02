@@ -15,7 +15,6 @@
  */
 package org.pkl.intellij.packages.dto
 
-import com.intellij.util.text.SemVer
 import java.net.URI
 import java.net.URISyntaxException
 import java.util.*
@@ -33,7 +32,7 @@ import org.pkl.intellij.packages.PackageDependency
 data class PackageUri(
   val authority: String,
   val path: String,
-  val version: SemVer,
+  val version: Version,
   val checksums: Checksums?
 ) {
   private val basePath = path.substringBeforeLast('@')
@@ -45,7 +44,7 @@ data class PackageUri(
 
       override fun deserialize(decoder: Decoder): PackageUri {
         val str = decoder.decodeString()
-        return create(str)!!
+        return create(str) ?: throw IllegalArgumentException("Invalid package uri: $str")
       }
 
       override fun serialize(encoder: Encoder, value: PackageUri) {
@@ -68,7 +67,7 @@ data class PackageUri(
           Checksums(value)
         } else null
       val versionStr = versionAndChecksumPart.substringBeforeLast("::")
-      val version = SemVer.parseFromText(versionStr) ?: return null
+      val version = Version.parseOrNull(versionStr) ?: return null
       return PackageUri(authority, path, version, checksums)
     }
 
