@@ -22,7 +22,6 @@ import com.intellij.openapi.util.TextRange
 import com.intellij.openapi.vfs.LocalFileSystem
 import com.intellij.psi.PsiElement
 import com.intellij.psi.PsiReference
-import com.intellij.util.text.SemVer
 import java.net.URI
 import java.net.URISyntaxException
 import org.pkl.intellij.PklVersion
@@ -31,6 +30,7 @@ import org.pkl.intellij.intention.PklPrefixDependencyNotationQuickFix
 import org.pkl.intellij.packages.PackageDependency
 import org.pkl.intellij.packages.dto.Checksums
 import org.pkl.intellij.packages.dto.PackageUri
+import org.pkl.intellij.packages.dto.Version
 import org.pkl.intellij.packages.pklPackageService
 import org.pkl.intellij.psi.*
 import org.pkl.intellij.util.currentProject
@@ -170,7 +170,7 @@ class PklModuleUriAndVersionAnnotator : PklAnnotator() {
       return true
     }
     val versionAndChecksumParts = versionAndChecksumPart.split("::")
-    val version = SemVer.parseFromText(versionAndChecksumParts.first())
+    val version = Version.parseOrNull(versionAndChecksumParts.first())
     if (version == null) {
       val offset = element.text.lastIndexOf('@') + 1
       createAnnotation(
