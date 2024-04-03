@@ -20,9 +20,7 @@ import kotlin.math.min
 
 /** Adapted from `org.pkl.core.Version` */
 data class Version(
-  /** Returns the major version. */
   val major: Int,
-  /** Returns the minor version. */
   var minor: Int,
   val patch: Int,
   val preRelease: String?,
