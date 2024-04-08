@@ -17,6 +17,7 @@ package org.pkl.intellij.action
 
 import com.intellij.ide.IdeBundle
 import com.intellij.ide.IdeView
+import com.intellij.openapi.actionSystem.ActionUpdateThread
 import com.intellij.openapi.actionSystem.AnActionEvent
 import com.intellij.openapi.actionSystem.CommonDataKeys
 import com.intellij.openapi.actionSystem.LangDataKeys.IDE_VIEW
@@ -43,6 +44,10 @@ class PklCreateProjectAction :
     val view = IDE_VIEW.getData(e.dataContext) ?: return
     val isAvailable = !hasPklProject(view)
     e.presentation.isEnabledAndVisible = isAvailable
+  }
+
+  override fun getActionUpdateThread(): ActionUpdateThread {
+    return ActionUpdateThread.BGT
   }
 
   override fun actionPerformed(e: AnActionEvent) {
