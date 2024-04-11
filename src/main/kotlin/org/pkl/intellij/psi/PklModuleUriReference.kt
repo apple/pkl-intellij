@@ -439,7 +439,7 @@ class PklModuleUriReference(uri: PklModuleUri, rangeInElement: TextRange) :
       var currentDir = sourceFile.parent?.parent
       while (currentDir != null) {
         val result = currentDir.findFileByRelativePath(targetPathAfterTripleDot)
-        if (result != null) return result
+        if (result != null && result.path != sourceFile.path) return result
         currentDir = currentDir.parent
       }
 
