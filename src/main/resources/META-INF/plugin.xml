@@ -42,6 +42,7 @@
                          displayName="Pkl"
                          nonDefaultProject="false" />
     <stubIndex implementation="org.pkl.intellij.stubs.PklModuleUriIndex" />
+    <breadcrumbsInfoProvider implementation="org.pkl.intellij.PklBreadcrumbsProvider" />
     <projectViewNestingRulesProvider implementation="org.pkl.intellij.projectView.PklProjectViewNestingRulesProvider" />
     <projectViewNodeDecorator implementation="org.pkl.intellij.projectView.PklProjectViewNodeDecorator" />
     <generatedSourcesFilter implementation="org.pkl.intellij.PklGeneratedSourcesFilter" />
