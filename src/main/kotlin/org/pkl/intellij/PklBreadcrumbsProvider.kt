@@ -47,20 +47,7 @@ class PklBreadcrumbsProvider : BreadcrumbsProvider {
 
   private fun PklArgumentList?.renderMethodCallArguments(): String {
     if (this == null) return ""
-    if (elements.isEmpty()) return "()"
-    return buildString {
-      append("(")
-      var isFirst = true
-      for (argument in elements) {
-        if (isFirst) {
-          isFirst = false
-        } else {
-          append(", ")
-        }
-        append(argument.toDisplayText() ?: "…")
-      }
-      append(")")
-    }
+    return elements.joinToString(", ", prefix = "(", postfix = ")") { it.toDisplayText() ?: "…" }
   }
 
   private fun PklExpr.toDisplayText(): String? {
@@ -170,7 +157,7 @@ class PklBreadcrumbsProvider : BreadcrumbsProvider {
   private val ifThenHandler =
     object : PklBreadcrumbHandler {
       override fun accepts(elem: PsiElement): Boolean =
-        elem.parent is PklIfExpr && elem.isThenBody()
+        elem.isThenBody()
 
       override fun getElementInfo(element: PsiElement): String {
         val ifExpr = element.parent as PklIfExpr
