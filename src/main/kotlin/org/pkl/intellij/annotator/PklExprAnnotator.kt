@@ -24,6 +24,7 @@ import com.intellij.psi.util.parentOfType
 import com.intellij.psi.util.parentOfTypes
 import com.intellij.refactoring.suggested.endOffset
 import com.intellij.refactoring.suggested.startOffset
+import org.pkl.intellij.PklVersion
 import org.pkl.intellij.intention.*
 import org.pkl.intellij.psi.*
 import org.pkl.intellij.resolve.ResolveVisitors
@@ -330,7 +331,7 @@ class PklExprAnnotator : PklAnnotator() {
     val constPropertyOrMethod = element.parentOfTypes(PklClassProperty::class, PklMethod::class)
     val needsConst =
       constPropertyOrMethod?.isConst == true ||
-        element.parentOfTypes(PklClass::class, PklAnnotation::class) != null
+        element.parentOfTypes(PklClass::class, PklAnnotation::class, PklTypeAlias::class) != null
     if (needsConst) {
       createAnnotation(
         HighlightSeverity.ERROR,
@@ -363,6 +364,7 @@ class PklExprAnnotator : PklAnnotator() {
   }
 
   private fun PklElement.getConstScope(): Pair<Boolean, Boolean> {
+    @Suppress("MoveVariableDeclarationIntoWhen")
     val parent = parentOfTypes(PklClassProperty::class, PklMethod::class, PklObjectBodyBase::class)
     return when (parent) {
       is PklModifierListOwner -> parent.isConst to false
@@ -463,10 +465,12 @@ class PklExprAnnotator : PklAnnotator() {
       return
     }
 
-    // scenario 2: methods/properties on a module that are referenced from inside a class or
-    // annotation need to be const
-    val classOrAnnotationBody = element.parentOfTypes(PklClass::class, PklAnnotation::class)
-    if (classOrAnnotationBody != null) {
+    // scenario 2: methods/properties on a module that are referenced from inside a class,
+    // annotation, or typealias
+    // need to be const
+    val staticParent =
+      element.parentOfTypes(PklClass::class, PklAnnotation::class, PklTypeAlias::class)
+    if (staticParent != null) {
       if (
         target.parent is PklModuleMemberList &&
           !target.isConst &&
@@ -474,6 +478,15 @@ class PklExprAnnotator : PklAnnotator() {
       ) {
         val action = if (target is PklProperty) "reference property" else "call method"
         val name = if (target is PklProperty) target.name else (target as PklMethod).name
+        if (staticParent is PklTypeAlias) {
+          // const requirement on typealiases added in Pkl 0.26. If the declared Pkl version is
+          // 0.25.x, display a warning rather than an error.
+          element.enclosingModule?.effectivePklVersion?.let { effectivePklVersion ->
+            if (effectivePklVersion < PklVersion.VERSION_0_26) {
+              return warnTypealiasConst(element, action, name, holder)
+            }
+          }
+        }
         createAnnotation(
           HighlightSeverity.ERROR,
           element.textRange,
@@ -481,7 +494,7 @@ class PklExprAnnotator : PklAnnotator() {
           """
             Cannot $action <code>${name?.escapeXml()}</code> from here because it is not <code>const</code>.<br/>
             <br/>
-            Classes and annotations can only reference <code>const</code> members of their enclosing module.
+            Classes, typealiases, and annotations can only reference <code>const</code> members of their enclosing module.
             
             <p>To fix, either make the accessed member <code>const</code>, or add a self-import of this module, and access this member off of the self import.</p>
             """
@@ -492,6 +505,30 @@ class PklExprAnnotator : PklAnnotator() {
         )
       }
     }
+  }
+
+  private fun warnTypealiasConst(
+    element: PklElement,
+    action: String,
+    name: String?,
+    holder: AnnotationHolder
+  ) {
+    createAnnotation(
+      HighlightSeverity.WARNING,
+      element.textRange,
+      "Should not $action `$name` from here because it is not `const`",
+      """
+            Should not $action <code>${name?.escapeXml()}</code> from here because it is not <code>const</code>.<br/>
+            <br/>
+            In Pkl 0.26, typealiases can only reference <code>const</code> members of their enclosing module, and this code is considered breaking.
+            
+            <p>To fix, either make the accessed member <code>const</code>, or add a self-import of this module, and access this member off of the self import.</p>
+            """
+        .trimIndent(),
+      holder,
+      null,
+      null
+    )
   }
 
   private fun checkIsRedundantConversion(

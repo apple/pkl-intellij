@@ -56,7 +56,8 @@ class PklVersion(
       compareBy(PklVersion::major, PklVersion::minor, PklVersion::patch) then
         nullsLast(compareBy(PklVersion::preReleaseLabel))
 
-    val VERSION_0_24: PklVersion = PklVersion(0, 24, 0, null, null)
+    val VERSION_0_25: PklVersion = PklVersion(0, 25, 0, null, null)
+    val VERSION_0_26: PklVersion = PklVersion(0, 26, 0, null, null)
 
     fun parse(versionString: String): PklVersion? {
       val result = REGEX.matchEntire(versionString) ?: return null
