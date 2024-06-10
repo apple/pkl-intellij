@@ -27,6 +27,7 @@ import com.intellij.psi.PsiElement
 import com.intellij.psi.PsiFile
 import java.net.URI
 import java.net.URISyntaxException
+import java.nio.file.Path
 import java.util.*
 import java.util.regex.Pattern
 import kotlin.math.max
@@ -233,3 +234,5 @@ fun parseUriOrNull(uriStr: String): URI? =
   } catch (_: URISyntaxException) {
     null
   }
+
+fun Path.dropRoot(): Path = toAbsolutePath().subpath(0, count())

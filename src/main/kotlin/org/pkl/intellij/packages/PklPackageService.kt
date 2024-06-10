@@ -46,6 +46,7 @@ import org.pkl.intellij.packages.dto.PklProject
 import org.pkl.intellij.psi.PklModuleUri
 import org.pkl.intellij.stubs.PklModuleUriIndex
 import org.pkl.intellij.toolchain.pklCli
+import org.pkl.intellij.util.dropRoot
 import org.pkl.intellij.util.editorSupportDir
 import org.pkl.intellij.util.pklCacheDir
 
@@ -238,7 +239,7 @@ class PklPackageService(val project: Project) : Disposable, UserDataHolderBase()
         editorSupportDir
           ?.toNioPath()
           ?.resolve("projectpackage")
-          ?.resolve(dependency.pklProject.projectFile.parent.toAbsolutePath().toString().drop(1))
+          ?.resolve(dependency.pklProject.projectFile.parent.dropRoot().toString())
           ?: return null
     val metadataFile =
       localFs.findFileByNioFile(cacheDir.resolve(dependency.packageUri.relativeMetadataFile))

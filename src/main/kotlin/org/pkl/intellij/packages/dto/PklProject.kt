@@ -30,6 +30,7 @@ import kotlinx.serialization.json.Json
 import org.pkl.intellij.packages.Dependency
 import org.pkl.intellij.packages.LocalProjectDependency
 import org.pkl.intellij.packages.PackageDependency
+import org.pkl.intellij.util.dropRoot
 
 data class PklProject(val metadata: DerivedProjectMetadata, val projectDeps: ProjectDeps?) {
 
@@ -106,9 +107,7 @@ data class PklProject(val metadata: DerivedProjectMetadata, val projectDeps: Pro
   val projectPackageCacheDirPath: Path? by lazy {
     VfsUtil.getUserHomeDir()
       ?.toNioPath()
-      ?.resolve(
-        ".pkl/editor-support/projectpackage/${projectDir.toAbsolutePath().toString().drop(1)}"
-      )
+      ?.resolve(".pkl/editor-support/projectpackage/${projectDir.dropRoot()}")
   }
 
   fun projectPackagesCacheDir(): VirtualFile? {
