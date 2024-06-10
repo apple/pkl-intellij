@@ -156,8 +156,7 @@ class PklBreadcrumbsProvider : BreadcrumbsProvider {
 
   private val ifThenHandler =
     object : PklBreadcrumbHandler {
-      override fun accepts(elem: PsiElement): Boolean =
-        elem.isThenBody()
+      override fun accepts(elem: PsiElement): Boolean = elem.isThenBody()
 
       override fun getElementInfo(element: PsiElement): String {
         val ifExpr = element.parent as PklIfExpr
