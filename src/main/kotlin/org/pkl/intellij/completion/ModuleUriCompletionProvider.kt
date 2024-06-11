@@ -41,7 +41,7 @@ import org.pkl.intellij.packages.pklPackageService
 import org.pkl.intellij.psi.*
 import org.pkl.intellij.util.findSourceAndClassesRoots
 import org.pkl.intellij.util.isAbsoluteUriLike
-import org.pkl.intellij.util.packages1CacheDir
+import org.pkl.intellij.util.packagesCacheDir
 
 class ModuleUriCompletionProvider(private val packageUriOnly: Boolean = false) :
   PklCompletionProvider() {
@@ -216,7 +216,7 @@ class ModuleUriCompletionProvider(private val packageUriOnly: Boolean = false) :
   ) {
     val basePath = targetUri.drop(10).substringBeforeLast('/')
     val packageName = targetUri.substringAfterLast('/')
-    val packages = packages1CacheDir?.findFileByRelativePath(basePath)?.children ?: return
+    val packages = packagesCacheDir?.findFileByRelativePath(basePath)?.children ?: return
     for (pkg in packages) {
       if (pkg.name.startsWith(packageName)) {
         val version = pkg.name.substringAfterLast('@')
@@ -229,7 +229,7 @@ class ModuleUriCompletionProvider(private val packageUriOnly: Boolean = false) :
   }
 
   private fun completePackageBaseUris(collector: MutableList<LookupElement>) {
-    val root = packages1CacheDir ?: return
+    val root = packagesCacheDir ?: return
     val packages = collectPackages(root.toNioPath())
     for (pkg in packages) {
       val completionText = "$PACKAGE_SCHEME$pkg@"

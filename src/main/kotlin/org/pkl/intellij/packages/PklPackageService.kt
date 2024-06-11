@@ -242,21 +242,24 @@ class PklPackageService(val project: Project) : Disposable, UserDataHolderBase()
           ?.resolve(dependency.pklProject.projectFile.parent.dropRoot().toString())
           ?: return null
     val metadataFile =
-      localFs.findFileByNioFile(cacheDir.resolve(dependency.packageUri.relativeMetadataFile))
+      dependency.packageUri.relativeMetadataFiles.firstNotNullOfOrNull {
+        localFs.findFileByNioFile(cacheDir.resolve(it))
+      }
         ?: run {
+          val paths = dependency.packageUri.relativeMetadataFiles.map(cacheDir::resolve)
           thisLogger()
             .info(
-              "Missing metadata file at path ${cacheDir.resolve(dependency.packageUri.relativeMetadataFile)}"
+              "Missing metadata file at paths ${paths.joinToString(", ") { "`$it`" }}"
             )
           return null
         }
     val zipFile =
-      localFs.findFileByNioFile(cacheDir.resolve(dependency.packageUri.relativeZipFile))
+      dependency.packageUri.relativeZipFiles.firstNotNullOfOrNull {
+        localFs.findFileByNioFile(cacheDir.resolve(it))
+      }
         ?: run {
-          thisLogger()
-            .info(
-              "Missing zip file at path ${cacheDir.resolve(dependency.packageUri.relativeZipFile)}"
-            )
+          val paths = dependency.packageUri.relativeZipFiles.map(cacheDir::resolve)
+          thisLogger().info("Missing zip file at paths ${paths.joinToString(", ") { "`$it`" }}")
           return null
         }
     val jarRoot = jarFs.getJarRootForLocalFile(zipFile) ?: return null

@@ -45,8 +45,8 @@ val pklDir: VirtualFile?
 val pklCacheDir: VirtualFile?
   get() = pklDir?.findChild("cache")
 
-val packages1CacheDir: VirtualFile?
-  get() = pklCacheDir?.findChild("package-1")
+val packagesCacheDir: VirtualFile?
+  get() = pklCacheDir?.run { findChild("package-2") ?: findChild("package-1") }
 
 val editorSupportDir: VirtualFile?
   get() = pklDir?.findChild("editor-support")

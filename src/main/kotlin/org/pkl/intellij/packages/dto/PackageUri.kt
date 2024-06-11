@@ -98,9 +98,17 @@ data class PackageUri(
 
   private val lastSegmentName = path.substringAfterLast('/').substringBeforeLast("::")
 
-  val relativeZipFile = "package-1/$authority$basePath@$version/$lastSegmentName.zip"
+  val relativeZipFiles =
+    listOf(
+      "package-2/$authority$basePath@$version/$lastSegmentName.zip",
+      "package-1/$authority$basePath@$version/$lastSegmentName.zip"
+    )
 
-  val relativeMetadataFile = "package-1/$authority$basePath@$version/$lastSegmentName.json"
+  val relativeMetadataFiles =
+    listOf(
+      "package-2/$authority$basePath@$version/$lastSegmentName.json",
+      "package-1/$authority$basePath@$version/$lastSegmentName.json"
+    )
 
   fun asPackageDependency(pklProject: PklProject? = null): PackageDependency =
     PackageDependency(this, pklProject)
