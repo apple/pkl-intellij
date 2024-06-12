@@ -248,9 +248,7 @@ class PklPackageService(val project: Project) : Disposable, UserDataHolderBase()
         ?: run {
           val paths = dependency.packageUri.relativeMetadataFiles.map(cacheDir::resolve)
           thisLogger()
-            .info(
-              "Missing metadata file at paths ${paths.joinToString(", ") { "`$it`" }}"
-            )
+            .info("Missing metadata file at paths ${paths.joinToString(", ") { "`$it`" }}")
           return null
         }
     val zipFile =
