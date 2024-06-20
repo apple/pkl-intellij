@@ -28,6 +28,7 @@
       <li>Add const check for typealiases</li>
       <li>Add support for breadcrumbs</li>
       <li>Add support for new package cache dir</li>
+      <li>Add support for Pkl 0.26.0 standard library</li>
     </ul>
     <b>0.26.0</b>
     <ul>

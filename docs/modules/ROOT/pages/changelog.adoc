@@ -23,6 +23,7 @@
 * Add const check for typealiases (new in Pkl 0.26) (https://github.com/apple/pkl-intellij/pull/32[#32]).
 * Add support for breadcrumbs (https://github.com/apple/pkl-intellij/pull/31[#31]).
 * Add support for new package cache dir (new in Pkl 0.26) (https://github.com/apple/pkl-intellij/pull/36[#36]).
+* Add support for Pkl 0.26.0 standard library (https://github.com/apple/pkl-intellij/pull/38[#38]).
 
 === Contributors ❤️
 
