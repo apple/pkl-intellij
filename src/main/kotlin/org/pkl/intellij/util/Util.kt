@@ -48,6 +48,7 @@ val pklCacheDir: VirtualFile?
 
 interface CacheDir {
   val file: VirtualFile
+
   fun resolve(path: String): VirtualFile?
 }
 
