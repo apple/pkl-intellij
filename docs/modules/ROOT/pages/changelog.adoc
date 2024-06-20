@@ -1,5 +1,38 @@
 = Changelog
 
+[[release-0.27.0]]
+== 0.27.0 (2024-06-20)
+
+=== Fixes
+
+* Fix triple-dot uri resolution (https://github.com/apple/pkl-intellij/pull/24[#24]).
+* Fix runtime crash from `PklCreateProjectAction` in 2024.1+ (https://github.com/apple/pkl-intellij/pull/22[#22]).
+* Fix false positive "expression is always false" (https://github.com/apple/pkl-intellij/pull/33[#33]).
+* Fix type constraint checking of octal literals (https://github.com/apple/pkl-intellij/pull/34[#34]).
+* Fix path resolution for packages on Windows (https://github.com/apple/pkl-intellij/pull/35[#35]).
+
+=== Miscellaneous
+
+* Move `kotlin.serialization.plugin` to version catalog (https://github.com/apple/pkl-intellij/pull/14[#14]).
+* Documentation improvements (https://github.com/apple/pkl-intellij/pull/7[#7], https://github.com/apple/pkl-intellij/pull/15[#15]).
+
+=== Changes
+
+* Change Pkl file icon to use the logo (https://github.com/apple/pkl-intellij/pull/6[#6]).
+* Improve semver handling in package uris (https://github.com/apple/pkl-intellij/pull/20[#20]).
+* Add const check for typealiases (new in Pkl 0.26) (https://github.com/apple/pkl-intellij/pull/32[#32]).
+* Add support for breadcrumbs (https://github.com/apple/pkl-intellij/pull/31[#31]).
+* Add support for new package cache dir (new in Pkl 0.26) (https://github.com/apple/pkl-intellij/pull/36[#36]).
+
+=== Contributors ❤️
+
+We would like to thank the contributors to this release (in alphabetical order):
+
+* https://github.com/Madmegsox1[@Madmegsox1]
+* https://github.com/MrNavaStar[@MrNavaStar]
+* https://github.com/StefMa[@StefMa]
+* https://github.com/WarningImHack3r[@WarningImHack3r]
+
 [[release-0.26.0]]
 == 0.26.0 (2024-02-02)
 

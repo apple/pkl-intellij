@@ -21,6 +21,14 @@
     ]]></description>
   <!-- language=html -->
   <change-notes><![CDATA[
+    <b>0.27.0</b>
+    <ul>
+      <li>Change Pkl file icon to the logo</li>
+      <li>Improve semver handling in package uris</li>
+      <li>Add const check for typealiases</li>
+      <li>Add support for breadcrumbs</li>
+      <li>Add support for new package cache dir</li>
+    </ul>
     <b>0.26.0</b>
     <ul>
       <li>First release</li>
