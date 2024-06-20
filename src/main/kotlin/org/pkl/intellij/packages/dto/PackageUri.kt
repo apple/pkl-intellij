@@ -26,6 +26,7 @@ import kotlinx.serialization.descriptors.SerialDescriptor
 import kotlinx.serialization.encoding.Decoder
 import kotlinx.serialization.encoding.Encoder
 import org.pkl.intellij.packages.PackageDependency
+import org.pkl.intellij.util.encodePath
 
 @Suppress("PROVIDED_RUNTIME_TOO_LOW")
 @Serializable(with = PackageUri.Companion.Serializer::class)
@@ -98,9 +99,13 @@ data class PackageUri(
 
   private val lastSegmentName = path.substringAfterLast('/').substringBeforeLast("::")
 
-  val relativeZipFile = "package-1/$authority$basePath@$version/$lastSegmentName.zip"
+  private val packageFilenameBase = "$authority$basePath@$version/$lastSegmentName"
 
-  val relativeMetadataFile = "package-1/$authority$basePath@$version/$lastSegmentName.json"
+  val relativeZipFiles =
+    listOf(encodePath("package-2/$packageFilenameBase.zip"), "package-1/$packageFilenameBase.zip")
+
+  val relativeMetadataFiles =
+    listOf(encodePath("package-2/$packageFilenameBase.json"), "package-1/$packageFilenameBase.json")
 
   fun asPackageDependency(pklProject: PklProject? = null): PackageDependency =
     PackageDependency(this, pklProject)

@@ -25,6 +25,7 @@ import com.intellij.openapi.vfs.VfsUtil
 import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.psi.PsiElement
 import com.intellij.psi.PsiFile
+import java.math.BigInteger
 import java.net.URI
 import java.net.URISyntaxException
 import java.nio.file.Path
@@ -45,8 +46,29 @@ val pklDir: VirtualFile?
 val pklCacheDir: VirtualFile?
   get() = pklDir?.findChild("cache")
 
-val packages1CacheDir: VirtualFile?
-  get() = pklCacheDir?.findChild("package-1")
+interface CacheDir {
+  val file: VirtualFile
+
+  fun resolve(path: String): VirtualFile?
+}
+
+data class Package2CacheDir(override val file: VirtualFile) : CacheDir {
+  override fun resolve(path: String): VirtualFile? {
+    return file.findFileByRelativePath(encodePath(path))
+  }
+}
+
+data class Package1CacheDir(override val file: VirtualFile) : CacheDir {
+  override fun resolve(path: String): VirtualFile? {
+    return file.findFileByRelativePath(path)
+  }
+}
+
+val packages2CacheDir: CacheDir?
+  get() = pklCacheDir?.findChild("package-2")?.let { Package2CacheDir(it) }
+
+val packages1CacheDir: CacheDir?
+  get() = pklCacheDir?.findChild("package-1")?.let { Package1CacheDir(it) }
 
 val editorSupportDir: VirtualFile?
   get() = pklDir?.findChild("editor-support")
@@ -236,3 +258,86 @@ fun parseUriOrNull(uriStr: String): URI? =
   }
 
 fun Path.dropRoot(): Path = toAbsolutePath().let { it.subpath(0, it.count()) }
+
+/**
+ * Windows reserves characters `<>:"\|?*` in filenames.
+ *
+ * For any such characters, enclose their decimal character code with parentheses. Verbatim `(` is
+ * encoded as `((`.
+ *
+ * This code is copied from `org.pkl.core.util.IoUtils.encodePath()`.
+ */
+fun encodePath(path: String): String {
+  if (path.isEmpty()) return path
+  return buildString {
+    for (i in path.indices) {
+      when (val character = path[i]) {
+        '<',
+        '>',
+        ':',
+        '"',
+        '\\',
+        '|',
+        '?',
+        '*' -> {
+          append('(')
+          append(BigInteger(byteArrayOf(character.code.toByte())).toString(16))
+          append(")")
+        }
+        '(' -> append("((")
+        else -> append(path[i])
+      }
+    }
+  }
+}
+
+/** Decodes a path encoded with [encodePath]. */
+fun decodePath(path: String): String {
+  if (path.isEmpty()) return path
+  return buildString {
+    var i = 0
+    while (i < path.length) {
+      val character = path[i]
+      if (character == '(') {
+        require(i != path.length - 1) { "Invalid path encoding: $path" }
+        i++
+        var nextCharacter = path[i]
+        if (nextCharacter == '(') {
+          append('(')
+          i++
+          continue
+        }
+        require(nextCharacter != ')') { "Invalid path encoding: $path" }
+        val codePointBuilder = StringBuilder()
+        while (nextCharacter != ')') {
+          when (nextCharacter) {
+            '0',
+            '1',
+            '2',
+            '3',
+            '4',
+            '5',
+            '6',
+            '7',
+            '8',
+            '9',
+            'a',
+            'b',
+            'c',
+            'd',
+            'e',
+            'f' -> codePointBuilder.append(nextCharacter)
+            else -> throw IllegalArgumentException("Invalid path encoding: $path")
+          }
+          i++
+          require(i != path.length) { "Invalid path encoding: $path" }
+          nextCharacter = path[i]
+        }
+        append(codePointBuilder.toString().toInt(16).toChar())
+      } else {
+        append(character)
+      }
+      i++
+    }
+  }
+}

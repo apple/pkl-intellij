@@ -39,9 +39,7 @@ import org.pkl.intellij.packages.PackageDependency
 import org.pkl.intellij.packages.dto.PackageAssetUri
 import org.pkl.intellij.packages.pklPackageService
 import org.pkl.intellij.psi.*
-import org.pkl.intellij.util.findSourceAndClassesRoots
-import org.pkl.intellij.util.isAbsoluteUriLike
-import org.pkl.intellij.util.packages1CacheDir
+import org.pkl.intellij.util.*
 
 class ModuleUriCompletionProvider(private val packageUriOnly: Boolean = false) :
   PklCompletionProvider() {
@@ -214,12 +212,16 @@ class ModuleUriCompletionProvider(private val packageUriOnly: Boolean = false) :
     targetUri: String,
     collector: MutableList<LookupElement>
   ) {
-    val basePath = targetUri.drop(10).substringBeforeLast('/')
-    val packageName = targetUri.substringAfterLast('/')
-    val packages = packages1CacheDir?.findFileByRelativePath(basePath)?.children ?: return
+    val path = targetUri.drop(10)
+    val basePath = path.substringBeforeLast('/')
+    val packageName = path.substringAfterLast('/')
+    val packages = buildSet {
+      packages1CacheDir?.resolve(basePath)?.children?.map { it.name }?.let(::addAll)
+      packages2CacheDir?.resolve(basePath)?.children?.map { decodePath(it.name) }?.let(::addAll)
+    }
     for (pkg in packages) {
-      if (pkg.name.startsWith(packageName)) {
-        val version = pkg.name.substringAfterLast('@')
+      if (pkg.startsWith(packageName)) {
+        val version = pkg.substringAfterLast('@')
         val completion = "$targetUri$version".let { if (!packageUriOnly) "$it#/" else it }
         val element =
           LookupElementBuilder.create(completion).withPresentableText(version).completeAgain()
@@ -229,8 +231,11 @@ class ModuleUriCompletionProvider(private val packageUriOnly: Boolean = false) :
   }
 
   private fun completePackageBaseUris(collector: MutableList<LookupElement>) {
-    val root = packages1CacheDir ?: return
-    val packages = collectPackages(root.toNioPath())
+    val packages = buildSet {
+      packages1CacheDir?.let { addAll(collectPackages(it.file.toNioPath())) }
+      packages2CacheDir?.let { addAll(collectPackages(it.file.toNioPath()).map(::decodePath)) }
+    }
+    if (packages.isEmpty()) return
     for (pkg in packages) {
       val completionText = "$PACKAGE_SCHEME$pkg@"
       val pkgName = pkg.substringAfterLast('/')

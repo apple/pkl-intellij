@@ -23,8 +23,7 @@ import com.intellij.openapi.vfs.VirtualFile
 import javax.swing.Icon
 import org.pkl.intellij.PklIcons
 import org.pkl.intellij.packages.dto.PackageMetadata
-import org.pkl.intellij.util.editorSupportDir
-import org.pkl.intellij.util.packages1CacheDir
+import org.pkl.intellij.util.*
 
 data class PklLibrary(
   val packageDependency: PackageDependency,
@@ -61,6 +60,6 @@ class PklAdditionalLibraryRootsProvider : AdditionalLibraryRootsProvider() {
   }
 
   override fun getRootsToWatch(project: Project): Collection<VirtualFile> {
-    return listOfNotNull(packages1CacheDir, editorSupportDir)
+    return listOfNotNull(pklCacheDir, editorSupportDir)
   }
 }
