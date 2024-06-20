@@ -51,8 +51,7 @@ To debug the plugin, go to the _runIde_ task in the Gradle window and debug it.
 Before a release, run Code->Inspect Code->Whole Project (at least) for pkl-hub project and check the results.
 
 The release CI build publishes the plugin zip and the `updatePlugins.xml`. +
-The plugin update site always points to the latest released `updatePlugins.xml`, so nothing
-has to be done there.
+The plugin update site is automatically updated.
 
 == Resources
 
