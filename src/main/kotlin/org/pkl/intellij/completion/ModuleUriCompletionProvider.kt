@@ -212,7 +212,8 @@ class ModuleUriCompletionProvider(private val packageUriOnly: Boolean = false) :
     targetUri: String,
     collector: MutableList<LookupElement>
   ) {
-    val path = if (doesPackageCacheRequireEncoding) encodePath(targetUri.drop(10)) else targetUri.drop(10)
+    val path =
+      if (doesPackageCacheRequireEncoding) encodePath(targetUri.drop(10)) else targetUri.drop(10)
     val basePath = path.substringBeforeLast('/')
     val packageName = path.substringAfterLast('/')
     val packages = packagesCacheDir?.findFileByRelativePath(basePath)?.children ?: return
