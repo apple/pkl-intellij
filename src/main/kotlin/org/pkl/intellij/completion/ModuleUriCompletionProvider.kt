@@ -212,14 +212,16 @@ class ModuleUriCompletionProvider(private val packageUriOnly: Boolean = false) :
     targetUri: String,
     collector: MutableList<LookupElement>
   ) {
-    val path =
-      if (doesPackageCacheRequireEncoding) encodePath(targetUri.drop(10)) else targetUri.drop(10)
+    val path = targetUri.drop(10)
     val basePath = path.substringBeforeLast('/')
     val packageName = path.substringAfterLast('/')
-    val packages = packagesCacheDir?.findFileByRelativePath(basePath)?.children ?: return
+    val packages = buildSet {
+      packages1CacheDir?.resolve(basePath)?.children?.map { it.name }?.let(::addAll)
+      packages2CacheDir?.resolve(basePath)?.children?.map { decodePath(it.name) }?.let(::addAll)
+    }
     for (pkg in packages) {
-      if (pkg.name.startsWith(packageName)) {
-        val version = pkg.name.substringAfterLast('@')
+      if (pkg.startsWith(packageName)) {
+        val version = pkg.substringAfterLast('@')
         val completion = "$targetUri$version".let { if (!packageUriOnly) "$it#/" else it }
         val element =
           LookupElementBuilder.create(completion).withPresentableText(version).completeAgain()
@@ -229,15 +231,17 @@ class ModuleUriCompletionProvider(private val packageUriOnly: Boolean = false) :
   }
 
   private fun completePackageBaseUris(collector: MutableList<LookupElement>) {
-    val root = packagesCacheDir ?: return
-    val packages = collectPackages(root.toNioPath())
+    val packages = buildSet {
+      packages1CacheDir?.let { addAll(collectPackages(it.file.toNioPath())) }
+      packages2CacheDir?.let { addAll(collectPackages(it.file.toNioPath()).map(::decodePath)) }
+    }
+    if (packages.isEmpty()) return
     for (pkg in packages) {
-      val cleanPkg = if (doesPackageCacheRequireEncoding) decodePath(pkg) else pkg
-      val completionText = "$PACKAGE_SCHEME$cleanPkg@"
-      val pkgName = cleanPkg.substringAfterLast('/')
+      val completionText = "$PACKAGE_SCHEME$pkg@"
+      val pkgName = pkg.substringAfterLast('/')
       val element =
         LookupElementBuilder.create(completionText)
-          .withTypeText(cleanPkg, true)
+          .withTypeText(pkg, true)
           .withPresentableText(pkgName)
           .completeAgain()
       collector.add(element)

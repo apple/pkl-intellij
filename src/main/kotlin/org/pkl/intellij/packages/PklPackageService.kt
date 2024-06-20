@@ -242,8 +242,8 @@ class PklPackageService(val project: Project) : Disposable, UserDataHolderBase()
           ?.resolve(dependency.pklProject.projectFile.parent.dropRoot().toString())
           ?: return null
     val metadataFile =
-      dependency.packageUri.relativeMetadataFiles.firstNotNullOfOrNull {
-        localFs.findFileByNioFile(cacheDir.resolve(it))
+      dependency.packageUri.relativeMetadataFiles.firstNotNullOfOrNull { path ->
+        localFs.findFileByNioFile(cacheDir.resolve(path))
       }
         ?: run {
           val paths = dependency.packageUri.relativeMetadataFiles.map(cacheDir::resolve)
@@ -252,8 +252,8 @@ class PklPackageService(val project: Project) : Disposable, UserDataHolderBase()
           return null
         }
     val zipFile =
-      dependency.packageUri.relativeZipFiles.firstNotNullOfOrNull {
-        localFs.findFileByNioFile(cacheDir.resolve(it))
+      dependency.packageUri.relativeZipFiles.firstNotNullOfOrNull { path ->
+        localFs.findFileByNioFile(cacheDir.resolve(path))
       }
         ?: run {
           val paths = dependency.packageUri.relativeZipFiles.map(cacheDir::resolve)

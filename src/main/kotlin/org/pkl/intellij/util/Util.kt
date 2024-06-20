@@ -46,11 +46,28 @@ val pklDir: VirtualFile?
 val pklCacheDir: VirtualFile?
   get() = pklDir?.findChild("cache")
 
-val packagesCacheDir: VirtualFile?
-  get() = pklCacheDir?.run { findChild("package-2") ?: findChild("package-1") }
+interface CacheDir {
+  val file: VirtualFile
+  fun resolve(path: String): VirtualFile?
+}
 
-val doesPackageCacheRequireEncoding: Boolean
-  get() = packagesCacheDir?.url?.contains("package-2") == true
+data class Package2CacheDir(override val file: VirtualFile) : CacheDir {
+  override fun resolve(path: String): VirtualFile? {
+    return file.findFileByRelativePath(encodePath(path))
+  }
+}
+
+data class Package1CacheDir(override val file: VirtualFile) : CacheDir {
+  override fun resolve(path: String): VirtualFile? {
+    return file.findFileByRelativePath(path)
+  }
+}
+
+val packages2CacheDir: CacheDir?
+  get() = pklCacheDir?.findChild("package-2")?.let { Package2CacheDir(it) }
+
+val packages1CacheDir: CacheDir?
+  get() = pklCacheDir?.findChild("package-1")?.let { Package1CacheDir(it) }
 
 val editorSupportDir: VirtualFile?
   get() = pklDir?.findChild("editor-support")
