@@ -39,9 +39,7 @@ import org.pkl.intellij.packages.PackageDependency
 import org.pkl.intellij.packages.dto.PackageAssetUri
 import org.pkl.intellij.packages.pklPackageService
 import org.pkl.intellij.psi.*
-import org.pkl.intellij.util.findSourceAndClassesRoots
-import org.pkl.intellij.util.isAbsoluteUriLike
-import org.pkl.intellij.util.packagesCacheDir
+import org.pkl.intellij.util.*
 
 class ModuleUriCompletionProvider(private val packageUriOnly: Boolean = false) :
   PklCompletionProvider() {
@@ -214,8 +212,9 @@ class ModuleUriCompletionProvider(private val packageUriOnly: Boolean = false) :
     targetUri: String,
     collector: MutableList<LookupElement>
   ) {
-    val basePath = targetUri.drop(10).substringBeforeLast('/')
-    val packageName = targetUri.substringAfterLast('/')
+    val path = if (doesPackageCacheRequireEncoding) encodePath(targetUri.drop(10)) else targetUri.drop(10)
+    val basePath = path.substringBeforeLast('/')
+    val packageName = path.substringAfterLast('/')
     val packages = packagesCacheDir?.findFileByRelativePath(basePath)?.children ?: return
     for (pkg in packages) {
       if (pkg.name.startsWith(packageName)) {
@@ -232,11 +231,12 @@ class ModuleUriCompletionProvider(private val packageUriOnly: Boolean = false) :
     val root = packagesCacheDir ?: return
     val packages = collectPackages(root.toNioPath())
     for (pkg in packages) {
-      val completionText = "$PACKAGE_SCHEME$pkg@"
-      val pkgName = pkg.substringAfterLast('/')
+      val cleanPkg = if (doesPackageCacheRequireEncoding) decodePath(pkg) else pkg
+      val completionText = "$PACKAGE_SCHEME$cleanPkg@"
+      val pkgName = cleanPkg.substringAfterLast('/')
       val element =
         LookupElementBuilder.create(completionText)
-          .withTypeText(pkg, true)
+          .withTypeText(cleanPkg, true)
           .withPresentableText(pkgName)
           .completeAgain()
       collector.add(element)

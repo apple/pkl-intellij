@@ -26,6 +26,7 @@ import kotlinx.serialization.descriptors.SerialDescriptor
 import kotlinx.serialization.encoding.Decoder
 import kotlinx.serialization.encoding.Encoder
 import org.pkl.intellij.packages.PackageDependency
+import org.pkl.intellij.util.encodePath
 
 @Suppress("PROVIDED_RUNTIME_TOO_LOW")
 @Serializable(with = PackageUri.Companion.Serializer::class)
@@ -100,13 +101,13 @@ data class PackageUri(
 
   val relativeZipFiles =
     listOf(
-      "package-2/$authority$basePath@$version/$lastSegmentName.zip",
+      encodePath("package-2/$authority$basePath@$version/$lastSegmentName.zip"),
       "package-1/$authority$basePath@$version/$lastSegmentName.zip"
     )
 
   val relativeMetadataFiles =
     listOf(
-      "package-2/$authority$basePath@$version/$lastSegmentName.json",
+      encodePath("package-2/$authority$basePath@$version/$lastSegmentName.json"),
       "package-1/$authority$basePath@$version/$lastSegmentName.json"
     )
 
