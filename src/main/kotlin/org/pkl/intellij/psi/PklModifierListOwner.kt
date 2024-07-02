@@ -47,13 +47,16 @@ interface PklModifierListOwner : PklElement {
   val isAbstractOrOpen: Boolean
     get() = hasEitherModifier(PklElementTypes.ABSTRACT, PklElementTypes.OPEN)
 
+  val isLocalOrConstOrFixed: Boolean
+    get() = hasEitherModifier(PklElementTypes.LOCAL, PklElementTypes.CONST, PklElementTypes.FIXED)
+
   private fun hasModifier(modifier: IElementType): Boolean {
     val modifiers = modifierList?.elements ?: return false
     return modifiers.any { it.elementType == modifier }
   }
 
-  private fun hasEitherModifier(modifier1: IElementType, modifier2: IElementType): Boolean {
-    val modifiers = modifierList?.elements ?: return false
-    return modifiers.any { it.elementType == modifier1 || it.elementType == modifier2 }
+  private fun hasEitherModifier(vararg modifiers: IElementType): Boolean {
+    val myModifiers = modifierList?.elements ?: return false
+    return myModifiers.any { modifiers.contains(it.elementType) }
   }
 }
