@@ -16,8 +16,18 @@
 package org.pkl.intellij.psi
 
 import com.intellij.psi.tree.IElementType
+import com.intellij.psi.tree.TokenSet
 
 interface PklModifierListOwner : PklElement {
+  companion object {
+    private val constOrFixed = TokenSet.create(PklElementTypes.CONST, PklElementTypes.FIXED)
+
+    private val localOrConstOrFixed =
+      TokenSet.create(PklElementTypes.LOCAL, PklElementTypes.CONST, PklElementTypes.FIXED)
+
+    private val abstractOrOpen = TokenSet.create(PklElementTypes.ABSTRACT, PklElementTypes.OPEN)
+  }
+
   val modifierList: PklModifierList?
 
   val isAbstract: Boolean
@@ -42,18 +52,21 @@ interface PklModifierListOwner : PklElement {
     get() = hasModifier(PklElementTypes.CONST)
 
   val isFixedOrConst: Boolean
-    get() = hasEitherModifier(PklElementTypes.CONST, PklElementTypes.FIXED)
+    get() = hasAnyModifier(constOrFixed)
 
   val isAbstractOrOpen: Boolean
-    get() = hasEitherModifier(PklElementTypes.ABSTRACT, PklElementTypes.OPEN)
+    get() = hasAnyModifier(abstractOrOpen)
+
+  val isLocalOrConstOrFixed: Boolean
+    get() = hasAnyModifier(localOrConstOrFixed)
 
   private fun hasModifier(modifier: IElementType): Boolean {
     val modifiers = modifierList?.elements ?: return false
     return modifiers.any { it.elementType == modifier }
   }
 
-  private fun hasEitherModifier(modifier1: IElementType, modifier2: IElementType): Boolean {
+  private fun hasAnyModifier(tokenSet: TokenSet): Boolean {
     val modifiers = modifierList?.elements ?: return false
-    return modifiers.any { it.elementType == modifier1 || it.elementType == modifier2 }
+    return modifiers.any { tokenSet.contains(it.elementType) }
   }
 }
