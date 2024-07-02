@@ -35,6 +35,7 @@ import com.intellij.refactoring.suggested.endOffset
 import com.intellij.util.ProcessingContext
 import org.pkl.intellij.completion.UnqualifiedAccessCompletionProvider.Group.AMEND
 import org.pkl.intellij.completion.UnqualifiedAccessCompletionProvider.Group.ASSIGN
+import org.pkl.intellij.packages.dto.PklProject
 import org.pkl.intellij.psi.*
 import org.pkl.intellij.resolve.ResolveVisitors
 import org.pkl.intellij.resolve.Resolvers
@@ -69,11 +70,13 @@ class UnqualifiedAccessCompletionProvider : PklCompletionProvider() {
   ) {
 
     val position = parameters.position
-    val base = parameters.originalFile.project.pklBaseModule
-    val thisType = position.computeThisType(base, mapOf())
+    val originalFile = parameters.originalFile
+    val base = originalFile.project.pklBaseModule
+    val projectContext = (originalFile as? PklModule)?.pklProject
+    val thisType = position.computeThisType(base, mapOf(), projectContext)
     if (thisType == Type.Unknown) return
 
-    addInferredExprTypeCompletions(position, base, result)
+    addInferredExprTypeCompletions(position, base, result, projectContext)
 
     // When completing the name of an object property definition, the AST at [position]
     // is Identifier->PklUnqualifiedAccessName->PklUnqualifiedAccessExpr->PklObjectElement,
@@ -90,14 +93,23 @@ class UnqualifiedAccessCompletionProvider : PklCompletionProvider() {
     ) {
 
       val alreadyDefinedProperties = collectPropertyNames(position)
-      if (addDefinitionCompletions(position, thisType, alreadyDefinedProperties, base, result)) {
+      if (
+        addDefinitionCompletions(
+          position,
+          thisType,
+          alreadyDefinedProperties,
+          base,
+          result,
+          projectContext
+        )
+      ) {
         return
       }
     }
 
     val visitor = ResolveVisitors.lookupElements(base).withoutShadowedElements()
 
-    val allowClasses = shouldCompleteClassesOrTypeAliases(position, base)
+    val allowClasses = shouldCompleteClassesOrTypeAliases(position, base, projectContext)
     Resolvers.resolveUnqualifiedAccess(
       position,
       thisType,
@@ -105,7 +117,8 @@ class UnqualifiedAccessCompletionProvider : PklCompletionProvider() {
       allowClasses,
       base,
       thisType.bindings,
-      visitor
+      visitor,
+      projectContext
     )
     Resolvers.resolveUnqualifiedAccess(
       position,
@@ -114,7 +127,8 @@ class UnqualifiedAccessCompletionProvider : PklCompletionProvider() {
       allowClasses,
       base,
       thisType.bindings,
-      visitor
+      visitor,
+      projectContext
     )
 
     result.addAllElements(visitor.result)
@@ -124,17 +138,18 @@ class UnqualifiedAccessCompletionProvider : PklCompletionProvider() {
 
   private fun shouldCompleteClassesOrTypeAliases(
     position: PsiElement,
-    base: PklBaseModule
+    base: PklBaseModule,
+    context: PklProject?
   ): Boolean {
     fun isClassOrTypeAlias(type: Type): Boolean =
       when (type) {
         is Type.Class -> type.classEquals(base.classType) || type.classEquals(base.typeAliasType)
-        is Type.Alias -> isClassOrTypeAlias(type.unaliased(base))
+        is Type.Alias -> isClassOrTypeAlias(type.unaliased(base, context))
         is Type.Union -> isClassOrTypeAlias(type.leftType) || isClassOrTypeAlias(type.rightType)
         else -> false
       }
     val expr = position.parentOfType<PklExpr>() ?: return false
-    val type = expr.inferExprTypeFromContext(base, mapOf())
+    val type = expr.inferExprTypeFromContext(base, mapOf(), context)
     return isClassOrTypeAlias(type)
   }
 
@@ -143,7 +158,8 @@ class UnqualifiedAccessCompletionProvider : PklCompletionProvider() {
     thisType: Type,
     alreadyDefinedProperties: Set<String>,
     base: PklBaseModule,
-    result: CompletionResultSet
+    result: CompletionResultSet,
+    context: PklProject?
   ): Boolean {
 
     return when {
@@ -154,16 +170,18 @@ class UnqualifiedAccessCompletionProvider : PklCompletionProvider() {
           thisType.leftType,
           alreadyDefinedProperties,
           base,
-          result
+          result,
+          context
         ) &&
           addDefinitionCompletions(
             position,
             thisType.rightType,
             alreadyDefinedProperties,
             base,
-            result
+            result,
+            context
           )
-      thisType.isSubtypeOf(base.typedType, base) -> {
+      thisType.isSubtypeOf(base.typedType, base, context) -> {
         val enclosingDef =
           position.parentOfTypes(
             PklModule::class,
@@ -178,7 +196,7 @@ class UnqualifiedAccessCompletionProvider : PklCompletionProvider() {
             is PklClass -> true
             else -> false
           }
-        addTypedCompletions(alreadyDefinedProperties, isClassDef, thisType, base, result)
+        addTypedCompletions(alreadyDefinedProperties, isClassDef, thisType, base, result, context)
         result.addAllElements(DEFINITION_LEVEL_KEYWORD_LOOKUP_ELEMENTS)
 
         when (position) {
@@ -200,15 +218,15 @@ class UnqualifiedAccessCompletionProvider : PklCompletionProvider() {
         true // typed objects cannot have elements
       }
       else -> {
-        val thisClassType = thisType.toClassType(base) ?: return false
+        val thisClassType = thisType.toClassType(base, context) ?: return false
         when {
           thisClassType.classEquals(base.mappingType) -> {
-            addMappingCompletions(alreadyDefinedProperties, thisClassType, base, result)
+            addMappingCompletions(alreadyDefinedProperties, thisClassType, base, result, context)
             result.addAllElements(DEFINITION_LEVEL_KEYWORD_LOOKUP_ELEMENTS)
             true // mappings cannot have elements
           }
           thisClassType.classEquals(base.listingType) -> {
-            addListingCompletions(alreadyDefinedProperties, thisClassType, base, result)
+            addListingCompletions(alreadyDefinedProperties, thisClassType, base, result, context)
             result.addAllElements(DEFINITION_LEVEL_KEYWORD_LOOKUP_ELEMENTS)
             false
           }
@@ -227,13 +245,14 @@ class UnqualifiedAccessCompletionProvider : PklCompletionProvider() {
     isClassOrModule: Boolean,
     thisType: Type,
     base: PklBaseModule,
-    result: CompletionResultSet
+    result: CompletionResultSet,
+    context: PklProject?
   ) {
 
     val properties =
       when (thisType) {
-        is Type.Class -> thisType.psi.cache.properties
-        is Type.Module -> thisType.psi.cache.properties
+        is Type.Class -> thisType.psi.cache(context).properties
+        is Type.Module -> thisType.psi.cache(context).properties
         else -> unexpectedType(thisType)
       }
 
@@ -241,10 +260,10 @@ class UnqualifiedAccessCompletionProvider : PklCompletionProvider() {
       if (propertyName in alreadyDefinedProperties) continue
       if (property.isFixedOrConst && !isClassOrModule) continue
 
-      val propertyType = property.type.toType(base, thisType.bindings)
-      val amendedPropertyType = propertyType.amended(base)
+      val propertyType = property.type.toType(base, thisType.bindings, context)
+      val amendedPropertyType = propertyType.amended(base, context)
       if (amendedPropertyType != Type.Nothing && amendedPropertyType != Type.Unknown) {
-        val amendingPropertyType = propertyType.amending(base)
+        val amendingPropertyType = propertyType.amending(base, context)
         result.addElement(createPropertyAmendElement(propertyName, amendingPropertyType, property))
       }
       result.addElement(createPropertyAssignElement(propertyName, propertyType, property))
@@ -255,15 +274,16 @@ class UnqualifiedAccessCompletionProvider : PklCompletionProvider() {
     alreadyDefinedProperties: Set<String>,
     thisType: Type.Class,
     base: PklBaseModule,
-    result: CompletionResultSet
+    result: CompletionResultSet,
+    context: PklProject?
   ) {
 
     val keyType = thisType.typeArguments[0]
     val valueType = thisType.typeArguments[1]
 
-    val amendedValueType = valueType.amended(base)
+    val amendedValueType = valueType.amended(base, context)
     if (amendedValueType != Type.Nothing && amendedValueType != Type.Unknown) {
-      val amendingValueType = valueType.amending(base)
+      val amendingValueType = valueType.amending(base, context)
       if ("default" !in alreadyDefinedProperties) {
         result.addElement(
           createPropertyAmendElement("default", amendingValueType, base.mappingDefaultProperty)
@@ -283,14 +303,15 @@ class UnqualifiedAccessCompletionProvider : PklCompletionProvider() {
     alreadyDefinedProperties: Set<String>,
     thisType: Type.Class,
     base: PklBaseModule,
-    result: CompletionResultSet
+    result: CompletionResultSet,
+    context: PklProject?
   ) {
 
     val elementType = thisType.typeArguments[0]
 
-    val amendedElementType = elementType.amended(base)
+    val amendedElementType = elementType.amended(base, context)
     if (amendedElementType != Type.Nothing && amendedElementType != Type.Unknown) {
-      val amendingElementType = elementType.amending(base)
+      val amendingElementType = elementType.amending(base, context)
       if ("default" !in alreadyDefinedProperties) {
         result.addElement(
           createPropertyAmendElement("default", amendingElementType, base.listingDefaultProperty)
@@ -311,9 +332,10 @@ class UnqualifiedAccessCompletionProvider : PklCompletionProvider() {
     // example: `(String) -> Int` (used as code completion element's display type)
     actualType: () -> Type,
     base: PklBaseModule,
-    result: CompletionResultSet
+    result: CompletionResultSet,
+    context: PklProject?
   ) {
-    val unaliasedGenericType = genericType.unaliased(base)
+    val unaliasedGenericType = genericType.unaliased(base, context)
 
     when {
       // e.g., `(Key) -> Value` or `Function1<Key, Value>`
@@ -324,18 +346,22 @@ class UnqualifiedAccessCompletionProvider : PklCompletionProvider() {
       }
       // e.g., `((Key) -> Value)|((Int, Key) -> Value)`
       unaliasedGenericType is Type.Union -> {
-        val unaliasedActualType by lazy { actualType.invoke().unaliased(base) as Type.Union }
+        val unaliasedActualType by lazy {
+          actualType.invoke().unaliased(base, context) as Type.Union
+        }
         doAddInferredExprTypeCompletions(
           unaliasedGenericType.leftType,
           { unaliasedActualType.leftType },
           base,
-          result
+          result,
+          context,
         )
         doAddInferredExprTypeCompletions(
           unaliasedGenericType.rightType,
           { unaliasedActualType.rightType },
           base,
-          result
+          result,
+          context
         )
       }
       else -> return
@@ -345,7 +371,8 @@ class UnqualifiedAccessCompletionProvider : PklCompletionProvider() {
   private fun addInferredExprTypeCompletions(
     position: PsiElement,
     base: PklBaseModule,
-    result: CompletionResultSet
+    result: CompletionResultSet,
+    context: PklProject?
   ) {
     val expr =
       position.parentOfTypes(PklUnqualifiedAccessExpr::class, PklPropertyName::class)
@@ -353,10 +380,23 @@ class UnqualifiedAccessCompletionProvider : PklCompletionProvider() {
         ?: return
 
     doAddInferredExprTypeCompletions(
-      expr.inferExprTypeFromContext(base, mapOf(), false),
-      { expr.inferExprTypeFromContext(base, mapOf(), true) },
+      expr.inferExprTypeFromContext(
+        base,
+        mapOf(),
+        context,
+        false,
+      ),
+      {
+        expr.inferExprTypeFromContext(
+          base,
+          mapOf(),
+          context,
+          true,
+        )
+      },
       base,
-      result
+      result,
+      context
     )
   }
 

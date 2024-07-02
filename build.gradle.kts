@@ -52,6 +52,8 @@ dependencies {
   implementation(libs.kotlinxJson)
   // needed for kotlin ui dsl: https://plugins.jetbrains.com/docs/intellij/kotlin-ui-dsl-version-2.html
   implementation(libs.kotlinReflect)
+
+  testImplementation(libs.assertj)
 }
 
 idea {

@@ -21,6 +21,7 @@ import com.intellij.psi.util.parentOfType
 import com.intellij.psi.util.parentOfTypes
 import javax.swing.Icon
 import org.pkl.intellij.PklIcons
+import org.pkl.intellij.packages.dto.PklProject
 import org.pkl.intellij.type.Type
 import org.pkl.intellij.type.TypeParameterBindings
 import org.pkl.intellij.type.computeResolvedImportType
@@ -35,8 +36,11 @@ abstract class PklClassPropertyBase(node: ASTNode) : PklClassMemberBase(node), P
 
   override fun getIcon(flags: Int): Icon = PklIcons.PROPERTY.decorate(this, flags)
 
-  override fun getLookupElementType(base: PklBaseModule, bindings: TypeParameterBindings): Type =
-    computeResolvedImportType(base, bindings)
+  override fun getLookupElementType(
+    base: PklBaseModule,
+    bindings: TypeParameterBindings,
+    context: PklProject?
+  ): Type = computeResolvedImportType(base, bindings, context)
 
   fun setExpr(expr: PklExpr): PklClassPropertyBase {
     assert(this.expr == null)
@@ -45,50 +49,51 @@ abstract class PklClassPropertyBase(node: ASTNode) : PklClassMemberBase(node), P
     return this
   }
 
-  override val isDefinition: Boolean
-    get() {
-      when {
-        type != null -> return true
-        isLocal -> return true
-        isHidden -> return true
-        else -> {
-          when (val owner = parentOfTypes(PklModule::class, PklClass::class)) {
-            is PklModule -> {
-              if (owner.extendsAmendsClause.isAmend) return false
-              return when (val supermodule = owner.supermodule) {
-                null -> !project.pklBaseModule.moduleType.psi.cache.properties.containsKey(name)
-                else -> !supermodule.cache.properties.containsKey(name)
+  override fun isDefinition(context: PklProject?): Boolean {
+    return when {
+      type != null -> true
+      isLocal -> true
+      isHidden -> true
+      else -> {
+        when (val owner = parentOfTypes(PklModule::class, PklClass::class)) {
+          is PklModule -> {
+            if (owner.extendsAmendsClause.isAmend) return false
+            else
+              when (val supermodule = owner.supermodule(context)) {
+                null ->
+                  !project.pklBaseModule.moduleType.psi.cache(context).properties.containsKey(name)
+                else -> !supermodule.cache(context).properties.containsKey(name)
               }
-            }
-            is PklClass -> {
-              owner.superclass?.let { superclass ->
-                return !superclass.cache.properties.containsKey(name)
-              }
-              owner.supermodule?.let { supermodule ->
-                return !supermodule.cache.properties.containsKey(name)
-              }
-              return true
-            }
-            else -> return false
           }
+          is PklClass -> {
+            owner.superclass(context)?.let { superclass ->
+              return !superclass.cache(context).properties.containsKey(name)
+            }
+            owner.supermodule(context)?.let { supermodule ->
+              return !supermodule.cache(context).properties.containsKey(name)
+            }
+            return true
+          }
+          else -> return false
         }
       }
     }
+  }
 
-  override fun effectiveDocComment(): PklDocComment? {
+  override fun effectiveDocComment(context: PklProject?): PklDocComment? {
     docComment?.let {
       return it
     }
     val myName = name
     val clazz = parentOfType<PklClass>() ?: return null
-    clazz.eachSuperclassOrModule { typeDef ->
+    clazz.eachSuperclassOrModule(context) { typeDef ->
       when (typeDef) {
         is PklClass ->
-          typeDef.cache.properties[myName]?.docComment?.let {
+          typeDef.cache(context).properties[myName]?.docComment?.let {
             return it
           }
         is PklModule ->
-          typeDef.cache.properties[myName]?.docComment?.let {
+          typeDef.cache(context).properties[myName]?.docComment?.let {
             return it
           }
       }

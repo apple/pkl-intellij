@@ -27,6 +27,7 @@ import com.intellij.psi.util.parentOfTypes
 import org.pkl.intellij.intention.PklAddDefaultValueQuickFix
 import org.pkl.intellij.intention.PklAddModifierQuickFix
 import org.pkl.intellij.intention.PklReplaceWithSpreadQuickFix
+import org.pkl.intellij.packages.dto.PklProject
 import org.pkl.intellij.psi.*
 import org.pkl.intellij.psi.PklElementTypes.*
 import org.pkl.intellij.resolve.ResolveVisitors
@@ -54,11 +55,13 @@ class PklMemberAnnotator : PklAnnotator() {
     val module = holder.currentModule
     val project = module.project
     val base = project.pklBaseModule
+    val context = element.enclosingModule?.pklProject
 
     val memberType: Type by lazy {
       element.computeResolvedImportType(
         base,
         mapOf(),
+        context,
         preserveUnboundTypeVars = false,
         canInferExprBody = false
       )
@@ -68,14 +71,14 @@ class PklMemberAnnotator : PklAnnotator() {
       object : PklVisitor<Unit>() {
         override fun visitObjectProperty(element: PklObjectProperty) {
           checkModifiers(element, "object properties", OBJECT_PROPERTY_MODIFIERS, module, holder)
-          checkUnresolvedProperty(element, memberType, base, holder)
+          checkUnresolvedProperty(element, memberType, base, holder, context)
           checkIsAmendable(element, memberType, base, holder)
-          checkIsAssignable(element, base, holder)
+          checkIsAssignable(element, base, holder, context)
         }
 
         override fun visitObjectElement(element: PklObjectElement) {
-          val thisType = element.computeThisType(base, mapOf())
-          val thisClassType = thisType.toClassType(base)
+          val thisType = element.computeThisType(base, mapOf(), context)
+          val thisClassType = thisType.toClassType(base, context)
           if (
             thisClassType != null &&
               !thisClassType.classEquals(base.listingType) &&
@@ -93,8 +96,8 @@ class PklMemberAnnotator : PklAnnotator() {
         }
 
         override fun visitObjectEntry(element: PklObjectEntry) {
-          val thisType = element.computeThisType(base, mapOf())
-          val thisClassType = thisType.toClassType(base)
+          val thisType = element.computeThisType(base, mapOf(), context)
+          val thisClassType = thisType.toClassType(base, context)
           if (
             thisClassType != null &&
               // listing can *syntactically* have an entry (override by index)
@@ -115,7 +118,7 @@ class PklMemberAnnotator : PklAnnotator() {
         }
 
         override fun visitForGenerator(o: PklForGenerator) {
-          checkObjectSpread(base, o, holder)
+          checkObjectSpread(base, o, holder, context)
         }
 
         override fun visitMemberPredicate(element: PklMemberPredicate) {
@@ -128,9 +131,9 @@ class PklMemberAnnotator : PklAnnotator() {
 
         override fun visitClassProperty(element: PklClassProperty) {
           checkModifiers(element, "properties", CLASS_PROPERTY_MODIFIERS, module, holder)
-          checkUnresolvedProperty(element, memberType, base, holder)
+          checkUnresolvedProperty(element, memberType, base, holder, context)
           checkIsAmendable(element, memberType, base, holder)
-          checkFixedOrConstModifier(element, holder, base)
+          checkFixedOrConstModifier(element, holder, base, context)
         }
 
         override fun visitClassMethod(element: PklClassMethod) {
@@ -146,7 +149,7 @@ class PklMemberAnnotator : PklAnnotator() {
         override fun visitTypeAlias(element: PklTypeAlias) {
           checkModifiers(element, "type aliases", TYPE_ALIAS_MODIFIERS, module, holder)
           val body = element.body
-          if (body != null && element.isRecursive) {
+          if (body != null && element.isRecursive(context)) {
             holder
               .newAnnotation(HighlightSeverity.ERROR, "Recursive type alias")
               .range(body)
@@ -170,7 +173,8 @@ class PklMemberAnnotator : PklAnnotator() {
     element: PklClassProperty,
     holder: AnnotationHolder,
     enclosingEntity: PklTypeDefOrModule,
-    base: PklBaseModule
+    base: PklBaseModule,
+    context: PklProject?
   ) {
     if (
       !element.isFixedOrConst ||
@@ -179,8 +183,8 @@ class PklMemberAnnotator : PklAnnotator() {
         element.isExternal
     )
       return
-    val type = element.type?.toType(base, mapOf()) ?: return
-    if (type.hasDefault(base)) return
+    val type = element.type?.toType(base, mapOf(), context) ?: return
+    if (type.hasDefault(base, context)) return
     val severity =
       if (enclosingEntity.isOpen) HighlightSeverity.WARNING else HighlightSeverity.ERROR
     val enclosingEntityName = if (enclosingEntity is PklModule) "module" else "class"
@@ -229,16 +233,18 @@ class PklMemberAnnotator : PklAnnotator() {
   private fun checkFixedOrConstModifier(
     element: PklClassProperty,
     holder: AnnotationHolder,
-    base: PklBaseModule
+    base: PklBaseModule,
+    context: PklProject?
   ) {
     val enclosingDef = element.parentOfTypes(PklClass::class, PklModule::class) ?: return
-    checkFixedOrConstWithoutDefaultValue(element, holder, enclosingDef, base)
+    checkFixedOrConstWithoutDefaultValue(element, holder, enclosingDef, base, context)
     val isAmendingModule = enclosingDef is PklModule && enclosingDef.extendsAmendsClause.isAmend
     if (isAmendingModule) {
-      checkIsAssignable(element, base, holder)
+      checkIsAssignable(element, base, holder, context)
       return
     }
-    val parentProperty = enclosingDef.effectiveParentProperties?.get(element.name) ?: return
+    val parentProperty =
+      enclosingDef.effectiveParentProperties(context)?.get(element.name) ?: return
     if (parentProperty.isFixed == element.isFixed && parentProperty.isConst == element.isConst)
       return
     if (parentProperty.isFixedOrConst) {
@@ -321,13 +327,14 @@ class PklMemberAnnotator : PklAnnotator() {
   private fun checkIsAssignable(
     element: PklProperty,
     base: PklBaseModule,
-    holder: AnnotationHolder
+    holder: AnnotationHolder,
+    context: PklProject?
   ) {
-    val enclosingParentType = element.computeThisType(base, mapOf())
+    val enclosingParentType = element.computeThisType(base, mapOf(), context)
     val properties =
-      when (val underlyingType = enclosingParentType.unaliased(base)) {
-        is Class -> underlyingType.psi.cache.properties
-        is Module -> underlyingType.psi.cache.properties
+      when (val underlyingType = enclosingParentType.unaliased(base, context)) {
+        is Class -> underlyingType.psi.cache(context).properties
+        is Module -> underlyingType.psi.cache(context).properties
         else -> return
       }
     val property = properties[element.name]
@@ -463,7 +470,8 @@ class PklMemberAnnotator : PklAnnotator() {
     property: PklProperty,
     propertyType: Type,
     base: PklBaseModule,
-    holder: AnnotationHolder
+    holder: AnnotationHolder,
+    context: PklProject?
   ) {
 
     if (propertyType != Unknown) {
@@ -471,21 +479,25 @@ class PklMemberAnnotator : PklAnnotator() {
       return
     }
 
-    if (property.isDefinition) return
+    if (property.isDefinition(context)) return
 
     // this may be expensive to recompute
     // (was already computed during `element.computeDefinitionType`)
-    val thisType = property.computeThisType(base, mapOf())
+    val thisType = property.computeThisType(base, mapOf(), context)
     if (thisType == Unknown) return
 
-    if (thisType.isSubtypeOf(base.objectType, base)) {
-      if (thisType.isSubtypeOf(base.dynamicType, base)) return
+    if (thisType.isSubtypeOf(base.objectType, base, context)) {
+      if (thisType.isSubtypeOf(base.dynamicType, base, context)) return
 
       // should be able to find a definition
-      val visitor = ResolveVisitors.firstElementNamed(property.name, base)
-      if (Resolvers.resolveQualifiedAccess(thisType, true, base, visitor) == null) {
+      val visitor =
+        ResolveVisitors.firstElementNamed(
+          property.name,
+          base,
+        )
+      if (Resolvers.resolveQualifiedAccess(thisType, true, base, visitor, context) == null) {
         createAnnotation(
-          if (thisType.isUnresolvedMemberFatal(base)) HighlightSeverity.ERROR
+          if (thisType.isUnresolvedMemberFatal(base, context)) HighlightSeverity.ERROR
           else HighlightSeverity.WARNING,
           property.nameIdentifier.textRange,
           "Unresolved property: ${property.name}",
@@ -498,17 +510,24 @@ class PklMemberAnnotator : PklAnnotator() {
     }
   }
 
-  private fun checkObjectSpread(base: PklBaseModule, o: PklForGenerator, holder: AnnotationHolder) {
+  private fun checkObjectSpread(
+    base: PklBaseModule,
+    o: PklForGenerator,
+    holder: AnnotationHolder,
+    context: PklProject?
+  ) {
     if (isSuppressed(o, PklProblemGroups.replaceForGeneratorWithSpread)) return
     val keyIdentifier = if (o.keyValueVars.size > 1) o.keyValueVars[0] else null
     val elemIdentifier =
       if (o.keyValueVars.size > 1) o.keyValueVars[1] else o.keyValueVars.firstOrNull() ?: return
     if (o.objectBody?.members?.toList()?.size?.let { it > 1 } == true) return
-    val thisType = o.parent?.computeThisType(base, mapOf())?.toClassType(base) ?: return
-    val iterableType = o.iterableExpr?.computeExprType(base, mapOf())?.toClassType(base) ?: return
+    val thisType =
+      o.parent?.computeThisType(base, mapOf(), context)?.toClassType(base, context) ?: return
+    val iterableType =
+      o.iterableExpr?.computeExprType(base, mapOf(), context)?.toClassType(base, context) ?: return
     // only offer replacement if valid iterable type.
     val expectedIterableType = base.spreadType(thisType)
-    if (!iterableType.isSubtypeOf(expectedIterableType, base)) return
+    if (!iterableType.isSubtypeOf(expectedIterableType, base, context)) return
     when (val member = o.objectBody?.members?.elementAtOrNull(0)) {
       // for (elem in iterable) { elem }
       is PklObjectElement -> {

@@ -17,6 +17,7 @@ package org.pkl.intellij.psi
 
 import com.intellij.lang.ASTNode
 import com.intellij.psi.PsiElement
+import org.pkl.intellij.packages.dto.PklProject
 import org.pkl.intellij.type.Type
 import org.pkl.intellij.type.TypeParameterBindings
 import org.pkl.intellij.type.toType
@@ -27,6 +28,9 @@ abstract class PklTypedIdentifierBase(node: ASTNode) :
 
   override fun getNameIdentifier(): PsiElement = identifier
 
-  override fun getLookupElementType(base: PklBaseModule, bindings: TypeParameterBindings): Type =
-    type.toType(base, bindings)
+  override fun getLookupElementType(
+    base: PklBaseModule,
+    bindings: TypeParameterBindings,
+    context: PklProject?
+  ): Type = type.toType(base, bindings, context)
 }

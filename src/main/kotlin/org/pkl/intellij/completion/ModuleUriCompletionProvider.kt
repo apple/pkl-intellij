@@ -167,7 +167,7 @@ class ModuleUriCompletionProvider(private val packageUriOnly: Boolean = false) :
         }
       }
       targetUri.startsWith("@") && !packageUriOnly -> {
-        val dependencies = sourceModule.dependencies ?: return
+        val dependencies = sourceModule.dependencies(null) ?: return
         if (!targetUri.contains('/')) {
           collector.addAll(
             dependencies.keys.map { name ->
@@ -175,11 +175,17 @@ class ModuleUriCompletionProvider(private val packageUriOnly: Boolean = false) :
             }
           )
         } else {
-          PklModuleUriReference.getDependencyRoot(project, targetUri, sourceModule)?.let { root ->
-            val delimiter = targetUri.indexOf('/')
-            val resolvedTargetUri = if (delimiter == -1) "/" else targetUri.drop(delimiter)
-            completeHierarchicalUri(arrayOf(root), ".", resolvedTargetUri, false, collector)
-          }
+          PklModuleUriReference.getDependencyRoot(
+              project,
+              targetUri,
+              sourceModule,
+              sourceModule.pklProject
+            )
+            ?.let { root ->
+              val delimiter = targetUri.indexOf('/')
+              val resolvedTargetUri = if (delimiter == -1) "/" else targetUri.drop(delimiter)
+              completeHierarchicalUri(arrayOf(root), ".", resolvedTargetUri, false, collector)
+            }
         }
       }
       !targetUri.contains(':') && packageUriOnly -> {

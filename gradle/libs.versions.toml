@@ -1,4 +1,5 @@
 [versions] # ordered alphabetically
+assertj = "3.+"
 # GoLand version to verify against. Use latest version.
 # https://www.jetbrains.com/go/download/#section=mac
 goLand = "2023.1.4"
@@ -31,6 +32,7 @@ spotless = "6.21.0"
 pklStdLib = { group = "org.pkl-lang", name = "pkl-stdlib", version.ref = "pklStdLib" }
 kotlinxJson = { group = "org.jetbrains.kotlinx", name = "kotlinx-serialization-json", version.ref = "kotlinx" }
 kotlinReflect = { group = "org.jetbrains.kotlin", name = "kotlin-reflect", version.ref = "kotlin" }
+assertj = { group = "org.assertj", name = "assertj-core", version.ref = "assertj" }
 
 [plugins] # ordered alphabetically
 grammarKit = { id = "org.jetbrains.grammarkit", version.ref = "grammarKitPlugin" }

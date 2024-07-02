@@ -16,6 +16,7 @@
 package org.pkl.intellij.psi
 
 import com.intellij.psi.PsiElement
+import org.pkl.intellij.packages.dto.PklProject
 
 interface PklProperty : PklModifierListOwner, PklNavigableElement, PklSuppressWarningsTarget {
   override val modifierList: PklModifierList
@@ -33,5 +34,5 @@ interface PklProperty : PklModifierListOwner, PklNavigableElement, PklSuppressWa
   val type: PklType?
 
   /** Tells if this element defines a new property instead of just overriding its value. */
-  val isDefinition: Boolean
+  fun isDefinition(context: PklProject?): Boolean
 }

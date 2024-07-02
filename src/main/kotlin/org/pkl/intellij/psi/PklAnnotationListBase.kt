@@ -25,8 +25,9 @@ abstract class PklAnnotationListBase(node: ASTNode) :
   override val deprecated: Deprecated?
     get() {
       val base = project.pklBaseModule
+      val context = enclosingModule?.pklProject
       val annotation =
-        elements.find { it.typeName?.resolve() === base.deprecatedType.psi } ?: return null
+        elements.find { it.typeName?.resolve(context) === base.deprecatedType.psi } ?: return null
       val body = annotation.objectBody
       val since = body?.getConstantStringProperty("since")
       val message = body?.getConstantStringProperty("message")
@@ -38,7 +39,7 @@ abstract class PklAnnotationListBase(node: ASTNode) :
     get() {
       val annotation =
         elements.find {
-          val resolved = it.typeName?.resolve()
+          val resolved = it.typeName?.resolve(enclosingModule?.pklProject)
           resolved != null && resolved === project.pklBaseModule.sourceCodeType?.psi
         }
           ?: return null

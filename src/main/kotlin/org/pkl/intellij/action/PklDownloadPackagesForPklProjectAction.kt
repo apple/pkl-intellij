@@ -21,22 +21,23 @@ import com.intellij.openapi.actionSystem.CommonDataKeys
 import com.intellij.openapi.application.runInEdt
 import com.intellij.openapi.ui.Messages
 import org.pkl.intellij.packages.pklProjectService
+import org.pkl.intellij.util.pklCacheDir
 
 class PklDownloadPackagesForPklProjectAction : AnAction() {
   override fun actionPerformed(e: AnActionEvent) {
     val file = e.dataContext.getData(CommonDataKeys.VIRTUAL_FILE) ?: return
     val project = e.project ?: return
     val pklProject = project.pklProjectService.getPklProject(file) ?: return
-    val cacheDir = pklProject.projectPackageCacheDirPath
-    if (cacheDir == null) {
-      runInEdt {
-        Messages.showErrorDialog(
-          "Cannot download packages because the home directory could not be found",
-          "Error"
-        )
-      }
-      return
-    }
+    val cacheDir =
+      pklCacheDir?.toNioPath()
+        ?: return runInEdt {
+          runInEdt {
+            Messages.showErrorDialog(
+              "Cannot download packages because the home directory could not be found",
+              "Error"
+            )
+          }
+        }
     project.pklProjectService.downloadDependencies(pklProject, cacheDir)
   }
 }

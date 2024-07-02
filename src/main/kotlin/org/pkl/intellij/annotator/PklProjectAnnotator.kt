@@ -19,6 +19,7 @@ import com.intellij.lang.annotation.AnnotationHolder
 import com.intellij.lang.annotation.HighlightSeverity
 import com.intellij.psi.PsiElement
 import org.pkl.intellij.intention.PklChangeOrAddAmendsClauseQuickFix
+import org.pkl.intellij.packages.dto.PklProject
 import org.pkl.intellij.psi.*
 import org.pkl.intellij.type.computeExprType
 import org.pkl.intellij.type.computeThisType
@@ -52,11 +53,12 @@ class PklProjectAnnotator : PklAnnotator() {
     }
   }
 
-  private fun findOutputValue(element: PklModule?): List<PklExpr>? {
+  private fun findOutputValue(element: PklModule?, context: PklProject?): List<PklExpr>? {
     if (element == null) return null
     val output = findOutput(element)
     return output?.expr?.findOutputValue()
-      ?: output?.objectBodyList?.findOutputValue() ?: findOutputValue(element.supermodule)
+      ?: output?.objectBodyList?.findOutputValue()
+        ?: findOutputValue(element.supermodule(context), context)
   }
 
   private fun findOutput(element: PklModule?): PklClassProperty? {
@@ -69,10 +71,11 @@ class PklProjectAnnotator : PklAnnotator() {
     val projectModule = project.pklProjectModule
 
     if (element.containingFile.name != "PklProject" || element !is PklModule) return
-    val outputValue = findOutputValue(element)
+    val context = element.enclosingModule?.pklProject
+    val outputValue = findOutputValue(element, context)
     if (outputValue == null) {
-      val elementType = element.computeThisType(baseModule, mapOf())
-      if (!elementType.isEquivalentTo(projectModule.projectType, baseModule)) {
+      val elementType = element.computeThisType(baseModule, mapOf(), context)
+      if (!elementType.isEquivalentTo(projectModule.projectType, baseModule, context)) {
         val textRange =
           element.extendsAmendsClause?.textRange
             ?: element.declaration?.textRange ?: element.textRange
@@ -89,9 +92,9 @@ class PklProjectAnnotator : PklAnnotator() {
       return
     }
     for (value in outputValue) {
-      val type = value.computeExprType(baseModule, mapOf())
+      val type = value.computeExprType(baseModule, mapOf(), context)
       if (value.enclosingModule == element) {
-        if (!type.isEquivalentTo(projectModule.projectType, baseModule)) {
+        if (!type.isEquivalentTo(projectModule.projectType, baseModule, context)) {
           createMismatchAnnotation(
             HighlightSeverity.ERROR,
             value.textRange,

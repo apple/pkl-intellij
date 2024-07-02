@@ -19,6 +19,7 @@ import com.intellij.lang.ASTNode
 import com.intellij.psi.PsiElement
 import javax.swing.Icon
 import org.pkl.intellij.PklIcons
+import org.pkl.intellij.packages.dto.PklProject
 import org.pkl.intellij.type.Type
 import org.pkl.intellij.type.TypeParameterBindings
 import org.pkl.intellij.type.toType
@@ -38,8 +39,11 @@ abstract class PklObjectMethodBase(node: ASTNode) : PklAstWrapperPsiElement(node
 
   override fun getNameIdentifier(): PsiElement? = identifier
 
-  override fun getLookupElementType(base: PklBaseModule, bindings: TypeParameterBindings): Type =
-    returnType.toType(base, bindings)
+  override fun getLookupElementType(
+    base: PklBaseModule,
+    bindings: TypeParameterBindings,
+    context: PklProject?
+  ): Type = returnType.toType(base, bindings, context)
 
   override val hasParameters: Boolean
     get() = !parameterList?.elements.isNullOrEmpty()

@@ -17,6 +17,7 @@ package org.pkl.intellij.psi
 
 import com.intellij.openapi.util.TextRange
 import com.intellij.psi.*
+import org.pkl.intellij.packages.dto.PklProject
 
 class PklModuleNameReference(private val moduleName: PklModuleName) :
   PsiReferenceBase<PklModuleName>(moduleName) {
@@ -25,15 +26,17 @@ class PklModuleNameReference(private val moduleName: PklModuleName) :
 
   override fun getCanonicalText(): String = moduleName.identifier.text
 
-  override fun resolve(): PklModule? {
+  fun resolveContextual(context: PklProject?): PklModule? {
     val module = moduleName.enclosingModule ?: return null
     val moduleNameText = moduleName.identifier.text
     for (import in module.imports) {
       if (import.memberName == moduleNameText) {
-        val resolved = import.resolve() as? SimpleModuleResolutionResult ?: return null
+        val resolved = import.resolve(context) as? SimpleModuleResolutionResult ?: return null
         return resolved.resolved
       }
     }
     return null
   }
+
+  override fun resolve(): PklModule? = resolveContextual(null)
 }

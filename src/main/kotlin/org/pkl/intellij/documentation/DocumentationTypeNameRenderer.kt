@@ -22,7 +22,7 @@ import org.pkl.intellij.util.notEscapeXml
 
 object DocumentationTypeNameRenderer : TypeNameRenderer {
   override fun render(name: PklTypeName, appendable: Appendable) {
-    appendable.renderTypeName(name.moduleName?.resolve(), name.simpleName.text)
+    appendable.renderTypeName(name.moduleName?.resolve(null), name.simpleName.text)
   }
 
   override fun render(type: Type.Class, appendable: Appendable) {

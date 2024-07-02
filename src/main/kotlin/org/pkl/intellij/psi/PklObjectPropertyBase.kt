@@ -19,6 +19,7 @@ import com.intellij.lang.ASTNode
 import com.intellij.psi.PsiElement
 import javax.swing.Icon
 import org.pkl.intellij.PklIcons
+import org.pkl.intellij.packages.dto.PklProject
 import org.pkl.intellij.type.Type
 import org.pkl.intellij.type.TypeParameterBindings
 import org.pkl.intellij.type.computeResolvedImportType
@@ -33,11 +34,13 @@ abstract class PklObjectPropertyBase(node: ASTNode) :
 
   override fun getNameIdentifier(): PsiElement = propertyName.identifier
 
-  override fun getLookupElementType(base: PklBaseModule, bindings: TypeParameterBindings): Type =
-    computeResolvedImportType(base, bindings)
+  override fun getLookupElementType(
+    base: PklBaseModule,
+    bindings: TypeParameterBindings,
+    context: PklProject?
+  ): Type = computeResolvedImportType(base, bindings, context)
 
-  override val isDefinition: Boolean
-    get() = type != null || isLocal
+  override fun isDefinition(context: PklProject?): Boolean = type != null || isLocal
 
   override fun toString(): String = "ObjectProperty($name)"
 }

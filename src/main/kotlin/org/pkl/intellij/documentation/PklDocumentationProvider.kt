@@ -28,6 +28,7 @@ import org.intellij.markdown.html.HtmlGenerator
 import org.intellij.markdown.parser.MarkdownParser
 import org.pkl.intellij.documentation.DocumentationTypeNameRenderer.renderModuleName
 import org.pkl.intellij.documentation.DocumentationTypeNameRenderer.renderTypeName
+import org.pkl.intellij.packages.dto.PklProject
 import org.pkl.intellij.psi.*
 import org.pkl.intellij.resolve.ResolveVisitors
 import org.pkl.intellij.resolve.Resolvers
@@ -41,8 +42,9 @@ class PklDocumentationProvider : AbstractDocumentationProvider() {
     }
 
   override fun generateDoc(element: PsiElement, originalElement: PsiElement?): String? {
-    if (element is PklProperty && !element.isDefinition) {
-      val target = element.propertyName.reference?.resolve() ?: return null
+    val context = originalElement?.enclosingModule?.pklProject
+    if (element is PklProperty && !element.isDefinition(element.enclosingModule?.pklProject)) {
+      val target = element.propertyName.resolve(context) ?: return null
       return generateDoc(target, originalElement)
     }
 
@@ -51,7 +53,7 @@ class PklDocumentationProvider : AbstractDocumentationProvider() {
       if (!renderSignature(element, originalElement)) return null
       append(DocumentationMarkup.DEFINITION_END)
 
-      val docComment = (element as? PklDocCommentOwner)?.effectiveDocComment()
+      val docComment = (element as? PklDocCommentOwner)?.effectiveDocComment(context)
       if (docComment != null) {
         append(DocumentationMarkup.CONTENT_START)
         append(renderDocComment(docComment))
@@ -88,12 +90,14 @@ class PklDocumentationProvider : AbstractDocumentationProvider() {
   override fun getDocumentationElementForLink(
     psiManager: PsiManager,
     link: String,
-    context: PsiElement
-  ): PsiElement? =
-    when {
-      link.contains('.') -> resolveQualifiedLink(psiManager, link, context)
-      else -> resolveUnqualifiedLink(psiManager, link, context)
+    position: PsiElement
+  ): PsiElement? {
+    val context = position.enclosingModule?.pklProject
+    return when {
+      link.contains('.') -> resolveQualifiedLink(psiManager, link, position, context)
+      else -> resolveUnqualifiedLink(psiManager, link, position, context)
     }
+  }
 
   private fun renderDocComment(docComment: PklDocComment): String {
     val text =
@@ -109,10 +113,12 @@ class PklDocumentationProvider : AbstractDocumentationProvider() {
   private fun resolveQualifiedLink(
     psiManager: PsiManager,
     link: String,
-    context: PsiElement
+    position: PsiElement,
+    context: PklProject?
   ): PsiElement? {
     val parts = link.split('.')
     val base by lazy { psiManager.project.pklBaseModule }
+    val enclosingModule = position.enclosingModule
 
     when (parts.size) {
       2 -> {
@@ -122,18 +128,22 @@ class PklDocumentationProvider : AbstractDocumentationProvider() {
         val rawMemberName = parts[1]
         val isMethod = rawMemberName.endsWith("()")
         val memberName = if (isMethod) rawMemberName.dropLast(2) else rawMemberName
-        val visitor = ResolveVisitors.firstElementNamed(classOrModuleName, base)
-
+        val visitor =
+          ResolveVisitors.firstElementNamed(
+            classOrModuleName,
+            base,
+          )
         val resolveResult =
-          context.enclosingModule?.imports?.find { it.memberName == classOrModuleName }?.resolve()
+          enclosingModule?.imports?.find { it.memberName == classOrModuleName }?.resolve(context)
             as? SimpleModuleResolutionResult
-        resolveResult?.resolved?.cache?.let { cache ->
+        resolveResult?.resolved?.cache(context)?.let { cache ->
           return if (isMethod) cache.methods[memberName]
           else cache.typeDefsAndProperties[memberName]
         }
 
         val clazz =
-          Resolvers.resolveUnqualifiedTypeName(context, base, mapOf(), visitor) as? PklClass
+          Resolvers.resolveUnqualifiedTypeName(position, base, mapOf(), visitor, context)
+            as? PklClass
             ?: return null
         return if (isMethod) {
           clazz.methods.find { it.name == memberName }
@@ -149,10 +159,11 @@ class PklDocumentationProvider : AbstractDocumentationProvider() {
         val isMethod = rawMemberName.endsWith("()")
         val memberName = if (isMethod) rawMemberName.dropLast(2) else rawMemberName
         val module =
-          context.enclosingModule?.imports?.find { it.memberName == moduleName }?.resolve()
+          enclosingModule?.imports?.find { it.memberName == moduleName }?.resolve(context)
             as? SimpleModuleResolutionResult
             ?: return null
-        val clazz = module.resolved?.cache?.types?.get(className) as? PklClass ?: return null
+        val clazz =
+          module.resolved?.cache(context)?.types?.get(className) as? PklClass ?: return null
         return if (isMethod) {
           clazz.methods.find { it.name == memberName }
         } else {
@@ -166,15 +177,29 @@ class PklDocumentationProvider : AbstractDocumentationProvider() {
   private fun resolveUnqualifiedLink(
     psiManager: PsiManager,
     link: String,
-    context: PsiElement
+    position: PsiElement,
+    context: PklProject?
   ): PsiElement? {
     val isProperty = !link.endsWith("()")
     val memberName = if (isProperty) link else link.dropLast(2)
     val base = psiManager.project.pklBaseModule
-    val visitor = ResolveVisitors.firstElementNamed(memberName, base)
-    return Resolvers.resolveUnqualifiedAccess(context, null, isProperty, base, mapOf(), visitor)
+    val visitor =
+      ResolveVisitors.firstElementNamed(
+        memberName,
+        base,
+      )
+    return Resolvers.resolveUnqualifiedAccess(
+      position,
+      null,
+      isProperty,
+      base,
+      mapOf(),
+      visitor,
+      context
+    )
     // search for type in supermodules
-    ?: if (isProperty) Resolvers.resolveUnqualifiedTypeName(context, base, mapOf(), visitor)
+    ?: if (isProperty)
+        Resolvers.resolveUnqualifiedTypeName(position, base, mapOf(), visitor, context)
       else null
   }
 
@@ -182,6 +207,7 @@ class PklDocumentationProvider : AbstractDocumentationProvider() {
     element: PsiElement,
     originalElement: PsiElement?
   ): Boolean {
+    val context = originalElement?.enclosingModule?.pklProject
     when (element) {
       is PklModule -> {
         renderModifiers(element.modifierList)
@@ -190,7 +216,7 @@ class PklDocumentationProvider : AbstractDocumentationProvider() {
 
         val clause = element.extendsAmendsClause
         if (clause != null) {
-          val supermodule = clause.moduleUri?.resolve() ?: return true
+          val supermodule = clause.moduleUri?.resolve(context) ?: return true
           append(if (clause.isAmend) " amends " else " extends ")
           bold { escapeXml { renderModuleName(supermodule, supermodule.displayName) } }
         }
@@ -204,7 +230,8 @@ class PklDocumentationProvider : AbstractDocumentationProvider() {
         escapeXml { append(moduleUri) }
         append("\"")
         val base = element.project.pklBaseModule
-        val definitionType = element.resolve().computeResolvedImportType(base, mapOf(), false)
+        val definitionType =
+          element.resolve(context).computeResolvedImportType(base, mapOf(), false, context)
         escapeXml { renderTypeAnnotation(definitionType, DocumentationTypeNameRenderer) }
       }
       is PklModuleDeclaration -> {
@@ -273,6 +300,7 @@ class PklDocumentationProvider : AbstractDocumentationProvider() {
   ) {
     if (name == null) return
     val base = element.project.pklBaseModule
+    val context = originalElement?.enclosingModule?.pklProject
     bold { escapeXml { append(name) } }
     escapeXml {
       when {
@@ -290,11 +318,12 @@ class PklDocumentationProvider : AbstractDocumentationProvider() {
           val computedType =
             Resolvers.resolveUnqualifiedAccess(
               originalElement,
-              element.computeThisType(base, mapOf()),
+              element.computeThisType(base, mapOf(), context),
               true,
               element.project.pklBaseModule,
               mapOf(),
-              visitor
+              visitor,
+              context
             )
           renderTypeAnnotation(computedType, DocumentationTypeNameRenderer)
         }
@@ -302,7 +331,7 @@ class PklDocumentationProvider : AbstractDocumentationProvider() {
         type != null -> renderTypeAnnotation(type, mapOf(), DocumentationTypeNameRenderer)
         // otherwise, render the inferred type
         else -> {
-          val computedType = element.computeResolvedImportType(base, mapOf())
+          val computedType = element.computeResolvedImportType(base, mapOf(), context)
           renderTypeAnnotation(computedType, DocumentationTypeNameRenderer)
         }
       }

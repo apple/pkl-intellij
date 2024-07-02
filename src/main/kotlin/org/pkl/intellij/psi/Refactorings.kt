@@ -78,7 +78,8 @@ fun PklTypeName.replaceDeprecated(
   isDryRun: Boolean = false,
   applyIf: (PklAnnotationListOwner, Deprecated) -> Boolean = { _, _ -> true }
 ): Boolean {
-  val target = simpleName.reference?.resolve() as? PklAnnotationListOwner ?: return false
+  val context = module.pklProject
+  val target = simpleName.resolve(context) as? PklAnnotationListOwner ?: return false
   val deprecated = target.annotationList?.deprecated ?: return false
   val replaceWith = deprecated.replaceWith ?: return false
 

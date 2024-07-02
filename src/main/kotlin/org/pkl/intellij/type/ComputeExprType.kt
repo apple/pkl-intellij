@@ -22,34 +22,39 @@ import com.intellij.openapi.util.RecursionManager
 import com.intellij.psi.PsiElement
 import com.intellij.psi.PsiManager
 import com.intellij.psi.util.CachedValueProvider
-import com.intellij.psi.util.CachedValuesManager
 import org.pkl.intellij.PklLanguage
+import org.pkl.intellij.packages.dto.PklProject
 import org.pkl.intellij.psi.*
 import org.pkl.intellij.resolve.ResolveVisitors
+import org.pkl.intellij.util.getContextualCachedValue
 
 private val logger: Logger = Logger.getInstance("org.pkl.intellij.type")
 
-fun PsiElement?.computeExprType(base: PklBaseModule, bindings: TypeParameterBindings): Type {
+fun PsiElement?.computeExprType(
+  base: PklBaseModule,
+  bindings: TypeParameterBindings,
+  context: PklProject?
+): Type {
   return when {
     this == null || this !is PklExpr -> Type.Unknown
     bindings.isEmpty() -> {
       val project = base.project
       val psiManager = PsiManager.getInstance(project)
-      val cacheManager = CachedValuesManager.getManager(project)
-      cacheManager.getCachedValue(this) {
+      getContextualCachedValue(context) {
         CachedValueProvider.Result.create(
-          doComputeExprType(project.pklBaseModule, mapOf()),
+          doComputeExprType(project.pklBaseModule, mapOf(), context),
           psiManager.modificationTracker.forLanguage(PklLanguage)
         )
       }
     }
-    else -> doComputeExprType(base, bindings)
+    else -> doComputeExprType(base, bindings, context)
   }
 }
 
 private fun PsiElement.doComputeExprType(
   base: PklBaseModule,
-  bindings: TypeParameterBindings
+  bindings: TypeParameterBindings,
+  context: PklProject?
 ): Type {
   return RecursionManager.doPreventingRecursion(this, false) {
     when (this) {
@@ -62,7 +67,7 @@ private fun PsiElement.doComputeExprType(
             isNullSafeAccess,
             false
           )
-        resolve(base, null, bindings, visitor)
+        resolve(base, null, bindings, visitor, context)
       }
       is PklQualifiedAccessExpr -> {
         val visitor =
@@ -73,7 +78,7 @@ private fun PsiElement.doComputeExprType(
             isNullSafeAccess,
             false
           )
-        resolve(base, null, bindings, visitor)
+        resolve(base, null, bindings, visitor, context)
       }
       is PklSuperAccessExpr -> {
         val visitor =
@@ -84,7 +89,7 @@ private fun PsiElement.doComputeExprType(
             isNullSafeAccess,
             false
           )
-        resolve(base, null, bindings, visitor)
+        resolve(base, null, bindings, visitor, context)
       }
       is PklTrueLiteral,
       is PklFalseLiteral -> base.booleanType
@@ -109,20 +114,19 @@ private fun PsiElement.doComputeExprType(
 
       // inferring Listing/Mapping type parameters from elements/entries is tricky
       // because the latter are in turn inferred from Listing/Mapping types (e.g., in PklNewExpr)
-      is PklAmendExpr -> parentExpr.computeExprType(base, bindings).amended(base)
+      is PklAmendExpr -> parentExpr.computeExprType(base, bindings, context).amended(base, context)
       is PklNewExpr ->
-        (type?.toType(base, bindings) ?: inferExprTypeFromContext(base, bindings)).instantiated(
-          base
-        )
-      is PklThisExpr -> computeThisType(base, bindings)
+        (type?.toType(base, bindings, context) ?: inferExprTypeFromContext(base, bindings, context))
+          .instantiated(base, context)
+      is PklThisExpr -> computeThisType(base, bindings, context)
       is PklOuterExpr -> Type.Unknown // TODO
       is PklSubscriptBinExpr -> {
-        val receiverType = leftExpr.computeExprType(base, bindings)
-        doComputeSubscriptExprType(receiverType, base)
+        val receiverType = leftExpr.computeExprType(base, bindings, context)
+        doComputeSubscriptExprType(receiverType, base, context)
       }
       is PklSuperSubscriptExpr -> {
-        val receiverType = computeThisType(base, bindings)
-        doComputeSubscriptExprType(receiverType, base)
+        val receiverType = computeThisType(base, bindings, context)
+        doComputeSubscriptExprType(receiverType, base, context)
       }
       is PklEqualityBinExpr -> base.booleanType
       is PklComparisonBinExpr -> base.booleanType
@@ -130,18 +134,19 @@ private fun PsiElement.doComputeExprType(
       is PklLogicalOrBinExpr -> base.booleanType
       is PklLogicalNotExpr -> base.booleanType
       is PklTypeTestExpr -> base.booleanType
-      is PklTypeCastExpr -> type.toType(base, bindings)
-      is PklModuleExpr -> enclosingModule?.computeResolvedImportType(base, mapOf()) ?: Type.Unknown
+      is PklTypeCastExpr -> type.toType(base, bindings, context)
+      is PklModuleExpr -> enclosingModule?.computeResolvedImportType(base, mapOf(), context)
+          ?: Type.Unknown
       is PklUnaryMinusExpr -> {
-        when (expr.computeExprType(base, bindings)) {
+        when (expr.computeExprType(base, bindings, context)) {
           base.intType -> base.intType
           base.booleanType -> base.booleanType
           else -> Type.Unknown
         }
       }
       is PklAdditiveBinExpr -> {
-        val leftType = leftExpr.computeExprType(base, bindings)
-        val rightType = rightExpr.computeExprType(base, bindings)
+        val leftType = leftExpr.computeExprType(base, bindings, context)
+        val rightType = rightExpr.computeExprType(base, bindings, context)
         val op = operator.elementType
         when (leftType) {
           base.intType ->
@@ -178,9 +183,9 @@ private fun PsiElement.doComputeExprType(
             Type.Unknown
           else -> {
             val leftClassType =
-              leftType.toClassType(base) ?: return@doPreventingRecursion Type.Unknown
+              leftType.toClassType(base, context) ?: return@doPreventingRecursion Type.Unknown
             val rightClassType =
-              rightType.toClassType(base) ?: return@doPreventingRecursion Type.Unknown
+              rightType.toClassType(base, context) ?: return@doPreventingRecursion Type.Unknown
             when {
               leftClassType.classEquals(base.listType) ->
                 if (op == PklElementTypes.PLUS) {
@@ -191,7 +196,8 @@ private fun PsiElement.doComputeExprType(
                         Type.union(
                           leftClassType.typeArguments[0],
                           rightClassType.typeArguments[0],
-                          base
+                          base,
+                          context
                         )
                       base.listType.withTypeArguments(typeArgs)
                     }
@@ -207,7 +213,8 @@ private fun PsiElement.doComputeExprType(
                         Type.union(
                           leftClassType.typeArguments[0],
                           rightClassType.typeArguments[0],
-                          base
+                          base,
+                          context
                         )
                       base.setType.withTypeArguments(typeArgs)
                     }
@@ -222,13 +229,15 @@ private fun PsiElement.doComputeExprType(
                         Type.union(
                           leftClassType.typeArguments[0],
                           rightClassType.typeArguments[0],
-                          base
+                          base,
+                          context
                         )
                       val valueTypeArgs =
                         Type.union(
                           leftClassType.typeArguments[1],
                           rightClassType.typeArguments[1],
-                          base
+                          base,
+                          context
                         )
                       base.mapType.withTypeArguments(keyTypeArgs, valueTypeArgs)
                     }
@@ -241,8 +250,8 @@ private fun PsiElement.doComputeExprType(
         }
       }
       is PklMultiplicativeBinExpr -> {
-        val leftType = leftExpr.computeExprType(base, bindings)
-        val rightType = rightExpr.computeExprType(base, bindings)
+        val leftType = leftExpr.computeExprType(base, bindings, context)
+        val rightType = rightExpr.computeExprType(base, bindings, context)
         when (operator.elementType) {
           PklElementTypes.MUL ->
             when (leftType) {
@@ -323,10 +332,10 @@ private fun PsiElement.doComputeExprType(
         }
       }
       is PklExponentiationBinExpr -> base.numberType
-      is PklLetExpr -> bodyExpr.computeExprType(base, bindings)
+      is PklLetExpr -> bodyExpr.computeExprType(base, bindings, context)
       is PklThrowExpr -> Type.Nothing
-      is PklTraceExpr -> expr.computeExprType(base, bindings)
-      is PklImportExpr -> resolve().computeResolvedImportType(base, mapOf(), false)
+      is PklTraceExpr -> expr.computeExprType(base, bindings, context)
+      is PklImportExpr -> resolve(context).computeResolvedImportType(base, mapOf(), false, context)
       is PklReadExpr -> {
         val result =
           when (val resourceUriExpr = expr) {
@@ -335,30 +344,33 @@ private fun PsiElement.doComputeExprType(
             is PklAdditiveBinExpr -> {
               when (val leftExpr = resourceUriExpr.leftExpr) {
                 is PklStringLiteral -> inferResourceType(leftExpr, base)
-                else -> Type.union(base.stringType, base.resourceType, base)
+                else -> Type.union(base.stringType, base.resourceType, base, context)
               }
             }
-            else -> Type.union(base.stringType, base.resourceType, base)
+            else -> Type.union(base.stringType, base.resourceType, base, context)
           }
         if (isNullable) result.nullable(base)
         else if (isGlob) base.mappingType.withTypeArguments(base.stringType, result) else result
       }
       is PklIfExpr ->
         Type.union(
-          thenExpr.computeExprType(base, bindings),
-          elseExpr.computeExprType(base, bindings),
-          base
+          thenExpr.computeExprType(base, bindings, context),
+          elseExpr.computeExprType(base, bindings, context),
+          base,
+          context
         )
       is PklNullCoalesceBinExpr ->
         Type.union(
-          leftExpr.computeExprType(base, bindings).nonNull(base),
-          rightExpr.computeExprType(base, bindings),
-          base
+          leftExpr.computeExprType(base, bindings, context).nonNull(base, context),
+          rightExpr.computeExprType(base, bindings, context),
+          base,
+          context
         )
-      is PklNonNullAssertionExpr -> expr.computeExprType(base, bindings).nonNull(base)
+      is PklNonNullAssertionExpr ->
+        expr.computeExprType(base, bindings, context).nonNull(base, context)
       is PklPipeBinExpr -> {
-        val rightType = rightExpr.computeExprType(base, bindings)
-        val classType = rightType.toClassType(base)
+        val rightType = rightExpr.computeExprType(base, bindings, context)
+        val classType = rightType.toClassType(base, context)
         when {
           classType != null && classType.isFunctionType -> classType.typeArguments.last()
           rightType == Type.Unknown -> Type.Unknown
@@ -366,8 +378,8 @@ private fun PsiElement.doComputeExprType(
         }
       }
       is PklFunctionLiteral -> {
-        val parameterTypes = parameterList.elements.map { it.type.toType(base, bindings) }
-        val returnType = expr.computeExprType(base, bindings)
+        val parameterTypes = parameterList.elements.map { it.type.toType(base, bindings, context) }
+        val returnType = expr.computeExprType(base, bindings, context)
         when (parameterTypes.size) {
           0 -> base.function0Type.withTypeArguments(parameterTypes + returnType)
           1 -> base.function1Type.withTypeArguments(parameterTypes + returnType)
@@ -381,18 +393,22 @@ private fun PsiElement.doComputeExprType(
             ) // approximation (invalid Pkl code)
         }
       }
-      is PklParenthesizedExpr -> expr.computeExprType(base, bindings)
+      is PklParenthesizedExpr -> expr.computeExprType(base, bindings, context)
       else -> Type.Unknown
     }
   }
     ?: Type.Unknown
 }
 
-private fun doComputeSubscriptExprType(receiverType: Type, base: PklBaseModule) =
+private fun doComputeSubscriptExprType(
+  receiverType: Type,
+  base: PklBaseModule,
+  context: PklProject?
+) =
   when (receiverType) {
     is Type.StringLiteral -> base.stringType
     else -> {
-      val receiverClassType = receiverType.toClassType(base)
+      val receiverClassType = receiverType.toClassType(base, context)
       when {
         receiverClassType == null -> Type.Unknown
         receiverClassType.classEquals(base.stringType) -> base.stringType

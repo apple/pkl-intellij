@@ -1,0 +1,19 @@
+{
+  "schemaVersion": 1,
+  "resolvedDependencies": {
+    "package://pkg.pkl-lang.org/pkl-pantry/k8s.contrib.appEnvCluster@1": {
+      "type": "remote",
+      "uri": "projectpackage://pkg.pkl-lang.org/pkl-pantry/k8s.contrib.appEnvCluster@1.0.1",
+      "checksums": {
+        "sha256": "8fcc69d7f6576d4ede4c87bcf99e907eec13dcc5f57189d58302aeec78aa0aaa"
+      }
+    },
+    "package://pkg.pkl-lang.org/pkl-k8s/k8s@1": {
+      "type": "remote",
+      "uri": "projectpackage://pkg.pkl-lang.org/pkl-k8s/k8s@1.1.0",
+      "checksums": {
+        "sha256": "9ca6002419e405a19b517d506490b46be9279556b5ef2664be0e836df80535e5"
+      }
+    }
+  }
+}

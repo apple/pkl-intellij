@@ -124,7 +124,8 @@ class PklParameterInfoHandler :
     val base = context.project.pklBaseModule
 
     val visitor = ResolveVisitors.elementsNamed(accessExpr.memberNameText, base)
-    val methods = accessExpr.resolve(base, null, mapOf(), visitor)
+    val methods =
+      accessExpr.resolve(base, null, mapOf(), visitor, accessExpr.enclosingModule?.pklProject)
     val parameterLists =
       methods.mapNotNull { method ->
         when (method) {

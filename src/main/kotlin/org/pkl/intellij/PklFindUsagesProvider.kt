@@ -52,7 +52,7 @@ class PklFindUsagesProvider : FindUsagesProvider {
       is PklClass -> true
       is PklTypeAlias -> true
       is PklMethod -> true
-      is PklProperty -> element.isDefinition
+      is PklProperty -> element.isDefinition(element.enclosingModule?.pklProject)
       is PklTypedIdentifier -> true
       is PklTypeParameter -> true
       else -> false

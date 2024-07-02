@@ -1,0 +1,6 @@
+amends "pkl:Project"
+
+dependencies {
+  ["project1"] = import("../project1/PklProject")
+  ["k8s"] { uri = "package://pkg.pkl-lang.org/pkl-k8s/k8s@1.1.0" }
+}

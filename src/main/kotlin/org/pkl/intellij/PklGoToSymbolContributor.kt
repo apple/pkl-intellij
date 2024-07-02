@@ -39,14 +39,14 @@ class PklGoToSymbolContributor : ChooseByNameContributorEx {
     for (module in stdlib.modules) {
       val modulePsi = module.psi
       if (modulePsi.isClassLike) processor.process(module.shortName)
-      val moduleCache = modulePsi.cache
+      val moduleCache = modulePsi.cache(null)
 
       for (name in moduleCache.typeDefsAndProperties.keys) processor.process(name)
       for (name in moduleCache.methods.keys) processor.process(name)
 
       for (typeDef in moduleCache.types.values) {
         if (typeDef is PklClass) {
-          val classCache = typeDef.cache
+          val classCache = typeDef.cache(null)
           for (name in classCache.properties.keys) processor.process(name)
           for (name in classCache.methods.keys) processor.process(name)
         }
@@ -65,14 +65,14 @@ class PklGoToSymbolContributor : ChooseByNameContributorEx {
     for (module in stdlib.modules) {
       val modulePsi = module.psi
       if (modulePsi.isClassLike) processor.process(modulePsi)
-      val moduleCache = modulePsi.cache
+      val moduleCache = modulePsi.cache(null)
 
       moduleCache.typeDefsAndProperties[name]?.let { processor.process(it) }
       moduleCache.methods[name]?.let { processor.process(it) }
 
       for (typeDef in moduleCache.types.values) {
         if (typeDef is PklClass) {
-          val classCache = typeDef.cache
+          val classCache = typeDef.cache(null)
           classCache.properties[name]?.let { processor.process(it) }
           classCache.methods[name]?.let { processor.process(it) }
         }

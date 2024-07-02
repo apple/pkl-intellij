@@ -19,6 +19,7 @@ import com.intellij.lang.annotation.AnnotationHolder
 import com.intellij.lang.annotation.HighlightSeverity
 import com.intellij.psi.PsiElement
 import org.pkl.intellij.psi.PklTypeName
+import org.pkl.intellij.psi.enclosingModule
 import org.pkl.intellij.psi.resolve
 
 class PklTypeNameAnnotator : PklAnnotator() {
@@ -26,8 +27,9 @@ class PklTypeNameAnnotator : PklAnnotator() {
     when (element) {
       is PklTypeName -> {
         val moduleName = element.moduleName
+        val context = element.enclosingModule?.pklProject
         if (moduleName != null) {
-          val resolvedModule = moduleName.resolve()
+          val resolvedModule = moduleName.resolve(context)
           if (resolvedModule == null) {
             holder
               .newAnnotation(
@@ -40,7 +42,7 @@ class PklTypeNameAnnotator : PklAnnotator() {
           }
         }
         val typeName = element.simpleName
-        val resolvedType = typeName.resolve()
+        val resolvedType = typeName.resolve(context)
         if (resolvedType == null) {
           holder
             .newAnnotation(

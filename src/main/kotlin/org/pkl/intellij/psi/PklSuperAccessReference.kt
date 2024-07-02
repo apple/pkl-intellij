@@ -32,7 +32,11 @@ class PklSuperAccessReference(private val accessName: PklSuperAccessName) :
       base,
       null,
       mapOf(),
-      ResolveVisitors.firstElementNamed(accessExpr.memberNameText, base)
+      ResolveVisitors.firstElementNamed(
+        accessExpr.memberNameText,
+        base,
+      ),
+      accessExpr.enclosingModule?.pklProject
     )
   }
 }

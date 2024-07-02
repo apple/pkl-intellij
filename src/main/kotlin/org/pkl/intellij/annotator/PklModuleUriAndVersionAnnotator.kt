@@ -30,6 +30,7 @@ import org.pkl.intellij.intention.PklPrefixDependencyNotationQuickFix
 import org.pkl.intellij.packages.PackageDependency
 import org.pkl.intellij.packages.dto.Checksums
 import org.pkl.intellij.packages.dto.PackageUri
+import org.pkl.intellij.packages.dto.PklProject
 import org.pkl.intellij.packages.dto.Version
 import org.pkl.intellij.packages.pklPackageService
 import org.pkl.intellij.psi.*
@@ -45,6 +46,7 @@ class PklModuleUriAndVersionAnnotator : PklAnnotator() {
   override fun doAnnotate(element: PsiElement, holder: AnnotationHolder) {
     val project = holder.currentProject
     val base = project.pklBaseModule
+    val context = element.enclosingModule?.pklProject
 
     when (element) {
       is PklModule -> {
@@ -74,9 +76,9 @@ class PklModuleUriAndVersionAnnotator : PklAnnotator() {
           }
         }
         if (isGlobImport) {
-          annotateGlobUri(element, references, uriText, holder)
+          annotateGlobUri(element, references, uriText, holder, context)
         } else {
-          annotateNonGlobUri(element, references, uriText, holder)
+          annotateNonGlobUri(element, references, uriText, holder, context)
         }
       }
     }
@@ -88,10 +90,11 @@ class PklModuleUriAndVersionAnnotator : PklAnnotator() {
     holder: AnnotationHolder
   ): Boolean {
     val dependencyName = uriText.substringBefore('/').drop(1)
-    val resolved = element.enclosingModule?.dependencies?.get(dependencyName)
+    val dependencies = element.enclosingModule?.dependencies(null)
+    val resolved = dependencies?.get(dependencyName)
     if (resolved == null) {
       logger.info(
-        "Could not find dependency $dependencyName. Known dependencies: ${element.enclosingModule?.dependencies?.keys}"
+        "Could not find dependency $dependencyName. Known dependencies: ${dependencies?.keys ?: "<none>"}"
       )
       createAnnotation(
         HighlightSeverity.WARNING,
@@ -300,7 +303,8 @@ class PklModuleUriAndVersionAnnotator : PklAnnotator() {
     element: PklModuleUri,
     references: Array<PsiReference>,
     uriText: String,
-    holder: AnnotationHolder
+    holder: AnnotationHolder,
+    context: PklProject?
   ) {
     val sourceFileUri = element.containingFile.virtualFile.url
     val scheme = parseUriOrNull(uriText)?.scheme ?: URI(sourceFileUri).scheme
@@ -322,7 +326,7 @@ class PklModuleUriAndVersionAnnotator : PklAnnotator() {
 
     for ((index, reference) in references.withIndex()) {
       if (reference !is PklModuleUriReference) return
-      val resolved = reference.resolveGlob() ?: return
+      val resolved = reference.resolveGlob(context) ?: return
       if (index == 0) {
         checkDependencyNotation(element, reference, resolved, holder)
       }
@@ -355,7 +359,8 @@ class PklModuleUriAndVersionAnnotator : PklAnnotator() {
     element: PklModuleUri,
     references: Array<PsiReference>,
     uriText: String,
-    holder: AnnotationHolder
+    holder: AnnotationHolder,
+    context: PklProject?
   ) {
     val project = holder.currentProject
     val base = project.pklBaseModule
@@ -407,7 +412,7 @@ class PklModuleUriAndVersionAnnotator : PklAnnotator() {
           return
         }
         val projectPklVersion = base.pklVersion
-        val minPklVersion = resolved.cache.minPklVersion ?: return
+        val minPklVersion = resolved.cache(context).minPklVersion ?: return
         checkPklVersion(minPklVersion, projectPklVersion, element, holder)
       }
     }

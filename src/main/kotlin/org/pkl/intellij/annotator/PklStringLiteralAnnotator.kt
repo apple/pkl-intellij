@@ -33,6 +33,7 @@ class PklStringLiteralAnnotator : PklAnnotator() {
     when (element) {
       is PklStringLiteral -> {
         val content = element.content
+        val context = element.enclosingModule?.pklProject
         val firstChild = content.firstChild ?: return
         val lastChild = content.lastChild ?: return
 
@@ -57,8 +58,8 @@ class PklStringLiteralAnnotator : PklAnnotator() {
                 expr.isNullSafeAccess,
                 false
               )
-            val type = expr.resolve(base, null, mapOf(), visitor)
-            if (type.isSubtypeOf(base.stringType, base)) {
+            val type = expr.resolve(base, null, mapOf(), visitor, context)
+            if (type.isSubtypeOf(base.stringType, base, context)) {
               warn(element, holder)
             }
           }

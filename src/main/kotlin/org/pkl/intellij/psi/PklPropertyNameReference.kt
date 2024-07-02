@@ -19,6 +19,7 @@ import com.intellij.openapi.util.TextRange
 import com.intellij.psi.ElementManipulators
 import com.intellij.psi.PsiPolyVariantReferenceBase
 import com.intellij.psi.util.parentOfTypes
+import org.pkl.intellij.packages.dto.PklProject
 import org.pkl.intellij.resolve.PklResolveResult
 import org.pkl.intellij.resolve.ResolveVisitor
 import org.pkl.intellij.resolve.ResolveVisitors
@@ -31,19 +32,28 @@ class PklPropertyNameReference(private val propertyName: PklPropertyName) :
 
   override fun getRangeInElement(): TextRange = ElementManipulators.getValueTextRange(propertyName)
 
-  override fun resolve(): PklElement? {
+  fun resolveContextual(context: PklProject?): PklElement? {
     val name = propertyName.identifier.text
     val base = propertyName.project.pklBaseModule
-    return doResolve(ResolveVisitors.firstElementNamed(name, base))
+    return doResolve(
+      ResolveVisitors.firstElementNamed(
+        name,
+        base,
+      ),
+      context
+    )
   }
+
+  override fun resolve(): PklElement? = resolveContextual(propertyName.enclosingModule?.pklProject)
 
   override fun multiResolve(incompleteCode: Boolean): Array<PklResolveResult> {
     val name = propertyName.identifier.text
     val base = propertyName.project.pklBaseModule
-    return doResolve(ResolveVisitors.resolveResultsNamed(name, base))
+    val context = propertyName.enclosingModule?.pklProject
+    return doResolve(ResolveVisitors.resolveResultsNamed(name, base), context)
   }
 
-  private fun <R> doResolve(visitor: ResolveVisitor<R>): R {
+  private fun <R> doResolve(visitor: ResolveVisitor<R>, context: PklProject?): R {
     val base = propertyName.project.pklBaseModule
 
     return when (val property = propertyName.parentOfTypes(PklProperty::class)) {
@@ -52,8 +62,8 @@ class PklPropertyNameReference(private val propertyName: PklPropertyName) :
           property.type != null -> return visitor.result // defined here, no need to visit
           property.isLocal -> return visitor.result // defined here, no need to visit
           else -> {
-            val receiverType = property.computeThisType(base, mapOf())
-            Resolvers.resolveQualifiedAccess(receiverType, true, base, visitor)
+            val receiverType = property.computeThisType(base, mapOf(), context)
+            Resolvers.resolveQualifiedAccess(receiverType, true, base, visitor, context)
           }
         }
       else -> unexpectedType(property)

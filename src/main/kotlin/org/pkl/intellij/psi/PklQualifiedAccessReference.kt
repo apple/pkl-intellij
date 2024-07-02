@@ -30,7 +30,12 @@ class PklQualifiedAccessReference(private val accessName: PklQualifiedAccessName
   override fun resolve(): PsiElement? {
     val accessExpr = accessName.parentOfType<PklQualifiedAccessExpr>() ?: return null
     val base = accessExpr.project.pklBaseModule
-    val visitor = ResolveVisitors.firstElementNamed(accessExpr.memberNameText, base)
+    val visitor =
+      ResolveVisitors.firstElementNamed(
+        accessExpr.memberNameText,
+        base,
+      )
+    val context = accessExpr.enclosingModule?.pklProject
     if (accessExpr.receiverExpr is PklModuleExpr) {
       val result =
         Resolvers.resolveUnqualifiedAccess(
@@ -39,11 +44,12 @@ class PklQualifiedAccessReference(private val accessName: PklQualifiedAccessName
           accessExpr.argumentList == null,
           base,
           mapOf(),
-          visitor
+          visitor,
+          context
         )
       if (result != null) return result
     }
-    return accessExpr.resolve(base, null, mapOf(), visitor)
+    return accessExpr.resolve(base, null, mapOf(), visitor, context)
   }
 
   override fun multiResolve(incompleteCode: Boolean): Array<PklResolveResult> {
@@ -54,7 +60,8 @@ class PklQualifiedAccessReference(private val accessName: PklQualifiedAccessName
       base,
       null,
       mapOf(),
-      ResolveVisitors.resolveResultsNamed(accessExpr.memberNameText, base)
+      ResolveVisitors.resolveResultsNamed(accessExpr.memberNameText, base),
+      accessExpr.enclosingModule?.pklProject
     )
   }
 }

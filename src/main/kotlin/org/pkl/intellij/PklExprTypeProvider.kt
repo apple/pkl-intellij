@@ -25,7 +25,7 @@ import org.pkl.intellij.util.escapeXml
 
 class PklExprTypeProvider : ExpressionTypeProvider<PklExpr>() {
   override fun getInformationHint(element: PklExpr): String {
-    val type = element.computeExprType(element.project.pklBaseModule, mapOf())
+    val type = element.computeExprType(element.project.pklBaseModule, mapOf(), null)
     return type.render().escapeXml()
   }
 

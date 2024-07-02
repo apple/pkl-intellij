@@ -25,7 +25,6 @@ import com.intellij.openapi.util.ModificationTracker
 import com.intellij.openapi.vfs.LocalFileSystem
 import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.util.SmartList
-import com.intellij.util.io.systemIndependentPath
 import com.intellij.util.messages.Topic
 import com.jetbrains.rd.util.concurrentMapOf
 import java.net.URI
@@ -36,7 +35,6 @@ import java.nio.file.SimpleFileVisitor
 import java.nio.file.attribute.BasicFileAttributes
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.atomic.AtomicLong
-import kotlin.io.path.absolutePathString
 import kotlin.io.path.name
 import org.jdom.Element
 import org.pkl.intellij.packages.dto.Checksums
@@ -45,6 +43,7 @@ import org.pkl.intellij.packages.dto.PklProject
 import org.pkl.intellij.packages.dto.PklProject.Companion.DerivedProjectMetadata
 import org.pkl.intellij.toolchain.PklEvalException
 import org.pkl.intellij.toolchain.pklCli
+import org.pkl.intellij.util.pklCacheDir
 
 val Project.pklProjectService: PklProjectService
   get() = service()
@@ -76,12 +75,14 @@ class PklProjectService(private val project: Project) :
 
     const val PKL_PROJECT_FILENAME = "PklProject"
     const val PKL_PROJECT_DEPS_FILENAME = "PklProject.deps.json"
+    const val UNKNOWN_PACKAGE_URI = "<UNKNOWN>"
 
     private const val DEPENDENCIES_EXPR =
       """
       new JsonRenderer { omitNullProperties = false }
         .renderValue(new Dynamic {
           projectFileUri = module.projectFileUri
+          packageUri = module.package?.uri
           declaredDependencies = module.dependencies.toMap().mapValues((_, value) ->
             if (value is RemoteDependency) value.uri
             else value.package.uri
@@ -102,6 +103,8 @@ class PklProjectService(private val project: Project) :
   /** All projects, keyed by the project directory. */
   var pklProjects: MutableMap<String, PklProject> = concurrentMapOf()
 
+  private var isOutOfDate: Boolean = false
+
   private val modificationCount: AtomicLong = AtomicLong(0)
 
   fun unsyncProjects() {
@@ -118,13 +121,15 @@ class PklProjectService(private val project: Project) :
    * 3. Download the remote dependencies of each package
    */
   @Suppress("DialogTitleCapitalization")
-  fun syncProjects() =
+  fun syncProjects(basePath: Path? = null) =
     runBackgroundableTask("Sync PklProject", project) { _ ->
       project.messageBus.syncPublisher(PKL_PROJECTS_SYNC_TOPIC).pklProjectSyncStarted()
       pklProjects.clear()
       pklProjectErrors.clear()
-      val pklProjectFiles = discoverProjectFiles()
+      val pklProjectFiles = discoverProjectFiles(basePath?.let { localFs.findFileByNioFile(it) })
       if (pklProjectFiles.isEmpty()) {
+        project.messageBus.syncPublisher(PKL_PROJECTS_SYNC_TOPIC).pklProjectSyncFinished()
+        project.messageBus.syncPublisher(PKL_PROJECTS_TOPIC).pklProjectsUpdated(this, pklProjects)
         return@runBackgroundableTask
       }
       project.pklCli.resolveProject(pklProjectFiles.map { it.parent.toNioPath() })
@@ -134,30 +139,29 @@ class PklProjectService(private val project: Project) :
           projectFile to metadata
         }
       for ((projectFile, metadata) in metadatas) {
-        val key = projectFile.projectDirKey()
+        val key = projectFile.projectKey
         val projectDir = projectFile.parent
         try {
           val resolvedDepsPath = projectDir.findFileByRelativePath(PKL_PROJECT_DEPS_FILENAME)
           val resolvedDeps = resolvedDepsPath?.let { PklProject.loadProjectDeps(it) }
           val pklProject = PklProject(metadata, resolvedDeps)
           pklProjects[key] = pklProject
-          pklProject.projectPackageCacheDirPath?.let { cacheDir ->
-            doDownloadDependencies(pklProject, cacheDir)
-          }
+          pklCacheDir?.let { cacheDir -> doDownloadDependencies(pklProject, cacheDir.toNioPath()) }
         } catch (e: PklEvalException) {
           pklProjectErrors[key] = e
         }
       }
+      isOutOfDate = false
       modificationCount.getAndIncrement()
       project.messageBus.syncPublisher(PKL_PROJECTS_SYNC_TOPIC).pklProjectSyncFinished()
       project.messageBus.syncPublisher(PKL_PROJECTS_TOPIC).pklProjectsUpdated(this, pklProjects)
     }
 
   fun getPklProject(file: VirtualFile): PklProject? =
-    if (file.fileSystem !is LocalFileSystem) null else pklProjects[file.projectDirKey()]
+    if (file.fileSystem !is LocalFileSystem) null else pklProjects[file.projectKey]
 
   fun getError(file: VirtualFile): Throwable? =
-    if (file.fileSystem !is LocalFileSystem) null else pklProjectErrors[file.projectDirKey()]
+    if (file.fileSystem !is LocalFileSystem) null else pklProjectErrors[file.projectKey]
 
   private fun doDownloadDependencies(pklProject: PklProject, cacheDir: Path) {
     val packageUris =
@@ -193,6 +197,10 @@ class PklProjectService(private val project: Project) :
     for ((_, project) in pklProjects) {
       val projectElement = Element("pkl-project")
       projectElement.setAttribute("project-file-uri", project.metadata.projectFileUri)
+      projectElement.setAttribute(
+        "package-uri",
+        project.metadata.packageUri?.toString() ?: UNKNOWN_PACKAGE_URI
+      )
       for ((key, value) in project.metadata.declaredDependencies) {
         val dependency =
           Element("declared-dependency").apply {
@@ -236,14 +244,22 @@ class PklProjectService(private val project: Project) :
         val elems = state.getChildren("pkl-project")
         for (elem in elems) {
           val project = loadProjectFromState(elem)
-          val dir = Path.of(URI(project.metadata.projectFileUri)).parent.absolutePathString()
-          put(dir, project)
+          put(project.metadata.projectFileUri, project)
         }
       }
     project.messageBus.syncPublisher(PKL_PROJECTS_TOPIC).pklProjectsUpdated(this, pklProjects)
   }
 
   private fun loadProjectFromState(elem: Element): PklProject {
+    // attribute package-uri got added to workspace state in pkl-intellij 0.28. If not present, show
+    // as out-of-date,
+    // which causes a banner to appear (see PklSyncProjectNotificationProvider)
+    val packageUriValue = elem.getAttributeValue("package-uri")
+    if (packageUriValue == null) {
+      isOutOfDate = true
+    }
+    val packageUri =
+      packageUriValue?.let { if (it == UNKNOWN_PACKAGE_URI) null else PackageUri.create(it) }
     val projectFileUri = elem.getAttributeValue("project-file-uri")
     val declaredDependencies =
       buildMap<String, PackageUri> {
@@ -282,7 +298,8 @@ class PklProjectService(private val project: Project) :
         PklProject.Companion.EvaluatorSettings(moduleCacheDir)
       }
         ?: PklProject.Companion.EvaluatorSettings()
-    val metadata = DerivedProjectMetadata(projectFileUri, declaredDependencies, evaluatorSettings)
+    val metadata =
+      DerivedProjectMetadata(projectFileUri, packageUri, declaredDependencies, evaluatorSettings)
     val projectDeps =
       if (resolvedDependencies.isNotEmpty())
         PklProject.Companion.ProjectDeps(1, resolvedDependencies)
@@ -290,13 +307,13 @@ class PklProjectService(private val project: Project) :
     return PklProject(metadata, projectDeps)
   }
 
-  private fun discoverProjectFiles(): List<VirtualFile> {
-    val projectDir = project.guessProjectDir() ?: return emptyList()
+  private fun discoverProjectFiles(projectDir: VirtualFile?): List<VirtualFile> {
+    val resolvedProjectDir = projectDir ?: project.guessProjectDir() ?: return emptyList()
     val fut = CompletableFuture<List<VirtualFile>>()
     runBackgroundableTask("Discover PklProject files") {
       val result = SmartList<VirtualFile>()
       Files.walkFileTree(
-        projectDir.toNioPath(),
+        resolvedProjectDir.toNioPath(),
         object : SimpleFileVisitor<Path>() {
           override fun visitFile(file: Path, attrs: BasicFileAttributes): FileVisitResult {
             if (file.name == PKL_PROJECT_FILENAME) {
@@ -326,8 +343,8 @@ class PklProjectService(private val project: Project) :
    */
   private var pklProjectErrors: MutableMap<String, Throwable> = concurrentMapOf()
 
-  private fun VirtualFile.projectDirKey(): String =
-    if (name == PKL_PROJECT_FILENAME) parent.projectDirKey() else toNioPath().systemIndependentPath
+  private val VirtualFile.projectKey
+    get(): String = if (name == PKL_PROJECT_FILENAME) url else "$url/PklProject"
 
   private fun getProjectMetadatas(projectFiles: List<VirtualFile>): List<DerivedProjectMetadata> {
     val output =
@@ -341,4 +358,8 @@ class PklProjectService(private val project: Project) :
   }
 
   override fun getModificationCount(): Long = modificationCount.get()
+
+  fun isOutOfDate(): Boolean {
+    return isOutOfDate
+  }
 }

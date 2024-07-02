@@ -26,6 +26,7 @@ import com.intellij.refactoring.suggested.endOffset
 import com.intellij.refactoring.suggested.startOffset
 import org.pkl.intellij.PklVersion
 import org.pkl.intellij.intention.*
+import org.pkl.intellij.packages.dto.PklProject
 import org.pkl.intellij.psi.*
 import org.pkl.intellij.resolve.ResolveVisitors
 import org.pkl.intellij.resolve.Resolvers
@@ -39,8 +40,9 @@ class PklExprAnnotator : PklAnnotator() {
     val module = holder.currentModule
     val project = module.project
     val base = project.pklBaseModule
+    val context = element.enclosingModule?.pklProject
 
-    val expectedType = element.inferExprTypeFromContext(base, mapOf())
+    val expectedType = element.inferExprTypeFromContext(base, mapOf(), context)
     checkExprType(element, expectedType, base, holder)
 
     element.accept(
@@ -48,7 +50,11 @@ class PklExprAnnotator : PklAnnotator() {
         override fun visitUnqualifiedAccessExpr(element: PklUnqualifiedAccessExpr) {
           // don't resolve imports because whether import resolves is a separate issue/check
           val visitor =
-            ResolveVisitors.firstElementNamed(element.memberNameText, base, resolveImports = false)
+            ResolveVisitors.firstElementNamed(
+              element.memberNameText,
+              base,
+              resolveImports = false,
+            )
           // resolving unqualified access may not require `this` type so don't compute/pass it
           // upfront
           val (target, lookupMode) =
@@ -56,18 +62,19 @@ class PklExprAnnotator : PklAnnotator() {
               base,
               null,
               mapOf(),
-              visitor
+              visitor,
+              context
             )
           when (target) {
             null -> {
-              val thisType = element.computeThisType(base, mapOf())
+              val thisType = element.computeThisType(base, mapOf(), context)
               if (
                 thisType == Type.Unknown ||
                   (thisType == base.dynamicType && element.isPropertyAccess)
               ) {
                 return // don't flag
               }
-              reportUnresolvedAccess(element, thisType, base, holder)
+              reportUnresolvedAccess(element, thisType, base, holder, context)
             }
             is PklMethod -> {
               checkConstAccess(element, target, holder, lookupMode)
@@ -89,7 +96,7 @@ class PklExprAnnotator : PklAnnotator() {
         }
 
         override fun visitQualifiedAccessExpr(element: PklQualifiedAccessExpr) {
-          val receiverType = element.receiverExpr.computeExprType(base, mapOf())
+          val receiverType = element.receiverExpr.computeExprType(base, mapOf(), context)
           if (
             receiverType == Type.Unknown ||
               (receiverType == base.dynamicType && element.isPropertyAccess)
@@ -97,10 +104,14 @@ class PklExprAnnotator : PklAnnotator() {
             return // don't flag
           }
 
-          val visitor = ResolveVisitors.firstElementNamed(element.memberNameText, base)
-          when (val target = element.resolve(base, receiverType, mapOf(), visitor)) {
+          val visitor =
+            ResolveVisitors.firstElementNamed(
+              element.memberNameText,
+              base,
+            )
+          when (val target = element.resolve(base, receiverType, mapOf(), visitor, context)) {
             null -> {
-              reportUnresolvedAccess(element, receiverType, base, holder)
+              reportUnresolvedAccess(element, receiverType, base, holder, context)
             }
             is PklMethod -> {
               checkConstQualifiedAccess(element, target, holder)
@@ -116,7 +127,8 @@ class PklExprAnnotator : PklAnnotator() {
                         element.receiverExpr,
                         base.listingToListMethod,
                         base,
-                        holder
+                        holder,
+                        context
                       )
                     }
                   }
@@ -130,7 +142,8 @@ class PklExprAnnotator : PklAnnotator() {
                         element.receiverExpr,
                         base.mappingToMapMethod,
                         base,
-                        holder
+                        holder,
+                        context
                       )
                     }
                   }
@@ -155,7 +168,8 @@ class PklExprAnnotator : PklAnnotator() {
                         element.receiverExpr,
                         base.listingToListMethod,
                         base,
-                        holder
+                        holder,
+                        context
                       )
                     }
                   }
@@ -169,7 +183,8 @@ class PklExprAnnotator : PklAnnotator() {
                         element.receiverExpr,
                         base.mappingToMapMethod,
                         base,
-                        holder
+                        holder,
+                        context
                       )
                     }
                   }
@@ -181,15 +196,19 @@ class PklExprAnnotator : PklAnnotator() {
         }
 
         override fun visitSuperAccessExpr(element: PklSuperAccessExpr) {
-          val thisType = element.computeThisType(base, mapOf())
+          val thisType = element.computeThisType(base, mapOf(), context)
           if (
             thisType == Type.Unknown || (thisType == base.dynamicType && element.isPropertyAccess)
           )
             return // don't flag
 
-          val visitor = ResolveVisitors.firstElementNamed(element.memberNameText, base)
-          val target = element.resolve(base, thisType, mapOf(), visitor)
-          if (target == null) reportUnresolvedAccess(element, thisType, base, holder)
+          val visitor =
+            ResolveVisitors.firstElementNamed(
+              element.memberNameText,
+              base,
+            )
+          val target = element.resolve(base, thisType, mapOf(), visitor, context)
+          if (target == null) reportUnresolvedAccess(element, thisType, base, holder, context)
           when (target) {
             is PklProperty -> checkConstAccess(element.memberName, target, holder, null)
             is PklMethod -> checkConstAccess(element.memberName, target, holder, null)
@@ -200,13 +219,13 @@ class PklExprAnnotator : PklAnnotator() {
           val type =
             when (element.type) {
               null -> expectedType
-              else -> element.type.toType(base, mapOf())
+              else -> element.type.toType(base, mapOf(), element.enclosingModule?.pklProject)
             }
           checkIsInstantiable(element, type, base, holder)
         }
 
         override fun visitAmendExpr(element: PklAmendExpr) {
-          val elementType = element.parentExpr.computeExprType(base, mapOf())
+          val elementType = element.parentExpr.computeExprType(base, mapOf(), context)
           checkIsAmendable(element, elementType, base, holder)
           if (element.updateInstantiationSyntax(project, isDryRun = true)) {
             val annotation =
@@ -233,23 +252,23 @@ class PklExprAnnotator : PklAnnotator() {
         }
 
         override fun visitTypeTestExpr(element: PklTypeTestExpr) {
-          val exprType = element.expr.computeExprType(base, mapOf())
-          val testedType = element.type.toType(base, mapOf())
+          val exprType = element.expr.computeExprType(base, mapOf(), context)
+          val testedType = element.type.toType(base, mapOf(), context)
           if (testedType.hasConstraints) return
-          if (exprType != Type.Unknown && exprType.isSubtypeOf(testedType, base)) {
+          if (exprType != Type.Unknown && exprType.isSubtypeOf(testedType, base, context)) {
             holder.newAnnotation(HighlightSeverity.WARNING, "Expression is always 'true'").create()
-          } else if (!testedType.isSubtypeOf(exprType, base)) {
+          } else if (!testedType.isSubtypeOf(exprType, base, context)) {
             holder.newAnnotation(HighlightSeverity.WARNING, "Expression is always 'false'").create()
           }
         }
 
         override fun visitTypeCastExpr(element: PklTypeCastExpr) {
-          val exprType = element.expr.computeExprType(base, mapOf())
-          val testedType = element.type.toType(base, mapOf())
+          val exprType = element.expr.computeExprType(base, mapOf(), context)
+          val testedType = element.type.toType(base, mapOf(), context)
           if (
             !testedType.hasConstraints &&
               exprType != Type.Unknown &&
-              exprType.isSubtypeOf(testedType, base)
+              exprType.isSubtypeOf(testedType, base, context)
           ) {
             val annotation =
               holder
@@ -261,8 +280,8 @@ class PklExprAnnotator : PklAnnotator() {
             }
             annotation.create()
           } else if (
-            !testedType.isSubtypeOf(exprType, base) &&
-              !testedType.hasCommonSubtypeWith(exprType, base)
+            !testedType.isSubtypeOf(exprType, base, context) &&
+              !testedType.hasCommonSubtypeWith(exprType, base, context)
           ) {
             holder
               .newAnnotation(HighlightSeverity.ERROR, "Type cast cannot succeed")
@@ -272,7 +291,7 @@ class PklExprAnnotator : PklAnnotator() {
         }
 
         override fun visitNullCoalesceBinExpr(element: PklNullCoalesceBinExpr) {
-          val leftType = element.leftExpr.computeExprType(base, mapOf())
+          val leftType = element.leftExpr.computeExprType(base, mapOf(), context)
           if (!leftType.isNullable(base)) {
             val rightExpr = element.rightExpr ?: return
             val annotation =
@@ -288,7 +307,7 @@ class PklExprAnnotator : PklAnnotator() {
         }
 
         override fun visitNonNullAssertionExpr(element: PklNonNullAssertionExpr) {
-          val type = element.expr.computeExprType(base, mapOf())
+          val type = element.expr.computeExprType(base, mapOf(), context)
           if (!type.isNullable(base)) {
             val annotation =
               holder
@@ -535,13 +554,18 @@ class PklExprAnnotator : PklAnnotator() {
     expr: PklExpr,
     conversionMethod: PklClassMethod,
     base: PklBaseModule,
-    holder: AnnotationHolder
+    holder: AnnotationHolder,
+    context: PklProject?
   ) {
     if (expr !is PklQualifiedAccessExpr) return
 
     val methodName = expr.memberNameText
-    val visitor = ResolveVisitors.firstElementNamed(methodName, base)
-    val target = expr.resolve(base, null, mapOf(), visitor)
+    val visitor =
+      ResolveVisitors.firstElementNamed(
+        methodName,
+        base,
+      )
+    val target = expr.resolve(base, null, mapOf(), visitor, context)
     if (target == conversionMethod) {
       val annotation =
         holder
@@ -619,10 +643,11 @@ class PklExprAnnotator : PklAnnotator() {
     expr: PklAccessExpr,
     receiverType: Type,
     base: PklBaseModule,
-    holder: AnnotationHolder
+    holder: AnnotationHolder,
+    context: PklProject?
   ) {
     createAnnotation(
-      if (receiverType.isUnresolvedMemberFatal(base)) HighlightSeverity.ERROR
+      if (receiverType.isUnresolvedMemberFatal(base, context)) HighlightSeverity.ERROR
       else HighlightSeverity.WARNING,
       expr.memberName.textRange,
       "Unresolved reference: ${expr.memberNameText}",

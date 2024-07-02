@@ -76,7 +76,16 @@ class PklStringLiteralInjector : MultiHostInjector {
     val project = context.project
     val base = project.pklBaseModule
     val resolved =
-      accessExpr.resolve(base, null, mapOf(), ResolveVisitors.firstElementNamed("Regex", base))
+      accessExpr.resolve(
+        base,
+        null,
+        mapOf(),
+        ResolveVisitors.firstElementNamed(
+          "Regex",
+          base,
+        ),
+        accessExpr.enclosingModule?.pklProject
+      )
     return resolved == base.regexConstructor
   }
 
@@ -86,10 +95,11 @@ class PklStringLiteralInjector : MultiHostInjector {
     val property = context.parent?.parent
     if (property !is PklProperty) return null
 
+    val projectContext = context.enclosingModule?.pklProject
     val propertyDef =
       when {
-        property is PklClassProperty && property.isDefinition -> property
-        else -> property.propertyName.reference?.resolve() as? PklClassProperty ?: return null
+        property is PklClassProperty && property.isDefinition(projectContext) -> property
+        else -> property.propertyName.resolve(projectContext) as? PklClassProperty ?: return null
       }
     return propertyDef.annotationList.sourceCode
   }

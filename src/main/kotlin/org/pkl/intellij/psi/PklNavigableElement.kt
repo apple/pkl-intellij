@@ -19,6 +19,7 @@ import com.intellij.codeInsight.lookup.LookupElement
 import com.intellij.navigation.NavigationItem
 import com.intellij.psi.PsiElement
 import com.intellij.psi.PsiNameIdentifierOwner
+import org.pkl.intellij.packages.dto.PklProject
 import org.pkl.intellij.type.Type
 import org.pkl.intellij.type.TypeParameterBindings
 
@@ -35,5 +36,9 @@ interface PklNavigableElement : PklElement, PsiNameIdentifierOwner, NavigationIt
   }
 
   /** Returns the type displayed when this element appears in a [LookupElement]. */
-  fun getLookupElementType(base: PklBaseModule, bindings: TypeParameterBindings): Type
+  fun getLookupElementType(
+    base: PklBaseModule,
+    bindings: TypeParameterBindings,
+    context: PklProject?
+  ): Type
 }
