@@ -290,7 +290,7 @@ class PklDocumentationProvider : AbstractDocumentationProvider() {
           val computedType =
             Resolvers.resolveUnqualifiedAccess(
               originalElement,
-              null,
+              element.computeThisType(base, mapOf()),
               true,
               element.project.pklBaseModule,
               mapOf(),
