@@ -20,6 +20,7 @@ import com.intellij.testFramework.fixtures.impl.TempDirTestFixtureImpl
 import java.nio.file.Path
 import java.util.concurrent.CompletableFuture
 import org.assertj.core.api.Assertions.assertThat
+import org.pkl.intellij.PklTestCase
 import org.pkl.intellij.packages.PklProjectService.Companion.PKL_PROJECTS_SYNC_TOPIC
 import org.pkl.intellij.packages.PklProjectSyncListener
 import org.pkl.intellij.packages.pklProjectService
@@ -27,10 +28,8 @@ import org.pkl.intellij.psi.PklClassProperty
 import org.pkl.intellij.psi.PklModule
 import org.pkl.intellij.psi.PklModuleUriReference
 import org.pkl.intellij.psi.enclosingModule
-import org.pkl.intellij.settings.PklSettingsService
-import org.pkl.intellij.settings.pklSettings
 
-class LocalProjectResolveTest : BasePlatformTestCase() {
+class LocalProjectResolveTest : PklTestCase() {
   private fun syncProjects() {
     val fut = CompletableFuture<Any>()
     myFixture.project.messageBus
@@ -53,12 +52,7 @@ class LocalProjectResolveTest : BasePlatformTestCase() {
 
   override fun setUp() {
     super.setUp()
-    System.getProperty("pklExecutable")?.let { prop ->
-      val pklSettings = PklSettingsService.getInstance(project)
-      pklSettings.state.pklPath = prop
-    }
     // copy all files in resources/completion/projects into the ephemeral test project
-
     myFixture.copyDirectoryToProject("", "")
     syncProjects()
   }

@@ -15,13 +15,13 @@
  */
 package org.pkl.intellij.completion
 
-import com.intellij.testFramework.fixtures.BasePlatformTestCase
 import org.assertj.core.api.Assertions.assertThat
 import org.pkl.intellij.PklFileType
+import org.pkl.intellij.PklTestCase
 import org.pkl.intellij.packages.dto.PackageUri
 import org.pkl.intellij.packages.pklPackageService
 
-class CompletionTest : BasePlatformTestCase() {
+class CompletionTest : PklTestCase() {
   fun `test complete from lexical scope`() {
     myFixture.configureByText(
       PklFileType,
