@@ -1,4 +1,4 @@
-amends ".../pkl-project-commons/packages/pkl.impl.circleci/PklCI.pkl"
+amends "package://pkg.pkl-lang.org/pkl-project-commons/pkl.impl.circleci@1.1.1#/PklCI.pkl"
 
 prb = buildWorkflow
 
@@ -18,31 +18,32 @@ release {
   }
 }
 
-jobs {
-  ["build"] {
-    docker {
-      new {
-        image = "cimg/openjdk:17.0"
-      }
-    }
-    steps {
-      "checkout"
-      new RunStep {
-        command = "./gradlew --info --stacktrace build"
-      }
+local baseJob: Job = new {
+  docker {
+    new {
+      image = "cimg/openjdk:17.0"
     }
   }
-  ["build-publish"] {
-    docker {
-      new {
-        image = "cimg/openjdk:17.0"
-      }
-    }
+  steps {
+    "checkout"
+  }
+}
+
+jobs {
+  ["build"] = (baseJob) {
     steps {
-      "checkout"
       new RunStep {
-        command = "./gradlew -DreleaseBuild=true --info --stacktrace build publish"
+        command = "./gradlew --info --stacktrace -DtestReportsDir=${HOME}/test-results build"
       }
+      new StoreTestResults { path = "~/test-results" }
+    }
+  }
+  ["build-publish"] = (baseJob) {
+    steps {
+      new RunStep {
+        command = "./gradlew -DreleaseBuild=true --info --stacktrace -DtestReportsDir=${HOME}/test-results build publish"
+      }
+      new StoreTestResults { path = "~/test-results" }
       new PersistToWorkspaceStep {
         root = "."
         paths {
