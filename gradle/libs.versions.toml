@@ -29,11 +29,11 @@ pklStdLib = "0.26.0"
 spotless = "6.21.0"
 
 [libraries] # ordered alphabetically
+assertj = { group = "org.assertj", name = "assertj-core", version.ref = "assertj" }
+pklCli = { group = "org.pkl-lang", name = "pkl-cli-java", version.ref = "pklStdLib" }
 pklStdLib = { group = "org.pkl-lang", name = "pkl-stdlib", version.ref = "pklStdLib" }
 kotlinxJson = { group = "org.jetbrains.kotlinx", name = "kotlinx-serialization-json", version.ref = "kotlinx" }
 kotlinReflect = { group = "org.jetbrains.kotlin", name = "kotlin-reflect", version.ref = "kotlin" }
-assertj = { group = "org.assertj", name = "assertj-core", version.ref = "assertj" }
-pklCli = { group = "org.pkl-lang", name = "pkl-cli-java", version.ref = "pklStdLib" }
 
 [plugins] # ordered alphabetically
 grammarKit = { id = "org.jetbrains.grammarkit", version.ref = "grammarKitPlugin" }

@@ -350,8 +350,8 @@ fun <T> PklElement.getContextualCachedValue(
   provider: CachedValueProvider<T>
 ): T {
   val manager = CachedValuesManager.getManager(project)
-  // Optimization: if the context is null, or if this element is not in a project or a package, no need to
-  // create a new CachedValueProvider.
+  // Optimization: if the context is null, or if this element is not in a project or a package, no
+  // need to create a new CachedValueProvider.
   if (
     context == null || (enclosingModule?.isInPackage ?: enclosingModule?.isInPklProject) != true
   ) {
