@@ -54,9 +54,7 @@ class PklDocumentationProvider : AbstractDocumentationProvider() {
       val docComment = (element as? PklDocCommentOwner)?.effectiveDocComment()
       if (docComment != null) {
         append(DocumentationMarkup.CONTENT_START)
-        append(renderDocComment(docComment)
-          .removePrefix("<body>")
-          .removeSuffix("</body>"))
+        append(renderDocComment(docComment).removePrefix("<body>").removeSuffix("</body>"))
         append(DocumentationMarkup.CONTENT_END)
       }
     }
