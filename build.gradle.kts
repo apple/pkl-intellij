@@ -166,7 +166,7 @@ val configurePklCliExecutable by tasks.registering {
 
 tasks.test {
   dependsOn(configurePklCliExecutable)
-  jvmArgs("-DpklExecutable=${pklCli.singleFile.absolutePath}")
+  systemProperties["pklExecutable"] = pklCli.singleFile.absolutePath
   System.getProperty("testReportsDir")?.let { reportsDir ->
     reports.junitXml.outputLocation.set(file(reportsDir).resolve(project.name).resolve(name))
   }
