@@ -16,11 +16,38 @@
 package org.pkl.intellij
 
 import com.intellij.testFramework.fixtures.BasePlatformTestCase
+import java.nio.file.Path
+import java.util.concurrent.CompletableFuture
+import org.pkl.intellij.packages.PklProjectService.Companion.PKL_PROJECTS_SYNC_TOPIC
+import org.pkl.intellij.packages.PklProjectSyncListener
+import org.pkl.intellij.packages.pklProjectService
 import org.pkl.intellij.settings.pklSettings
 
 abstract class PklTestCase : BasePlatformTestCase() {
   override fun setUp() {
     super.setUp()
+    // copy all files in the fixtures dir into the ephemeral test project
+    myFixture.copyDirectoryToProject("", "")
     System.getProperty("pklExecutable")?.let { project.pklSettings.state.pklPath = it }
+  }
+
+  protected fun syncProjects() {
+    val fut = CompletableFuture<Any>()
+    myFixture.project.messageBus
+      .connect()
+      .subscribe(
+        PKL_PROJECTS_SYNC_TOPIC,
+        object : PklProjectSyncListener {
+          override fun pklProjectSyncStarted() {
+            // no-op
+          }
+
+          override fun pklProjectSyncFinished() {
+            fut.complete(null)
+          }
+        }
+      )
+    myFixture.project.pklProjectService.syncProjects(Path.of(myFixture.tempDirPath))
+    fut.get()
   }
 }
