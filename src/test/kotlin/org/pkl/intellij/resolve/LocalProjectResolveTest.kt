@@ -54,9 +54,11 @@ class LocalProjectResolveTest : BasePlatformTestCase() {
   override fun setUp() {
     super.setUp()
     System.getProperty("pklExecutable")?.let { prop ->
-      myFixture.project.pklSettings.loadState(PklSettingsService.State(pklPath = prop))
+      val pklSettings = PklSettingsService.getInstance(project)
+      pklSettings.state.pklPath = prop
     }
     // copy all files in resources/completion/projects into the ephemeral test project
+
     myFixture.copyDirectoryToProject("", "")
     syncProjects()
   }
