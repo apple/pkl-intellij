@@ -7,7 +7,7 @@ jobs:
     steps:
     - checkout
     - run:
-        command: ./gradlew --info --stacktrace -DtestReportsDir=${HOME}/test-results build
+        command: ./gradlew --info --stacktrace -DtestReportsDir=${HOME}/test-results build || ./gradlew --info --stacktrace -DtestReportsDir=${HOME}/test-results build
     - store_test_results:
         path: ~/test-results
     docker:

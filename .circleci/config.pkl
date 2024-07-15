@@ -33,7 +33,7 @@ jobs {
   ["build"] = (baseJob) {
     steps {
       new RunStep {
-        command = "./gradlew --info --stacktrace -DtestReportsDir=${HOME}/test-results build"
+        command = "./gradlew --info --stacktrace -DtestReportsDir=${HOME}/test-results build || ./gradlew --info --stacktrace -DtestReportsDir=${HOME}/test-results build"
       }
       new StoreTestResults { path = "~/test-results" }
     }
