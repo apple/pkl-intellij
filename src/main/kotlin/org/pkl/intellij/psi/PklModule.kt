@@ -90,6 +90,15 @@ interface PklModule : PsiFile, PklTypeDefOrModule {
 
   val `package`: PackageDependency?
 
+  /** Tells if this module is an ancestor of a directory that contains a PklProject file. */
+  val isInPklProject: Boolean
+
+  /**
+   * The closest synced PklProject for this module.
+   *
+   * Value is `null` if the module is either not inside a Pkl project, or if the project has not
+   * been synced.
+   */
   val pklProject: PklProject?
 
   /**

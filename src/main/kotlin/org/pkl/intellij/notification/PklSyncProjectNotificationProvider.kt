@@ -20,13 +20,14 @@ import com.intellij.openapi.diagnostic.thisLogger
 import com.intellij.openapi.fileEditor.FileEditor
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.vfs.VirtualFile
+import com.intellij.psi.PsiManager
 import com.intellij.ui.EditorNotificationProvider
 import com.intellij.ui.EditorNotifications
 import java.util.function.Function
 import javax.swing.JComponent
 import org.pkl.intellij.packages.*
-import org.pkl.intellij.packages.PklProjectService.Companion.PKL_PROJECT_FILENAME
 import org.pkl.intellij.packages.dto.PklProject
+import org.pkl.intellij.psi.PklModule
 import org.pkl.intellij.toolchain.pklCli
 
 class PklSyncProjectNotificationProvider(project: Project) : EditorNotificationProvider {
@@ -58,11 +59,13 @@ class PklSyncProjectNotificationProvider(project: Project) : EditorNotificationP
     file: VirtualFile
   ): Function<in FileEditor, out JComponent?> {
     return Function { _ ->
-      if (file.name != PKL_PROJECT_FILENAME) return@Function null
       if (ScratchUtil.isScratch(file)) return@Function null
       if (!project.pklCli.isAvailable()) return@Function null
+      val psiFile = PsiManager.getInstance(project).findFile(file)
+      if (psiFile !is PklModule) return@Function null
+      if (!psiFile.isInPklProject) return@Function null
       val pklProject =
-        project.pklProjectService.getPklProject(file)
+        psiFile.pklProject
           ?: return@Function PklEditorNotificationPanel().apply {
             val error = project.pklProjectService.getError(file)
             if (error != null) {

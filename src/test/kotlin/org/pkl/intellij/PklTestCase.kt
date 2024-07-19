@@ -15,20 +15,37 @@
  */
 package org.pkl.intellij
 
-import com.intellij.testFramework.fixtures.BasePlatformTestCase
+import com.intellij.openapi.Disposable
+import com.intellij.testFramework.builders.ModuleFixtureBuilder
+import com.intellij.testFramework.fixtures.CodeInsightFixtureTestCase
 import java.nio.file.Path
 import java.util.concurrent.CompletableFuture
+import kotlin.io.path.ExperimentalPathApi
+import kotlin.io.path.copyToRecursively
+import kotlin.io.path.createDirectories
 import org.pkl.intellij.packages.PklProjectService.Companion.PKL_PROJECTS_SYNC_TOPIC
 import org.pkl.intellij.packages.PklProjectSyncListener
 import org.pkl.intellij.packages.pklProjectService
 import org.pkl.intellij.settings.pklSettings
 
-abstract class PklTestCase : BasePlatformTestCase() {
+@OptIn(ExperimentalPathApi::class)
+abstract class PklTestCase : CodeInsightFixtureTestCase<ModuleFixtureBuilder<*>>() {
+
+  open val fixtureDir: Path? = null
+
   override fun setUp() {
     super.setUp()
+    val projectDir = myFixture.findFileInTempDir(".")
     // copy all files in the fixtures dir into the ephemeral test project
-    myFixture.copyDirectoryToProject("", "")
+    fixtureDir?.copyToRecursively(
+      projectDir.toNioPath().apply { parent.createDirectories() },
+      followLinks = false
+    )
     System.getProperty("pklExecutable")?.let { project.pklSettings.state.pklPath = it }
+  }
+
+  override fun getTestRootDisposable(): Disposable {
+    return myFixture?.testRootDisposable ?: super.getTestRootDisposable()
   }
 
   protected fun syncProjects() {
@@ -47,7 +64,7 @@ abstract class PklTestCase : BasePlatformTestCase() {
           }
         }
       )
-    myFixture.project.pklProjectService.syncProjects(Path.of(myFixture.tempDirPath))
+    myFixture.project.pklProjectService.syncProjects()
     fut.get()
   }
 }

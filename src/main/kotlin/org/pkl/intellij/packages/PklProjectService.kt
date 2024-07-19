@@ -20,23 +20,21 @@ import com.intellij.openapi.diagnostic.logger
 import com.intellij.openapi.externalSystem.autoimport.ExternalSystemProjectTracker
 import com.intellij.openapi.progress.runBackgroundableTask
 import com.intellij.openapi.project.Project
-import com.intellij.openapi.project.guessProjectDir
+import com.intellij.openapi.project.modules
+import com.intellij.openapi.roots.ModuleRootManager
 import com.intellij.openapi.util.ModificationTracker
 import com.intellij.openapi.vfs.LocalFileSystem
+import com.intellij.openapi.vfs.VfsUtil
 import com.intellij.openapi.vfs.VirtualFile
-import com.intellij.util.SmartList
 import com.intellij.util.messages.Topic
 import com.jetbrains.rd.util.concurrentMapOf
 import java.net.URI
-import java.nio.file.FileVisitResult
-import java.nio.file.Files
 import java.nio.file.Path
-import java.nio.file.SimpleFileVisitor
-import java.nio.file.attribute.BasicFileAttributes
-import java.util.concurrent.CompletableFuture
+import java.util.*
 import java.util.concurrent.atomic.AtomicLong
 import kotlin.io.path.name
 import org.jdom.Element
+import org.pkl.intellij.PklFileType
 import org.pkl.intellij.packages.dto.Checksums
 import org.pkl.intellij.packages.dto.PackageUri
 import org.pkl.intellij.packages.dto.PklProject
@@ -121,12 +119,12 @@ class PklProjectService(private val project: Project) :
    * 3. Download the remote dependencies of each package
    */
   @Suppress("DialogTitleCapitalization")
-  fun syncProjects(basePath: Path? = null) =
+  fun syncProjects() =
     runBackgroundableTask("Sync PklProject", project) { _ ->
       project.messageBus.syncPublisher(PKL_PROJECTS_SYNC_TOPIC).pklProjectSyncStarted()
       pklProjects.clear()
       pklProjectErrors.clear()
-      val pklProjectFiles = discoverProjectFiles(basePath?.let { localFs.findFileByNioFile(it) })
+      val pklProjectFiles = discoverProjectFiles()
       if (pklProjectFiles.isEmpty()) {
         project.messageBus.syncPublisher(PKL_PROJECTS_SYNC_TOPIC).pklProjectSyncFinished()
         project.messageBus.syncPublisher(PKL_PROJECTS_TOPIC).pklProjectsUpdated(this, pklProjects)
@@ -307,25 +305,22 @@ class PklProjectService(private val project: Project) :
     return PklProject(metadata, projectDeps)
   }
 
-  private fun discoverProjectFiles(projectDir: VirtualFile?): List<VirtualFile> {
-    val resolvedProjectDir = projectDir ?: project.guessProjectDir() ?: return emptyList()
-    val fut = CompletableFuture<List<VirtualFile>>()
-    runBackgroundableTask("Discover PklProject files") {
-      val result = SmartList<VirtualFile>()
-      Files.walkFileTree(
-        resolvedProjectDir.toNioPath(),
-        object : SimpleFileVisitor<Path>() {
-          override fun visitFile(file: Path, attrs: BasicFileAttributes): FileVisitResult {
-            if (file.name == PKL_PROJECT_FILENAME) {
-              result.add(LocalFileSystem.getInstance().findFileByNioFile(file))
+  private fun discoverProjectFiles(): List<VirtualFile> {
+    return project.modules
+      .toList()
+      .flatMap { ModuleRootManager.getInstance(it).contentRoots.toList() }
+      .flatMap { contentRoot ->
+        // no need for async here because we are already inside a background task.
+        contentRoot.refresh(false, true)
+        buildList {
+          VfsUtil.processFileRecursivelyWithoutIgnored(contentRoot) { file ->
+            if (file.fileType == PklFileType && file.name == PKL_PROJECT_FILENAME) {
+              add(file)
             }
-            return FileVisitResult.CONTINUE
+            true
           }
         }
-      )
-      fut.complete(result)
-    }
-    return fut.get()
+      }
   }
 
   private fun registerProjectAware() {
