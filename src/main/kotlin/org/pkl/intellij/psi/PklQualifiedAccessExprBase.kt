@@ -16,6 +16,7 @@
 package org.pkl.intellij.psi
 
 import com.intellij.lang.ASTNode
+import org.pkl.intellij.packages.dto.PklProject
 import org.pkl.intellij.resolve.ResolveVisitor
 import org.pkl.intellij.resolve.Resolvers
 import org.pkl.intellij.type.Type
@@ -28,9 +29,16 @@ abstract class PklQualifiedAccessExprBase(node: ASTNode) :
     base: PklBaseModule,
     receiverType: Type?,
     bindings: TypeParameterBindings,
-    visitor: ResolveVisitor<R>
+    visitor: ResolveVisitor<R>,
+    context: PklProject?
   ): R {
-    val myReceiverType = receiverType ?: receiverExpr.computeExprType(base, bindings)
-    return Resolvers.resolveQualifiedAccess(myReceiverType, isPropertyAccess, base, visitor)
+    val myReceiverType = receiverType ?: receiverExpr.computeExprType(base, bindings, context)
+    return Resolvers.resolveQualifiedAccess(
+      myReceiverType,
+      isPropertyAccess,
+      base,
+      visitor,
+      context
+    )
   }
 }

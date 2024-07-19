@@ -18,10 +18,13 @@ package org.pkl.intellij.psi
 import com.intellij.openapi.util.TextRange
 import com.intellij.psi.ElementManipulators
 import com.intellij.psi.PsiReferenceBase
+import org.pkl.intellij.packages.dto.PklProject
 
-class PklModuleReference(source: PklElement) : PsiReferenceBase<PklElement>(source) {
+class PklModuleReference(source: PklElement) : PsiReferenceBase<PklElement>(source), PklReference {
   override fun getRangeInElement(): TextRange = ElementManipulators.getValueTextRange(myElement)
 
   // perhaps this should poly-resolve to all subtypes
   override fun resolve(): PklElement? = myElement.enclosingModule
+
+  override fun resolveContextual(context: PklProject?): PklElement? = resolve()
 }

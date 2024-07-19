@@ -36,12 +36,13 @@ class QualifiedAccessCompletionProvider : PklCompletionProvider() {
     val position = parameters.position
     val module = parameters.originalFile as? PklModule ?: return
     val base = module.project.pklBaseModule
+    val moduleContext = module.pklProject
     val accessExpr = position.parentOfType<PklQualifiedAccessExpr>() ?: return
-    val receiverType = accessExpr.receiverExpr.computeExprType(base, mapOf())
+    val receiverType = accessExpr.receiverExpr.computeExprType(base, mapOf(), moduleContext)
 
     val visitor = ResolveVisitors.lookupElements(base)
-    Resolvers.resolveQualifiedAccess(receiverType, true, base, visitor)
-    Resolvers.resolveQualifiedAccess(receiverType, false, base, visitor)
+    Resolvers.resolveQualifiedAccess(receiverType, true, base, visitor, moduleContext)
+    Resolvers.resolveQualifiedAccess(receiverType, false, base, visitor, moduleContext)
     result.addAllElements(visitor.result)
   }
 }

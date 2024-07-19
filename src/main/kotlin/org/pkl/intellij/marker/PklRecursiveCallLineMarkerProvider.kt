@@ -98,7 +98,11 @@ class PklRecursiveCallLineMarkerProvider : LineMarkerProvider {
                     base,
                     null,
                     mapOf(),
-                    ResolveVisitors.firstElementNamed(methodName, base)
+                    ResolveVisitors.firstElementNamed(
+                      methodName,
+                      base,
+                    ),
+                    accessExpr.enclosingModule?.pklProject
                   )
                 if (targetMethod === method) {
                   if (document == null) document = findEnclosingDocument(method) ?: return

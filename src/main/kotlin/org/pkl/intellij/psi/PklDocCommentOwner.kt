@@ -15,6 +15,8 @@
  */
 package org.pkl.intellij.psi
 
+import org.pkl.intellij.packages.dto.PklProject
+
 interface PklDocCommentOwner : PklElement {
   val docComment: PklDocComment?
 
@@ -23,5 +25,5 @@ interface PklDocCommentOwner : PklElement {
    * does not have a documentation comment, returns the documentation comment of the nearest
    * documented ancestor, if any.
    */
-  fun effectiveDocComment(): PklDocComment? = docComment
+  fun effectiveDocComment(context: PklProject?): PklDocComment? = docComment
 }

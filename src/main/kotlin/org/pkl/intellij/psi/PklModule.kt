@@ -44,9 +44,14 @@ interface PklModule : PsiFile, PklTypeDefOrModule {
 
   val extendsAmendsUri: PklModuleUri?
 
-  val supermodule: PklModule?
+  /**
+   * The supermodule, after having resolved imports.
+   *
+   * [context] is the module where the reference started.
+   */
+  fun supermodule(context: PklProject?): PklModule?
 
-  val supermodules: Sequence<PklModule>
+  fun supermodules(context: PklProject?): Sequence<PklModule>?
 
   val importList: PklImportList
 
@@ -74,7 +79,14 @@ interface PklModule : PsiFile, PklTypeDefOrModule {
 
   val isStdLibModule: Boolean
 
-  val cache: ModuleMemberCache
+  /**
+   * The view of this module from the context of the provided Pkl module.
+   *
+   * If this module is not inside a package, always returns the same member cache.
+   *
+   * The contents of a module in a package
+   */
+  fun cache(context: PklProject?): ModuleMemberCache
 
   val `package`: PackageDependency?
 
@@ -84,5 +96,8 @@ interface PklModule : PsiFile, PklTypeDefOrModule {
    * The dependencies available to the module, that can be imported using dependency notation (i.e.
    * `import "@foo/bar"`).
    */
-  val dependencies: Map<String, Dependency>?
+  fun dependencies(context: PklProject?): Map<String, Dependency>?
+
+  /** The effective in-language URI for this module */
+  val canonicalUri: String?
 }

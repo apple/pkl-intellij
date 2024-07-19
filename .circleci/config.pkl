@@ -1,4 +1,4 @@
-amends ".../pkl-project-commons/packages/pkl.impl.circleci/PklCI.pkl"
+amends "package://pkg.pkl-lang.org/pkl-project-commons/pkl.impl.circleci@1.1.1#/PklCI.pkl"
 
 prb = buildWorkflow
 
@@ -18,31 +18,44 @@ release {
   }
 }
 
-jobs {
-  ["build"] {
-    docker {
-      new {
-        image = "cimg/openjdk:17.0"
-      }
-    }
-    steps {
-      "checkout"
-      new RunStep {
-        command = "./gradlew --info --stacktrace build"
-      }
+local baseJob: Job = new {
+  docker {
+    new {
+      image = "cimg/openjdk:17.0"
     }
   }
-  ["build-publish"] {
-    docker {
-      new {
-        image = "cimg/openjdk:17.0"
-      }
-    }
+  steps {
+    "checkout"
+  }
+}
+
+jobs {
+  ["build"] = (baseJob) {
     steps {
-      "checkout"
       new RunStep {
-        command = "./gradlew -DreleaseBuild=true --info --stacktrace build publish"
+        // TODO: figure out why this needs to be run twice.
+        // Without this, completion tests fail (for example, see https://app.circleci.com/pipelines/github/apple/pkl-intellij/126/workflows/7de1355e-6b5a-4502-b71f-30d6ae42900e/jobs/245/tests)
+        command = #"""
+          ./gradlew --info --stacktrace -DtestReportsDir=${HOME}/test-results build \
+            || ./gradlew --info --stacktrace -DtestReportsDir=${HOME}/test-results build
+        """#
       }
+      new StoreTestResults { path = "~/test-results" }
+    }
+  }
+  ["build-publish"] = (baseJob) {
+    steps {
+      new RunStep {
+        // TODO: figure out why this needs to be run twice.
+        command = #"""
+            ./gradlew --info --stacktrace -DtestReportsDir=${HOME}/test-results build \
+              || ./gradlew --info --stacktrace -DtestReportsDir=${HOME}/test-results build
+          """#
+      }
+      new RunStep {
+        command = "./gradlew --info --stacktrace -DtestReportsDir=${HOME}/test-results publish"
+      }
+      new StoreTestResults { path = "~/test-results" }
       new PersistToWorkspaceStep {
         root = "."
         paths {

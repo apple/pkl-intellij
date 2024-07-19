@@ -30,13 +30,11 @@ class PklGoToClassContributor : ChooseByNameContributorEx {
     scope: GlobalSearchScope,
     filter: IdFilter?
   ) {
-    // need a class index to suggest project and cached pkl hub (module) classes
-
     if (scope.isSearchInLibraries) {
       val stdlib = scope.project?.pklStdLib ?: return
       for (module in stdlib.modules) {
         if (module.psi.isClassLike) processor.process(module.shortName)
-        val cache = module.psi.cache
+        val cache = module.psi.cache(null)
         for ((typeName, _) in cache.types) processor.process(typeName)
       }
     }
@@ -52,7 +50,7 @@ class PklGoToClassContributor : ChooseByNameContributorEx {
       for (module in stdlib.modules) {
         val modulePsi = module.psi
         if (module.shortName == name && modulePsi.isClassLike) processor.process(modulePsi)
-        val cache = modulePsi.cache
+        val cache = modulePsi.cache(null)
         cache.types[name]?.let { processor.process(it) }
       }
     }

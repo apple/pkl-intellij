@@ -22,10 +22,8 @@ import com.intellij.codeInsight.lookup.LookupElementBuilder
 import com.intellij.psi.PsiElement
 import com.intellij.psi.util.parentOfType
 import com.intellij.util.ProcessingContext
-import org.pkl.intellij.psi.PklBaseModule
-import org.pkl.intellij.psi.PklModule
-import org.pkl.intellij.psi.PklStringLiteral
-import org.pkl.intellij.psi.pklBaseModule
+import org.pkl.intellij.packages.dto.PklProject
+import org.pkl.intellij.psi.*
 import org.pkl.intellij.type.Type
 import org.pkl.intellij.type.inferExprTypeFromContext
 
@@ -40,10 +38,11 @@ class StringLiteralTypeCompletionProvider : PklCompletionProvider() {
     val stringLiteral = position.parentOfType<PklStringLiteral>() ?: return
     val module = parameters.originalFile as? PklModule ?: return
     val base = module.project.pklBaseModule
+    val moduleContext = module.pklProject
 
-    val resultType = stringLiteral.inferExprTypeFromContext(base, mapOf())
+    val resultType = stringLiteral.inferExprTypeFromContext(base, mapOf(), moduleContext)
     val result2 = result.withPrefixMatcher(CamelHumpMatcher(result.prefixMatcher.prefix, false))
-    addCompletionResults(resultType, position, result2, null, base)
+    addCompletionResults(resultType, position, result2, null, base, moduleContext)
   }
 
   private fun addCompletionResults(
@@ -51,7 +50,8 @@ class StringLiteralTypeCompletionProvider : PklCompletionProvider() {
     position: PsiElement,
     result: CompletionResultSet,
     originalAlias: Type.Alias?,
-    base: PklBaseModule
+    base: PklBaseModule,
+    context: PklProject?
   ) {
 
     when (resultType) {
@@ -74,12 +74,19 @@ class StringLiteralTypeCompletionProvider : PklCompletionProvider() {
         val stringLiteral = position.parentOfType<PklStringLiteral>()
         if (stringLiteral != null) {
           resultType.eachElementType { type ->
-            addCompletionResults(type, position, result, originalAlias, base)
+            addCompletionResults(type, position, result, originalAlias, base, context)
           }
         }
       }
       is Type.Alias -> {
-        addCompletionResults(resultType.aliasedType(base), position, result, resultType, base)
+        addCompletionResults(
+          resultType.aliasedType(base, context),
+          position,
+          result,
+          resultType,
+          base,
+          context
+        )
       }
       else -> {}
     }

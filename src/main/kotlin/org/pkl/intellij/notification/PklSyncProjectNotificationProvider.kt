@@ -91,6 +91,13 @@ class PklSyncProjectNotificationProvider(project: Project) : EditorNotificationP
           createActionLabel("Download", "Pkl.DownloadPackagesForPklProject")
         }
       }
+      if (project.pklProjectService.isOutOfDate()) {
+        return@Function PklEditorNotificationPanel().apply {
+          text = "Sync Pkl project"
+
+          createActionLabel("Sync", "Pkl.SyncPklProjects")
+        }
+      }
       null
     }
   }

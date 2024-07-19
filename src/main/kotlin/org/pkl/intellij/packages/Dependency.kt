@@ -31,17 +31,23 @@ import org.pkl.intellij.packages.dto.PklProject
  */
 sealed interface Dependency {
   fun getRoot(project: Project): VirtualFile?
+
+  val packageUri: PackageUri
 }
 
 internal val jarFs: JarFileSystem =
   VirtualFileManager.getInstance().getFileSystem("jar") as JarFileSystem
 
-data class PackageDependency(val packageUri: PackageUri, val pklProject: PklProject?) : Dependency {
+data class PackageDependency(override val packageUri: PackageUri, val pklProject: PklProject?) :
+  Dependency {
   override fun getRoot(project: Project): VirtualFile? =
     project.pklPackageService.getLibraryRoots(this)?.packageRoot
 }
 
-data class LocalProjectDependency(private val projectDir: VirtualFile) : Dependency {
+data class LocalProjectDependency(
+  override val packageUri: PackageUri,
+  private val projectDir: VirtualFile
+) : Dependency {
   override fun getRoot(project: Project): VirtualFile = projectDir
 }
 
@@ -49,7 +55,7 @@ fun PklProject.Companion.ResolvedDependency.toDependency(pklProject: PklProject)
   when (this) {
     is PklProject.Companion.LocalDependency ->
       pklProject.projectDirVirtualFile?.findFileByRelativePath(path)?.let {
-        LocalProjectDependency(it)
+        LocalProjectDependency(uri, it)
       }
     else -> PackageDependency(uri, pklProject)
   }

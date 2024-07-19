@@ -18,26 +18,26 @@ package org.pkl.intellij.psi
 import com.intellij.openapi.util.TextRange
 import com.intellij.psi.*
 import com.intellij.psi.util.parentOfType
+import org.pkl.intellij.packages.dto.PklProject
 import org.pkl.intellij.resolve.ResolveVisitors
 import org.pkl.intellij.resolve.Resolvers
 
 /** May refer to a class, type alias, module (via import), or type variable. */
 class PklSimpleTypeNameReference(private val simpleTypeName: PklSimpleTypeName) :
-  PsiReferenceBase<PklSimpleTypeName>(simpleTypeName) {
+  PsiReferenceBase<PklSimpleTypeName>(simpleTypeName), PklReference {
 
   override fun getRangeInElement(): TextRange =
     ElementManipulators.getValueTextRange(simpleTypeName)
 
   override fun getCanonicalText(): String = simpleTypeName.identifier.text
 
-  // returns PklTypeOrModule or PklTypeParameter
-  override fun resolve(): PklElement? {
+  override fun resolveContextual(context: PklProject?): PklElement? {
     val typeName = simpleTypeName.parentOfType<PklTypeName>() ?: return null
     val moduleName = typeName.moduleName
     val simpleTypeNameText = simpleTypeName.identifier.text
 
     if (moduleName != null) {
-      return moduleName.resolve()?.cache?.types?.get(simpleTypeNameText)
+      return moduleName.resolve(context)?.cache(context)?.types?.get(simpleTypeNameText)
     }
 
     val base = typeName.project.pklBaseModule
@@ -45,7 +45,13 @@ class PklSimpleTypeNameReference(private val simpleTypeName: PklSimpleTypeName) 
       simpleTypeName,
       base,
       mapOf(),
-      ResolveVisitors.firstElementNamed(simpleTypeNameText, base)
+      ResolveVisitors.firstElementNamed(simpleTypeNameText, base),
+      context
     )
+  }
+
+  // returns PklTypeOrModule or PklTypeParameter
+  override fun resolve(): PklElement? {
+    return resolveContextual(simpleTypeName.enclosingModule?.pklProject)
   }
 }

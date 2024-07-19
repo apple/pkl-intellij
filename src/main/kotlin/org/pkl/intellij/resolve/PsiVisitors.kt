@@ -59,13 +59,18 @@ fun visitUsedLocalDefinitions(
   base: PklBaseModule,
   visitor: (PklElement) -> Unit
 ) {
+  val context = module.pklProject
   module.accept(
     object : PklRecursiveVisitor<Unit>() {
       override fun visitUnqualifiedAccessExpr(expr: PklUnqualifiedAccessExpr) {
         super.visitUnqualifiedAccessExpr(expr)
         val resolveVisitor =
-          ResolveVisitors.firstElementNamed(expr.memberNameText, base, resolveImports = false)
-        expr.resolve(base, null, mapOf(), resolveVisitor)?.let { visitor(it) }
+          ResolveVisitors.firstElementNamed(
+            expr.memberNameText,
+            base,
+            resolveImports = false,
+          )
+        expr.resolve(base, null, mapOf(), resolveVisitor, context)?.let { visitor(it) }
       }
 
       override fun visitTypeName(typeName: PklTypeName) {
@@ -73,10 +78,13 @@ fun visitUsedLocalDefinitions(
           null -> {
             val simpleName = typeName.simpleName.identifier.text
             val resolveVisitor =
-              ResolveVisitors.firstElementNamed(simpleName, base, resolveImports = false)
-            Resolvers.resolveUnqualifiedTypeName(typeName, base, mapOf(), resolveVisitor)?.let {
-              visitor(it)
-            }
+              ResolveVisitors.firstElementNamed(
+                simpleName,
+                base,
+                resolveImports = false,
+              )
+            Resolvers.resolveUnqualifiedTypeName(typeName, base, mapOf(), resolveVisitor, context)
+              ?.let { visitor(it) }
           }
           else -> {
             module.imports.find { it.memberName == moduleName }?.let { visitor(it) }

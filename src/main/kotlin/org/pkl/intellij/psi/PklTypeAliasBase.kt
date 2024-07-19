@@ -19,6 +19,7 @@ import com.intellij.lang.ASTNode
 import com.intellij.psi.PsiElement
 import javax.swing.Icon
 import org.pkl.intellij.PklIcons
+import org.pkl.intellij.packages.dto.PklProject
 import org.pkl.intellij.type.Type
 import org.pkl.intellij.type.TypeParameterBindings
 
@@ -28,6 +29,9 @@ abstract class PklTypeAliasBase(node: ASTNode) : PklTypeDefBase(node), PklTypeAl
 
   override fun getIcon(flags: Int): Icon = PklIcons.TYPE_ALIAS.decorate(this, flags)
 
-  override fun getLookupElementType(base: PklBaseModule, bindings: TypeParameterBindings): Type =
-    base.typeAliasType
+  override fun getLookupElementType(
+    base: PklBaseModule,
+    bindings: TypeParameterBindings,
+    context: PklProject?
+  ): Type = base.typeAliasType
 }

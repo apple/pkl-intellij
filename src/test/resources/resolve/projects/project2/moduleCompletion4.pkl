@@ -1,0 +1,9 @@
+amends "@project1/fixtureForProject2.pkl"
+
+pods {
+  ["foo"] {
+    metadata {
+      nam<caret>e = "foo"
+    }
+  }
+}

@@ -60,6 +60,6 @@ class PklAdditionalLibraryRootsProvider : AdditionalLibraryRootsProvider() {
   }
 
   override fun getRootsToWatch(project: Project): Collection<VirtualFile> {
-    return listOfNotNull(pklCacheDir, editorSupportDir)
+    return listOfNotNull(pklCacheDir)
   }
 }

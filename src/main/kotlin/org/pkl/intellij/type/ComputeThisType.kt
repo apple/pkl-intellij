@@ -18,9 +18,14 @@
 package org.pkl.intellij.type
 
 import com.intellij.psi.PsiElement
+import org.pkl.intellij.packages.dto.PklProject
 import org.pkl.intellij.psi.*
 
-fun PsiElement.computeThisType(base: PklBaseModule, bindings: TypeParameterBindings): Type {
+fun PsiElement.computeThisType(
+  base: PklBaseModule,
+  bindings: TypeParameterBindings,
+  context: PklProject?
+): Type {
   var element: PsiElement? = this
   var memberPredicateExprSeen = false
   var objectBodySeen = false
@@ -31,10 +36,10 @@ fun PsiElement.computeThisType(base: PklBaseModule, bindings: TypeParameterBindi
       is PklAmendExpr,
       is PklNewExpr -> {
         if (objectBodySeen) {
-          val type = element.computeExprType(base, bindings).amending(base)
+          val type = element.computeExprType(base, bindings, context).amending(base, context)
           return when {
             memberPredicateExprSeen -> {
-              val classType = type.toClassType(base) ?: return Type.Unknown
+              val classType = type.toClassType(base, context) ?: return Type.Unknown
               when {
                 classType.classEquals(base.listingType) -> classType.typeArguments[0]
                 classType.classEquals(base.mappingType) -> classType.typeArguments[1]
@@ -67,10 +72,11 @@ fun PsiElement.computeThisType(base: PklBaseModule, bindings: TypeParameterBindi
       is PklObjectEntry,
       is PklMemberPredicate -> {
         if (objectBodySeen) {
-          val type = element.computeResolvedImportType(base, bindings).amending(base)
+          val type =
+            element.computeResolvedImportType(base, bindings, context).amending(base, context)
           return when {
             memberPredicateExprSeen -> {
-              val classType = type.toClassType(base) ?: return Type.Unknown
+              val classType = type.toClassType(base, context) ?: return Type.Unknown
               when {
                 classType.classEquals(base.listingType) -> classType.typeArguments[0]
                 classType.classEquals(base.mappingType) -> classType.typeArguments[1]
@@ -81,12 +87,12 @@ fun PsiElement.computeThisType(base: PklBaseModule, bindings: TypeParameterBindi
           }
         }
       }
-      is PklConstrainedType -> return element.type.toType(base, bindings)
+      is PklConstrainedType -> return element.type.toType(base, bindings, context)
       is PklModule,
       is PklClass,
-      is PklTypeAlias -> return element.computeResolvedImportType(base, bindings)
+      is PklTypeAlias -> return element.computeResolvedImportType(base, bindings, context)
       is PklAnnotation ->
-        return element.typeName?.resolve().computeResolvedImportType(base, bindings)
+        return element.typeName?.resolve(context).computeResolvedImportType(base, bindings, context)
     }
     element = element.parent
   }

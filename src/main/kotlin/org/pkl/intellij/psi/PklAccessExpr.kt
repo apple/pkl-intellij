@@ -15,6 +15,7 @@
  */
 package org.pkl.intellij.psi
 
+import org.pkl.intellij.packages.dto.PklProject
 import org.pkl.intellij.resolve.ResolveVisitor
 import org.pkl.intellij.type.Type
 import org.pkl.intellij.type.TypeParameterBindings
@@ -53,6 +54,7 @@ interface PklAccessExpr : PklElement {
      */
     receiverType: Type?,
     bindings: TypeParameterBindings,
-    visitor: ResolveVisitor<R>
+    visitor: ResolveVisitor<R>,
+    context: PklProject?
   ): R
 }

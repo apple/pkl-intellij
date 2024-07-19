@@ -1,0 +1,17 @@
+amends "pkl:Project"
+
+dependencies {
+  ["appEnvCluster"] {
+    uri = "package://pkg.pkl-lang.org/pkl-pantry/k8s.contrib.appEnvCluster@1.0.1"
+  }
+  ["k8s"] {
+    uri = "package://pkg.pkl-lang.org/pkl-k8s/k8s@1.1.0"
+  }
+}
+
+package {
+  name = "project1"
+  baseUri = "package://example.com/\(name)"
+  version = "1.0.0"
+  packageZipUrl = "https://example.com/\(name)@\(version).zip"
+}

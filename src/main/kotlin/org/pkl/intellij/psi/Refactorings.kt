@@ -78,7 +78,8 @@ fun PklTypeName.replaceDeprecated(
   isDryRun: Boolean = false,
   applyIf: (PklAnnotationListOwner, Deprecated) -> Boolean = { _, _ -> true }
 ): Boolean {
-  val target = simpleName.reference?.resolve() as? PklAnnotationListOwner ?: return false
+  val context = module.pklProject
+  val target = simpleName.resolve(context) as? PklAnnotationListOwner ?: return false
   val deprecated = target.annotationList?.deprecated ?: return false
   val replaceWith = deprecated.replaceWith ?: return false
 
@@ -116,7 +117,8 @@ fun PklAmendExpr.updateInstantiationSyntax(
   when (parentExpr) {
     is PklUnqualifiedAccessExpr -> {
       if (parentExpr.isPropertyAccess) {
-        val target = parentExpr.memberName.reference?.resolve()
+        val target =
+          parentExpr.memberName.pklReference?.resolveContextual(enclosingModule?.pklProject)
         if ((target is PklClass || target is PklTypeAlias)) {
           if (!isDryRun) {
             val newExpr =

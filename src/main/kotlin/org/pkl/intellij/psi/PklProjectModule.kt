@@ -40,14 +40,13 @@ val Project.pklProjectModule: PklProjectModule
 class PklProjectModule(stdLib: PklStdLib) {
   val psi: PklModule = stdLib.projectModule.psi
 
-  @OptIn(ExperimentalStdlibApi::class)
   val types: Map<String, Type> = buildMap {
     for (member in psi.members) {
       if (member is PklClass) {
         put(member.name!!, Type.Class(member))
       }
     }
-    put("Project", Type.module(psi, "pkl.Project"))
+    put("Project", Type.module(psi, "pkl.Project", context = null))
   }
 
   val projectType by lazy { types["Project"] as Type.Module }

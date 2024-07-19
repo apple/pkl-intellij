@@ -1,0 +1,9 @@
+amends "@appEnvCluster/AppEnvCluster.pkl"
+
+pods {
+  ["foo"] {
+    metadata {
+      nam<caret>e = "foo"
+    }
+  }
+}

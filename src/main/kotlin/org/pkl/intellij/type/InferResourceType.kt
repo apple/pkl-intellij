@@ -15,23 +15,25 @@
  */
 package org.pkl.intellij.type
 
-import org.pkl.intellij.psi.PklBaseModule
-import org.pkl.intellij.psi.PklElementTypes
-import org.pkl.intellij.psi.PklStringLiteral
-import org.pkl.intellij.psi.elementType
+import org.pkl.intellij.psi.*
 
 fun inferResourceType(resourceUri: PklStringLiteral, base: PklBaseModule): Type {
   // note that [resourceUri] could be an interpolated string.
   // we only operate on the first string part.
   val firstChild =
     resourceUri.content.firstChild
-      ?: return Type.union(base.stringType, base.resourceType, base) // empty string -> bail out
+      ?: return Type.union(
+        base.stringType,
+        base.resourceType,
+        base,
+        null
+      ) // empty string -> bail out
   val stringChars = firstChild.text
 
   return when {
     firstChild.elementType != PklElementTypes.STRING_CHARS ->
       // starts with escape sequence or interpolation expression -> bail out
-      Type.union(base.stringType, base.resourceType, base)
+      Type.union(base.stringType, base.resourceType, base, null)
     stringChars.startsWith("env:", ignoreCase = true) -> base.stringType
     stringChars.startsWith("prop:", ignoreCase = true) -> base.stringType
 
@@ -43,6 +45,6 @@ fun inferResourceType(resourceUri: PklStringLiteral, base: PklBaseModule): Type 
     !stringChars.contains(":") -> base.resourceType
     else ->
       // bail out
-      Type.union(base.stringType, base.resourceType, base)
+      Type.union(base.stringType, base.resourceType, base, null)
   }
 }

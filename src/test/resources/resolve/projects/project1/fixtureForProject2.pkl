@@ -1,0 +1,3 @@
+// need a separate file without <caret> markers because they don't get stripped when this module is not the active
+// file open in the ephemeral editor of `myFixture`.
+amends "@appEnvCluster/AppEnvCluster.pkl"

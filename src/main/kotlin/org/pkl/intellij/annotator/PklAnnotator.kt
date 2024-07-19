@@ -31,6 +31,7 @@ import com.intellij.psi.util.parentsOfType
 import com.intellij.xml.util.XmlStringUtil
 import kotlin.reflect.KClass
 import org.jetbrains.annotations.TestOnly
+import org.pkl.intellij.packages.dto.PklProject
 import org.pkl.intellij.psi.*
 import org.pkl.intellij.type.ConstraintValue
 import org.pkl.intellij.type.Type
@@ -85,7 +86,7 @@ abstract class PklAnnotator : Annotator {
     holder: AnnotationHolder
   ) {
 
-    if (parentType.isAmendable(base)) return
+    if (parentType.isAmendable(base, null)) return
 
     val brace = objectBody.firstChildOfType(PklElementTypes.LBRACE) ?: return
 
@@ -120,7 +121,7 @@ abstract class PklAnnotator : Annotator {
     holder: AnnotationHolder
   ) {
 
-    if (instantiatedType.isInstantiable(base)) return
+    if (instantiatedType.isInstantiable(base, null)) return
 
     val newKeyword = element.firstChild ?: return
     val elementTypeText = instantiatedType.render()
@@ -142,13 +143,14 @@ abstract class PklAnnotator : Annotator {
 
     if (expr == null || expectedType == Type.Unknown) return
 
-    val exprType = expr.computeExprType(base, mapOf())
-    val exprValue = lazy { expr.toConstraintExpr(base).evaluate(ConstraintValue.Error) }
+    val context = expr.enclosingModule?.pklProject
+    val exprType = expr.computeExprType(base, mapOf(), context)
+    val exprValue = lazy { expr.toConstraintExpr(base, context).evaluate(ConstraintValue.Error) }
     val failedConstraints = mutableListOf<Pair<Type, Int>>()
-    if (!isTypeMatch(exprType, exprValue, expectedType, failedConstraints, base)) {
+    if (!isTypeMatch(exprType, exprValue, expectedType, failedConstraints, base, context)) {
       when {
         failedConstraints.isEmpty() ->
-          reportTypeMismatch(expr, exprType, expectedType, base, holder)
+          reportTypeMismatch(expr, exprType, expectedType, base, holder, context)
         else -> reportConstraintMismatch(expr, exprValue, failedConstraints, holder)
       }
     }
@@ -164,30 +166,50 @@ abstract class PklAnnotator : Annotator {
     exprValue: Lazy<ConstraintValue>,
     memberType: Type,
     failedConstraints: MutableList<Pair<Type, Int>>,
-    base: PklBaseModule
+    base: PklBaseModule,
+    context: PklProject?
   ): Boolean {
 
     return when {
       exprType is Type.Alias -> {
-        isTypeMatch(exprType.aliasedType(base), exprValue, memberType, failedConstraints, base)
+        isTypeMatch(
+          exprType.aliasedType(base, context),
+          exprValue,
+          memberType,
+          failedConstraints,
+          base,
+          context
+        )
       }
       exprType is Type.Union -> {
         // This can cause multiple checks of the same top-level or nested constraint.
         // To avoid this, constraint check results could be cached while this method runs.
-        isTypeMatch(exprType.leftType, exprValue, memberType, failedConstraints, base) &&
-          isTypeMatch(exprType.rightType, exprValue, memberType, failedConstraints, base)
+        isTypeMatch(exprType.leftType, exprValue, memberType, failedConstraints, base, context) &&
+          isTypeMatch(exprType.rightType, exprValue, memberType, failedConstraints, base, context)
       }
       memberType is Type.Alias -> {
-        isTypeMatch(exprType, exprValue, memberType.aliasedType(base), failedConstraints, base) &&
-          isConstraintMatch(exprValue, memberType, failedConstraints, true)
+        isTypeMatch(
+          exprType,
+          exprValue,
+          memberType.aliasedType(base, context),
+          failedConstraints,
+          base,
+          context
+        ) && isConstraintMatch(exprValue, memberType, failedConstraints, true)
       }
       memberType is Type.Union && !memberType.isUnionOfStringLiterals -> {
-        (isTypeMatch(exprType, exprValue, memberType.leftType, failedConstraints, base) ||
-          isTypeMatch(exprType, exprValue, memberType.rightType, failedConstraints, base)) &&
-          isConstraintMatch(exprValue, memberType, failedConstraints, true)
+        (isTypeMatch(exprType, exprValue, memberType.leftType, failedConstraints, base, context) ||
+          isTypeMatch(
+            exprType,
+            exprValue,
+            memberType.rightType,
+            failedConstraints,
+            base,
+            context
+          )) && isConstraintMatch(exprValue, memberType, failedConstraints, true)
       }
       else -> {
-        exprType.isSubtypeOf(memberType, base) &&
+        exprType.isSubtypeOf(memberType, base, context) &&
           isConstraintMatch(exprValue, memberType, failedConstraints, false)
       }
     }
@@ -222,10 +244,11 @@ abstract class PklAnnotator : Annotator {
     actualType: Type,
     requiredType: Type,
     base: PklBaseModule,
-    holder: AnnotationHolder
+    holder: AnnotationHolder,
+    context: PklProject?
   ) {
     when {
-      !actualType.hasCommonSubtypeWith(requiredType, base) -> {
+      !actualType.hasCommonSubtypeWith(requiredType, base, context) -> {
         // no subtype of actual type is a subtype of required type ->
         // cannot be caused by the type system being too weak ->
         // runtime type check cannot succeed ->
@@ -240,7 +263,8 @@ abstract class PklAnnotator : Annotator {
           PklProblemGroups.typeMismatch
         )
       }
-      actualType.isNullable(base) && actualType.nonNull(base).isSubtypeOf(requiredType, base) -> {
+      actualType.isNullable(base) &&
+        actualType.nonNull(base, context).isSubtypeOf(requiredType, base, context) -> {
         // actual type is only too weak in that it admits `null` ->
         // could be caused by the type system being too weak ->
         // runtime type check could succeed ->

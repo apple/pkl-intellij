@@ -45,6 +45,8 @@ sourceSets {
   }
 }
 
+val pklCli by configurations.creating
+
 dependencies {
   // put stdlib ZIP on plugin class path instead of exploding it into plugin JAR
   // (saves work and `Class(Loader).getResource()` doesn't care)
@@ -52,6 +54,9 @@ dependencies {
   implementation(libs.kotlinxJson)
   // needed for kotlin ui dsl: https://plugins.jetbrains.com/docs/intellij/kotlin-ui-dsl-version-2.html
   implementation(libs.kotlinReflect)
+
+  testImplementation(libs.assertj)
+  pklCli(libs.pklCli)
 }
 
 idea {
@@ -151,6 +156,20 @@ tasks.clean {
 
 tasks.compileKotlin {
   dependsOn(generateLexer, generateParser)
+}
+
+val configurePklCliExecutable by tasks.registering {
+  doLast {
+    pklCli.singleFile.setExecutable(true)
+  }
+}
+
+tasks.test {
+  dependsOn(configurePklCliExecutable)
+  systemProperties["pklExecutable"] = pklCli.singleFile.absolutePath
+  System.getProperty("testReportsDir")?.let { reportsDir ->
+    reports.junitXml.outputLocation.set(file(reportsDir).resolve(project.name).resolve(name))
+  }
 }
 
 tasks.withType<KotlinCompile>().configureEach {

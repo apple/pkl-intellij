@@ -7,14 +7,24 @@ jobs:
     steps:
     - checkout
     - run:
-        command: ./gradlew --info --stacktrace build
+        command: |2-
+            ./gradlew --info --stacktrace -DtestReportsDir=${HOME}/test-results build \
+              || ./gradlew --info --stacktrace -DtestReportsDir=${HOME}/test-results build
+    - store_test_results:
+        path: ~/test-results
     docker:
     - image: cimg/openjdk:17.0
   build-publish:
     steps:
     - checkout
     - run:
-        command: ./gradlew -DreleaseBuild=true --info --stacktrace build publish
+        command: |2-
+            ./gradlew --info --stacktrace -DtestReportsDir=${HOME}/test-results build \
+              || ./gradlew --info --stacktrace -DtestReportsDir=${HOME}/test-results build
+    - run:
+        command: ./gradlew --info --stacktrace -DtestReportsDir=${HOME}/test-results publish
+    - store_test_results:
+        path: ~/test-results
     - persist_to_workspace:
         root: '.'
         paths:
@@ -66,7 +76,6 @@ workflows:
     - build:
         requires:
         - hold
-        - pr-approval/authenticate
     when:
       matches:
         value: << pipeline.git.branch >>

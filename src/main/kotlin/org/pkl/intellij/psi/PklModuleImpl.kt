@@ -34,15 +34,13 @@ import org.pkl.intellij.PklFileType
 import org.pkl.intellij.PklIcons
 import org.pkl.intellij.PklLanguage
 import org.pkl.intellij.PklVersion
-import org.pkl.intellij.packages.Dependency
-import org.pkl.intellij.packages.PackageDependency
+import org.pkl.intellij.packages.*
 import org.pkl.intellij.packages.PklProjectService.Companion.PKL_PROJECT_FILENAME
 import org.pkl.intellij.packages.dto.PackageMetadata
 import org.pkl.intellij.packages.dto.PklProject
-import org.pkl.intellij.packages.pklPackageService
-import org.pkl.intellij.packages.pklProjectService
 import org.pkl.intellij.type.Type
 import org.pkl.intellij.type.TypeParameterBindings
+import org.pkl.intellij.util.getContextualCachedValue
 
 internal val jarFs: JarFileSystem =
   VirtualFileManager.getInstance().getFileSystem("jar") as JarFileSystem
@@ -129,8 +127,11 @@ class PklModuleImpl(viewProvider: FileViewProvider) :
   // improve readability in PSI viewer
   override fun toString(): String = "Module"
 
-  override fun getLookupElementType(base: PklBaseModule, bindings: TypeParameterBindings): Type =
-    base.moduleType
+  override fun getLookupElementType(
+    base: PklBaseModule,
+    bindings: TypeParameterBindings,
+    context: PklProject?
+  ): Type = base.moduleType
 
   override val extendsAmendsClause: PklModuleExtendsAmendsClause?
     get() = declaration?.extendsAmendsClause
@@ -141,11 +142,13 @@ class PklModuleImpl(viewProvider: FileViewProvider) :
   override val docComment: PklDocComment?
     get() = declaration?.docComment
 
-  override val supermodule: PklModule?
-    get() = extendsAmendsUri?.resolve()
+  override fun supermodule(context: PklProject?): PklModule? {
+    return extendsAmendsUri?.resolve(context)
+  }
 
-  override val supermodules: Sequence<PklModule>
-    get() = generateSequence(supermodule) { it.supermodule }
+  override fun supermodules(context: PklProject?): Sequence<PklModule> {
+    return generateSequence(supermodule(context)) { it.supermodule(context) }
+  }
 
   override val importList: PklImportList
     get() = firstChildOfClass<PklImportList>()!!
@@ -176,14 +179,14 @@ class PklModuleImpl(viewProvider: FileViewProvider) :
 
   override val effectivePklVersion: PklVersion
     // could do more and compute minimum `minPklVersion` of transitively referenced modules
-    get() = minPklVersion ?: supermodule?.effectivePklVersion ?: project.pklStdLib.version
+    get() = minPklVersion ?: supermodule(null)?.effectivePklVersion ?: project.pklStdLib.version
 
   override val minPklVersionDetails: Pair<PklVersion, PklElement>?
     get() {
       val base = project.pklBaseModule
 
       for (ann in annotations) {
-        val annType = ann.typeName?.resolve() ?: continue
+        val annType = ann.typeName?.resolve(null) ?: continue
 
         if (annType == base.moduleInfoType.psi) {
           ann.objectBody?.properties?.forEach { property ->
@@ -206,12 +209,10 @@ class PklModuleImpl(viewProvider: FileViewProvider) :
 
   override val isStdLibModule: Boolean = declaredName?.text?.startsWith("pkl.") ?: false
 
-  override val cache: ModuleMemberCache
-    get() {
-      return cacheManager.getCachedValue(this) {
-        val cache = ModuleMemberCache.create(this)
-        CachedValueProvider.Result.create(cache, cache.dependencies)
-      }
+  override fun cache(context: PklProject?): ModuleMemberCache =
+    getContextualCachedValue(context) {
+      val cache = ModuleMemberCache.create(this, context)
+      CachedValueProvider.Result.create(cache, cache.dependencies)
     }
 
   private fun doGetPackage(): PackageDependency? {
@@ -262,16 +263,18 @@ class PklModuleImpl(viewProvider: FileViewProvider) :
       )
     }
 
-  override val dependencies: Map<String, Dependency>?
+  override fun dependencies(context: PklProject?): Map<String, Dependency>? =
+    `package`?.let { project.pklPackageService.getResolvedDependencies(it, context) }
+      ?: pklProject?.getResolvedDependencies(context)
+
+  override val canonicalUri: String
     get() =
-      `package`?.let(project.pklPackageService::getResolvedDependencies)
-        ?: pklProject?.myDependencies
+      `package`?.let { "${it.packageUri}#/${virtualFile.path.substringAfter("!/")}" }
+        ?: virtualFile.url
 
   override fun isEquivalentTo(other: PsiElement): Boolean {
     if (this === other) return true
     if (other !is PklModule) return false
-    val myName = declaredName ?: return false
-    val otherName = other.declaredName ?: return false
-    return myName == otherName
+    return canonicalUri == other.canonicalUri
   }
 }

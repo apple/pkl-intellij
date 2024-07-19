@@ -17,6 +17,7 @@ package org.pkl.intellij.psi
 
 import com.intellij.lang.ASTNode
 import com.intellij.psi.PsiElement
+import org.pkl.intellij.packages.dto.PklProject
 import org.pkl.intellij.type.Type
 import org.pkl.intellij.type.TypeParameterBindings
 
@@ -29,8 +30,11 @@ abstract class PklTypeParameterBase(node: ASTNode) :
   override fun getTextOffset(): Int = nameIdentifier.textOffset
 
   // TODO: consider making return type nullable instead
-  override fun getLookupElementType(base: PklBaseModule, bindings: TypeParameterBindings): Type =
-    Type.Unknown
+  override fun getLookupElementType(
+    base: PklBaseModule,
+    bindings: TypeParameterBindings,
+    context: PklProject?
+  ): Type = Type.Unknown
 
   override fun toString(): String = super.toString() + "($name)"
 }

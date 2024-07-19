@@ -20,6 +20,7 @@ import com.intellij.psi.PsiElement
 import com.intellij.psi.util.parentOfType
 import javax.swing.Icon
 import org.pkl.intellij.PklIcons
+import org.pkl.intellij.packages.dto.PklProject
 import org.pkl.intellij.type.Type
 import org.pkl.intellij.type.TypeParameterBindings
 import org.pkl.intellij.type.toType
@@ -43,26 +44,29 @@ abstract class PklClassMethodBase(node: ASTNode) : PklClassMemberBase(node), Pkl
     return icon.decorate(this, flags)
   }
 
-  override fun getLookupElementType(base: PklBaseModule, bindings: TypeParameterBindings): Type =
-    returnType.toType(base, bindings, true)
+  override fun getLookupElementType(
+    base: PklBaseModule,
+    bindings: TypeParameterBindings,
+    context: PklProject?
+  ): Type = returnType.toType(base, bindings, context, true)
 
   override val hasParameters: Boolean
     get() = !parameterList?.elements.isNullOrEmpty()
 
-  override fun effectiveDocComment(): PklDocComment? {
+  override fun effectiveDocComment(context: PklProject?): PklDocComment? {
     docComment?.let {
       return it
     }
     val myName = name ?: return null
     val clazz = parentOfType<PklClass>() ?: return null
-    clazz.eachSuperclassOrModule { typeDef ->
+    clazz.eachSuperclassOrModule(context) { typeDef ->
       when (typeDef) {
         is PklClass ->
-          typeDef.cache.methods[myName]?.docComment?.let {
+          typeDef.cache(context).methods[myName]?.docComment?.let {
             return it
           }
         is PklModule ->
-          typeDef.cache.methods[myName]?.docComment?.let {
+          typeDef.cache(context).methods[myName]?.docComment?.let {
             return it
           }
       }

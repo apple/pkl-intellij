@@ -20,6 +20,7 @@ import com.intellij.navigation.ItemPresentation
 import com.intellij.psi.PsiElement
 import java.lang.AssertionError
 import javax.swing.Icon
+import org.pkl.intellij.packages.dto.PklProject
 import org.pkl.intellij.type.Type
 import org.pkl.intellij.type.TypeParameterBindings
 
@@ -56,7 +57,11 @@ abstract class PklModuleMemberBase(node: ASTNode) : PklAstWrapperPsiElement(node
 
   override fun getTextOffset(): Int = nameIdentifier?.textOffset ?: super.getTextOffset()
 
-  override fun getLookupElementType(base: PklBaseModule, bindings: TypeParameterBindings): Type {
+  override fun getLookupElementType(
+    base: PklBaseModule,
+    bindings: TypeParameterBindings,
+    context: PklProject?
+  ): Type {
     throw AssertionError("This method should have been overridden by ${this::class.qualifiedName}.")
   }
 

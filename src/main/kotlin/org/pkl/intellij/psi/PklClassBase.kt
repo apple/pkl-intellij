@@ -18,13 +18,14 @@ package org.pkl.intellij.psi
 import com.intellij.lang.ASTNode
 import com.intellij.psi.PsiElement
 import com.intellij.psi.util.CachedValueProvider
-import com.intellij.psi.util.CachedValuesManager
 import javax.swing.Icon
 import org.pkl.intellij.PklIcons
+import org.pkl.intellij.packages.dto.PklProject
 import org.pkl.intellij.resolve.ResolveVisitor
 import org.pkl.intellij.resolve.visitIfNotNull
 import org.pkl.intellij.type.Type
 import org.pkl.intellij.type.TypeParameterBindings
+import org.pkl.intellij.util.getContextualCachedValue
 
 abstract class PklClassBase(node: ASTNode) : PklTypeDefBase(node), PklClass {
   override val keyword: PsiElement
@@ -41,10 +42,13 @@ abstract class PklClassBase(node: ASTNode) : PklTypeDefBase(node), PklClass {
   }
 
   private val isAnnotationType: Boolean
-    get() = isStrictSubclassOf(project.pklBaseModule.annotationType.psi)
+    get() = isStrictSubclassOf(project.pklBaseModule.annotationType.psi, null)
 
-  override fun getLookupElementType(base: PklBaseModule, bindings: TypeParameterBindings): Type =
-    base.classType.withTypeArguments(Type.Class(this))
+  override fun getLookupElementType(
+    base: PklBaseModule,
+    bindings: TypeParameterBindings,
+    context: PklProject?
+  ): Type = base.classType.withTypeArguments(Type.Class(this))
 
   override val members: Sequence<PklClassMember>
     get() = body?.members ?: emptySequence()
@@ -56,12 +60,11 @@ abstract class PklClassBase(node: ASTNode) : PklTypeDefBase(node), PklClass {
     get() = body?.methods ?: emptySequence()
 }
 
-val PklClass.cache: ClassMemberCache
-  get() =
-    CachedValuesManager.getManager(project).getCachedValue(this) {
-      val cache = ClassMemberCache.create(this)
-      CachedValueProvider.Result.create(cache, cache.dependencies)
-    }
+fun PklClass.cache(context: PklProject?): ClassMemberCache =
+  getContextualCachedValue(context) {
+    val cache = ClassMemberCache.create(this, context)
+    CachedValueProvider.Result.create(cache, cache.dependencies)
+  }
 
 /** Caches non-local, i.e., externally accessible, members of a class. */
 class ClassMemberCache(
@@ -85,47 +88,49 @@ class ClassMemberCache(
   fun visitPropertiesOrMethods(
     isProperty: Boolean,
     bindings: TypeParameterBindings,
-    visitor: ResolveVisitor<*>
+    visitor: ResolveVisitor<*>,
+    context: PklProject?
   ): Boolean {
-    return if (isProperty) doVisit(properties, bindings, visitor)
-    else doVisit(methods, bindings, visitor)
+    return if (isProperty) doVisit(properties, bindings, visitor, context)
+    else doVisit(methods, bindings, visitor, context)
   }
 
   private fun doVisit(
     members: Map<String, PklElement>,
     bindings: TypeParameterBindings,
-    visitor: ResolveVisitor<*>
+    visitor: ResolveVisitor<*>,
+    context: PklProject?
   ): Boolean {
 
     val exactName = visitor.exactName
     if (exactName != null) {
-      return visitor.visitIfNotNull(exactName, members[exactName], bindings)
+      return visitor.visitIfNotNull(exactName, members[exactName], bindings, context)
     }
 
     for ((name, member) in members) {
-      if (!visitor.visit(name, member, bindings)) return false
+      if (!visitor.visit(name, member, bindings, context)) return false
     }
 
     return true
   }
 
   companion object {
-    fun create(clazz: PklClass): ClassMemberCache {
+    fun create(clazz: PklClass, context: PklProject?): ClassMemberCache {
       val properties = mutableMapOf<String, PklClassProperty>()
       val leafProperties = mutableMapOf<String, PklClassProperty>()
       val methods = mutableMapOf<String, PklClassMethod>()
       val dependencies = mutableListOf<Any>(clazz)
 
-      clazz.superclass?.let { superclass ->
-        val superclassCache = superclass.cache
+      clazz.superclass(context)?.let { superclass ->
+        val superclassCache = superclass.cache(context)
         properties.putAll(superclassCache.properties)
         leafProperties.putAll(superclassCache.leafProperties)
         methods.putAll(superclassCache.methods)
         dependencies.addAll(superclassCache.dependencies)
       }
 
-      clazz.supermodule?.let { supermodule ->
-        val supermoduleCache = supermodule.cache
+      clazz.supermodule(context)?.let { supermodule ->
+        val supermoduleCache = supermodule.cache(context)
         properties.putAll(supermoduleCache.properties)
         leafProperties.putAll(supermoduleCache.leafProperties)
         methods.putAll(supermoduleCache.methods)

@@ -30,7 +30,10 @@ import org.pkl.intellij.util.unexpectedType
 
 class PklDeprecationAnnotator : PklAnnotator() {
   override fun doAnnotate(element: PsiElement, holder: AnnotationHolder) {
-    val target = element.reference?.resolve() as? PklAnnotationListOwner ?: return
+    val target =
+      element.pklReference?.resolveContextual(element.enclosingModule?.pklProject)
+        as? PklAnnotationListOwner
+        ?: return
     val deprecated = target.annotationList?.deprecated ?: return
     if (isSuppressed(element, PklProblemGroups.deprecated)) return
 

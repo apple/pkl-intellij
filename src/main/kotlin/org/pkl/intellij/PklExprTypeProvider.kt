@@ -19,13 +19,19 @@ import com.intellij.lang.ExpressionTypeProvider
 import com.intellij.psi.PsiElement
 import com.intellij.psi.util.parentOfType
 import org.pkl.intellij.psi.PklExpr
+import org.pkl.intellij.psi.enclosingModule
 import org.pkl.intellij.psi.pklBaseModule
 import org.pkl.intellij.type.computeExprType
 import org.pkl.intellij.util.escapeXml
 
 class PklExprTypeProvider : ExpressionTypeProvider<PklExpr>() {
   override fun getInformationHint(element: PklExpr): String {
-    val type = element.computeExprType(element.project.pklBaseModule, mapOf())
+    val type =
+      element.computeExprType(
+        element.project.pklBaseModule,
+        mapOf(),
+        element.enclosingModule?.pklProject
+      )
     return type.render().escapeXml()
   }
 

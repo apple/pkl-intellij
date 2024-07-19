@@ -16,6 +16,7 @@
 package org.pkl.intellij.psi
 
 import com.intellij.lang.ASTNode
+import org.pkl.intellij.packages.dto.PklProject
 import org.pkl.intellij.resolve.ResolveVisitor
 import org.pkl.intellij.resolve.Resolvers
 import org.pkl.intellij.type.Type
@@ -27,7 +28,8 @@ abstract class PklUnqualifiedAccessExprBase(node: ASTNode) :
     base: PklBaseModule,
     receiverType: Type?,
     bindings: TypeParameterBindings,
-    visitor: ResolveVisitor<R>
+    visitor: ResolveVisitor<R>,
+    context: PklProject?
   ): R {
     return Resolvers.resolveUnqualifiedAccess(
       this,
@@ -35,7 +37,8 @@ abstract class PklUnqualifiedAccessExprBase(node: ASTNode) :
       isPropertyAccess,
       base,
       bindings,
-      visitor
+      visitor,
+      context
     )
   }
 
@@ -43,7 +46,8 @@ abstract class PklUnqualifiedAccessExprBase(node: ASTNode) :
     base: PklBaseModule,
     receiverType: Type?,
     bindings: TypeParameterBindings,
-    visitor: ResolveVisitor<R>
+    visitor: ResolveVisitor<R>,
+    context: PklProject?
   ): Pair<R, Resolvers.LookupMode> {
     return Resolvers.resolveUnqualifiedAccessAndLookupMode(
       this,
@@ -52,7 +56,8 @@ abstract class PklUnqualifiedAccessExprBase(node: ASTNode) :
       true,
       base,
       bindings,
-      visitor
+      visitor,
+      context
     )
   }
 }

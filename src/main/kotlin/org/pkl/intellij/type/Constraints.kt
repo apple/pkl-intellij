@@ -17,6 +17,7 @@ package org.pkl.intellij.type
 
 import com.intellij.psi.util.parentOfTypes
 import java.util.regex.PatternSyntaxException
+import org.pkl.intellij.packages.dto.PklProject
 import org.pkl.intellij.psi.*
 import org.pkl.intellij.resolve.ResolveVisitors
 import org.pkl.intellij.type.ConstraintExpr.*
@@ -24,11 +25,12 @@ import org.pkl.intellij.type.ConstraintValue.*
 import org.pkl.intellij.util.escapeString
 import org.pkl.intellij.util.isMathematicalInteger
 
-fun List<PklExpr>.toConstraintExprs(base: PklBaseModule): List<ConstraintExpr> = map {
-  it.toConstraintExpr(base)
-}
+fun List<PklExpr>.toConstraintExprs(
+  base: PklBaseModule,
+  context: PklProject?
+): List<ConstraintExpr> = map { it.toConstraintExpr(base, context) }
 
-fun PklExpr?.toConstraintExpr(base: PklBaseModule): ConstraintExpr {
+fun PklExpr?.toConstraintExpr(base: PklBaseModule, context: PklProject?): ConstraintExpr {
   return when (this) {
     null -> Error
     is PklNumberLiteral -> {
@@ -50,24 +52,39 @@ fun PklExpr?.toConstraintExpr(base: PklBaseModule): ConstraintExpr {
     is PklFalseLiteral -> False
     is PklNullLiteral -> Null
     is PklThisExpr -> ThisExpr
-    is PklTypeTestExpr -> TypeTest(expr.toConstraintExpr(base), type.toType(base, mapOf()), base)
+    is PklTypeTestExpr ->
+      TypeTest(
+        expr.toConstraintExpr(base, context),
+        type.toType(base, mapOf(), context),
+        base,
+        context
+      )
     is PklIfExpr ->
       If(
-        conditionExpr.toConstraintExpr(base),
-        thenExpr.toConstraintExpr(base),
-        elseExpr.toConstraintExpr(base)
+        conditionExpr.toConstraintExpr(base, context),
+        thenExpr.toConstraintExpr(base, context),
+        elseExpr.toConstraintExpr(base, context)
       )
     is PklAccessExpr -> {
       val receiverExpr by lazy {
         when (this) {
           is PklUnqualifiedAccessExpr -> ImplicitThisExpr
-          is PklQualifiedAccessExpr -> this.receiverExpr.toConstraintExpr(base)
+          is PklQualifiedAccessExpr -> this.receiverExpr.toConstraintExpr(base, context)
           else -> Error
         }
       }
       when (
         val resolved =
-          resolve(base, null, mapOf(), ResolveVisitors.firstElementNamed(memberNameText, base))
+          resolve(
+            base,
+            null,
+            mapOf(),
+            ResolveVisitors.firstElementNamed(
+              memberNameText,
+              base,
+            ),
+            context
+          )
       ) {
         is PklClassProperty -> {
           when (resolved.parentOfTypes(PklClass::class, PklModule::class, PklObjectMember::class)) {
@@ -203,9 +220,9 @@ fun PklExpr?.toConstraintExpr(base: PklBaseModule): ConstraintExpr {
                       else -> Error
                     }
                   }
-                base.listConstructor -> ListExpr(arguments.toConstraintExprs(base))
-                base.setConstructor -> SetExpr(arguments.toConstraintExprs(base))
-                base.mapConstructor -> MapExpr(arguments.toConstraintExprs(base))
+                base.listConstructor -> ListExpr(arguments.toConstraintExprs(base, context))
+                base.setConstructor -> SetExpr(arguments.toConstraintExprs(base, context))
+                base.mapConstructor -> MapExpr(arguments.toConstraintExprs(base, context))
                 else -> Error
               }
             base.booleanType.psi ->
@@ -266,8 +283,8 @@ fun PklExpr?.toConstraintExpr(base: PklBaseModule): ConstraintExpr {
       }
     }
     is PklBinExpr -> {
-      val leftExpr = this.leftExpr.toConstraintExpr(base)
-      val rightExpr = this.rightExpr.toConstraintExpr(base)
+      val leftExpr = this.leftExpr.toConstraintExpr(base, context)
+      val rightExpr = this.rightExpr.toConstraintExpr(base, context)
       when (this) {
         is PklEqualityBinExpr -> {
           when (operator.elementType) {
@@ -292,11 +309,11 @@ fun PklExpr?.toConstraintExpr(base: PklBaseModule): ConstraintExpr {
       }
     }
     is PklUnaryMinusExpr -> {
-      val operandExpr = expr.toConstraintExpr(base)
+      val operandExpr = expr.toConstraintExpr(base, context)
       UnaryMinus(operandExpr)
     }
     is PklLogicalNotExpr -> {
-      val operandExpr = expr.toConstraintExpr(base)
+      val operandExpr = expr.toConstraintExpr(base, context)
       Not(operandExpr)
     }
     else -> Error
@@ -311,7 +328,7 @@ sealed class ConstraintValue : ConstraintExpr() {
       builder.append("<Error>")
     }
 
-    override fun computeType(base: PklBaseModule): Type = Type.Nothing
+    override fun computeType(base: PklBaseModule, context: PklProject?): Type = Type.Nothing
   }
 
   object BaseModule : ConstraintValue() {
@@ -322,11 +339,12 @@ sealed class ConstraintValue : ConstraintExpr() {
       builder.append("base")
     }
 
-    override fun computeType(base: PklBaseModule): Type = Type.Module.create(base.psi, "base")
+    override fun computeType(base: PklBaseModule, context: PklProject?): Type =
+      Type.Module.create(base.psi, "base", null)
   }
 
   abstract class Bool : ConstraintValue() {
-    override fun computeType(base: PklBaseModule): Type = base.booleanType
+    override fun computeType(base: PklBaseModule, context: PklProject?): Type = base.booleanType
   }
 
   object True : Bool() {
@@ -346,7 +364,7 @@ sealed class ConstraintValue : ConstraintExpr() {
       builder.append("null")
     }
 
-    override fun computeType(base: PklBaseModule): Type = base.nullType
+    override fun computeType(base: PklBaseModule, context: PklProject?): Type = base.nullType
   }
 
   data class IntValue(val value: Long) : ConstraintValue() {
@@ -354,7 +372,7 @@ sealed class ConstraintValue : ConstraintExpr() {
       builder.append(value)
     }
 
-    override fun computeType(base: PklBaseModule): Type = base.intType
+    override fun computeType(base: PklBaseModule, context: PklProject?): Type = base.intType
   }
 
   data class FloatValue(val value: Double) : ConstraintValue() {
@@ -362,7 +380,7 @@ sealed class ConstraintValue : ConstraintExpr() {
       builder.append(value)
     }
 
-    override fun computeType(base: PklBaseModule): Type = base.floatType
+    override fun computeType(base: PklBaseModule, context: PklProject?): Type = base.floatType
   }
 
   data class StringValue(val value: String) : ConstraintValue() {
@@ -370,7 +388,8 @@ sealed class ConstraintValue : ConstraintExpr() {
       builder.append('"').append(escapeString(value, "\"")).append('"')
     }
 
-    override fun computeType(base: PklBaseModule): Type = Type.StringLiteral(value)
+    override fun computeType(base: PklBaseModule, context: PklProject?): Type =
+      Type.StringLiteral(value)
   }
 
   data class RegexValue(val value: Regex) : ConstraintValue() {
@@ -380,12 +399,12 @@ sealed class ConstraintValue : ConstraintExpr() {
       builder.append("\"#)")
     }
 
-    override fun computeType(base: PklBaseModule): Type = base.regexType
+    override fun computeType(base: PklBaseModule, context: PklProject?): Type = base.regexType
   }
 
   // originally copied from Pkl codebase
   class Duration(val value: Double, val unit: Unit) : ConstraintValue(), Comparable<Duration> {
-    override fun computeType(base: PklBaseModule): Type = base.durationType
+    override fun computeType(base: PklBaseModule, context: PklProject?): Type = base.durationType
 
     override operator fun compareTo(other: Duration): Int {
       return if (unit.ordinal <= other.unit.ordinal) {
@@ -440,7 +459,7 @@ sealed class ConstraintValue : ConstraintExpr() {
 
   // originally copied from Pkl codebase
   class DataSize(val value: Double, val unit: Unit) : ConstraintValue(), Comparable<DataSize> {
-    override fun computeType(base: PklBaseModule): Type = base.dataSizeType
+    override fun computeType(base: PklBaseModule, context: PklProject?): Type = base.dataSizeType
 
     override operator fun compareTo(other: DataSize): Int {
       return if (unit.ordinal <= other.unit.ordinal) {
@@ -498,7 +517,7 @@ sealed class ConstraintValue : ConstraintExpr() {
   }
 
   data class ListValue(val elements: List<ConstraintValue>) : ConstraintValue() {
-    override fun computeType(base: PklBaseModule): Type = base.listType
+    override fun computeType(base: PklBaseModule, context: PklProject?): Type = base.listType
 
     override fun render(builder: StringBuilder) {
       builder.append("List(")
@@ -512,7 +531,7 @@ sealed class ConstraintValue : ConstraintExpr() {
   }
 
   data class SetValue(val elements: Set<ConstraintValue>) : ConstraintValue() {
-    override fun computeType(base: PklBaseModule): Type = base.setType
+    override fun computeType(base: PklBaseModule, context: PklProject?): Type = base.setType
 
     override fun render(builder: StringBuilder) {
       builder.append("Set(")
@@ -526,7 +545,7 @@ sealed class ConstraintValue : ConstraintExpr() {
   }
 
   data class MapValue(val entries: Map<ConstraintValue, ConstraintValue>) : ConstraintValue() {
-    override fun computeType(base: PklBaseModule): Type = base.mapType
+    override fun computeType(base: PklBaseModule, context: PklProject?): Type = base.mapType
 
     override fun render(builder: StringBuilder) {
       builder.append("Map(")
@@ -574,7 +593,7 @@ sealed class ConstraintExpr {
 
   abstract fun evaluate(thisValue: ConstraintValue): ConstraintValue
 
-  abstract fun computeType(base: PklBaseModule): Type
+  abstract fun computeType(base: PklBaseModule, context: PklProject?): Type
 
   abstract fun render(builder: StringBuilder)
 
@@ -596,12 +615,13 @@ sealed class ConstraintExpr {
   class TypeTest(
     private val operandExpr: ConstraintExpr,
     private val type: Type,
-    private val base: PklBaseModule
+    private val base: PklBaseModule,
+    private val context: PklProject?
   ) : ConstraintExpr() {
     override fun evaluate(thisValue: ConstraintValue): ConstraintValue =
-      operandExpr.computeType(base).isSubtypeOf(type, base).toBool()
+      operandExpr.computeType(base, context).isSubtypeOf(type, base, context).toBool()
 
-    override fun computeType(base: PklBaseModule): Type = base.booleanType
+    override fun computeType(base: PklBaseModule, context: PklProject?): Type = base.booleanType
 
     override fun render(builder: StringBuilder) {
       operandExpr.render(builder)
@@ -613,7 +633,7 @@ sealed class ConstraintExpr {
   object ThisExpr : ConstraintExpr() {
     override fun evaluate(thisValue: ConstraintValue): ConstraintValue = thisValue
 
-    override fun computeType(base: PklBaseModule): Type = Type.Unknown // TODO
+    override fun computeType(base: PklBaseModule, context: PklProject?): Type = Type.Unknown // TODO
 
     override fun render(builder: StringBuilder) {
       builder.append("this")
@@ -623,7 +643,7 @@ sealed class ConstraintExpr {
   object ImplicitThisExpr : ConstraintExpr() {
     override fun evaluate(thisValue: ConstraintValue): ConstraintValue = thisValue
 
-    override fun computeType(base: PklBaseModule): Type = Type.Unknown // TODO
+    override fun computeType(base: PklBaseModule, context: PklProject?): Type = Type.Unknown // TODO
 
     override val isImplicitReceiver: Boolean
       get() = true
@@ -757,7 +777,7 @@ sealed class ConstraintExpr {
       }
     }
 
-    override fun computeType(base: PklBaseModule): Type = base.booleanType
+    override fun computeType(base: PklBaseModule, context: PklProject?): Type = base.booleanType
   }
 
   class NotEquals(leftExpr: ConstraintExpr, rightExpr: ConstraintExpr) :
@@ -792,7 +812,7 @@ sealed class ConstraintExpr {
       }
     }
 
-    override fun computeType(base: PklBaseModule): Type = base.booleanType
+    override fun computeType(base: PklBaseModule, context: PklProject?): Type = base.booleanType
   }
 
   class LessThan(leftExpr: ConstraintExpr, rightExpr: ConstraintExpr) :
@@ -831,7 +851,7 @@ sealed class ConstraintExpr {
       }
     }
 
-    override fun computeType(base: PklBaseModule): Type = base.booleanType
+    override fun computeType(base: PklBaseModule, context: PklProject?): Type = base.booleanType
   }
 
   class LessThanOrEqualTo(leftExpr: ConstraintExpr, rightExpr: ConstraintExpr) :
@@ -870,7 +890,7 @@ sealed class ConstraintExpr {
       }
     }
 
-    override fun computeType(base: PklBaseModule): Type = base.booleanType
+    override fun computeType(base: PklBaseModule, context: PklProject?): Type = base.booleanType
   }
 
   class GreaterThan(leftExpr: ConstraintExpr, rightExpr: ConstraintExpr) :
@@ -909,7 +929,7 @@ sealed class ConstraintExpr {
       }
     }
 
-    override fun computeType(base: PklBaseModule): Type = base.booleanType
+    override fun computeType(base: PklBaseModule, context: PklProject?): Type = base.booleanType
   }
 
   class GreaterThanOrEqualTo(leftExpr: ConstraintExpr, rightExpr: ConstraintExpr) :
@@ -948,7 +968,7 @@ sealed class ConstraintExpr {
       }
     }
 
-    override fun computeType(base: PklBaseModule): Type = base.booleanType
+    override fun computeType(base: PklBaseModule, context: PklProject?): Type = base.booleanType
   }
 
   class NullCoalesce(leftExpr: ConstraintExpr, rightExpr: ConstraintExpr) :
@@ -963,8 +983,13 @@ sealed class ConstraintExpr {
       }
     }
 
-    override fun computeType(base: PklBaseModule): Type =
-      Type.union(leftExpr.computeType(base), rightExpr.computeType(base), base)
+    override fun computeType(base: PklBaseModule, context: PklProject?): Type =
+      Type.union(
+        leftExpr.computeType(base, context),
+        rightExpr.computeType(base, context),
+        base,
+        context
+      )
   }
 
   class If(
@@ -980,8 +1005,13 @@ sealed class ConstraintExpr {
       }
     }
 
-    override fun computeType(base: PklBaseModule): Type =
-      Type.union(thenExpr.computeType(base), elseExpr.computeType(base), base)
+    override fun computeType(base: PklBaseModule, context: PklProject?): Type =
+      Type.union(
+        thenExpr.computeType(base, context),
+        elseExpr.computeType(base, context),
+        base,
+        context
+      )
 
     override fun render(builder: StringBuilder) {
       builder.append("if (")
@@ -1004,7 +1034,7 @@ sealed class ConstraintExpr {
       return argument.value.matches(receiver.value).toBool()
     }
 
-    override fun computeType(base: PklBaseModule): Type = base.booleanType
+    override fun computeType(base: PklBaseModule, context: PklProject?): Type = base.booleanType
   }
 
   class StringContains(receiverExpr: ConstraintExpr, argumentExpr: ConstraintExpr) :
@@ -1021,7 +1051,7 @@ sealed class ConstraintExpr {
       }
     }
 
-    override fun computeType(base: PklBaseModule): Type = base.booleanType
+    override fun computeType(base: PklBaseModule, context: PklProject?): Type = base.booleanType
   }
 
   class StringStartsWith(receiverExpr: ConstraintExpr, argumentExpr: ConstraintExpr) :
@@ -1038,7 +1068,7 @@ sealed class ConstraintExpr {
       }
     }
 
-    override fun computeType(base: PklBaseModule): Type = base.booleanType
+    override fun computeType(base: PklBaseModule, context: PklProject?): Type = base.booleanType
   }
 
   class StringEndsWith(receiverExpr: ConstraintExpr, argumentExpr: ConstraintExpr) :
@@ -1058,7 +1088,7 @@ sealed class ConstraintExpr {
       }
     }
 
-    override fun computeType(base: PklBaseModule): Type = base.booleanType
+    override fun computeType(base: PklBaseModule, context: PklProject?): Type = base.booleanType
   }
 
   class IntIsPositive(receiverExpr: ConstraintExpr) : PropertyAccess(receiverExpr) {
@@ -1070,7 +1100,7 @@ sealed class ConstraintExpr {
       return (receiver.value >= 0).toBool()
     }
 
-    override fun computeType(base: PklBaseModule): Type = base.booleanType
+    override fun computeType(base: PklBaseModule, context: PklProject?): Type = base.booleanType
   }
 
   class IntIsNonZero(receiverExpr: ConstraintExpr) : PropertyAccess(receiverExpr) {
@@ -1082,7 +1112,7 @@ sealed class ConstraintExpr {
       return (receiver.value != 0L).toBool()
     }
 
-    override fun computeType(base: PklBaseModule): Type = base.booleanType
+    override fun computeType(base: PklBaseModule, context: PklProject?): Type = base.booleanType
   }
 
   class IntIsEven(receiverExpr: ConstraintExpr) : PropertyAccess(receiverExpr) {
@@ -1094,7 +1124,7 @@ sealed class ConstraintExpr {
       return (receiver.value % 2 == 0L).toBool()
     }
 
-    override fun computeType(base: PklBaseModule): Type = base.booleanType
+    override fun computeType(base: PklBaseModule, context: PklProject?): Type = base.booleanType
   }
 
   class IntIsOdd(receiverExpr: ConstraintExpr) : PropertyAccess(receiverExpr) {
@@ -1106,7 +1136,7 @@ sealed class ConstraintExpr {
       return (receiver.value % 2 == 1L).toBool()
     }
 
-    override fun computeType(base: PklBaseModule): Type = base.booleanType
+    override fun computeType(base: PklBaseModule, context: PklProject?): Type = base.booleanType
   }
 
   class FloatIsPositive(receiverExpr: ConstraintExpr) : PropertyAccess(receiverExpr) {
@@ -1118,7 +1148,7 @@ sealed class ConstraintExpr {
       return (receiver.value >= 0.0).toBool()
     }
 
-    override fun computeType(base: PklBaseModule): Type = base.booleanType
+    override fun computeType(base: PklBaseModule, context: PklProject?): Type = base.booleanType
   }
 
   class FloatIsNonZero(receiverExpr: ConstraintExpr) : PropertyAccess(receiverExpr) {
@@ -1130,7 +1160,7 @@ sealed class ConstraintExpr {
       return (receiver.value != 0.0).toBool()
     }
 
-    override fun computeType(base: PklBaseModule): Type = base.booleanType
+    override fun computeType(base: PklBaseModule, context: PklProject?): Type = base.booleanType
   }
 
   class FloatIsFinite(receiverExpr: ConstraintExpr) : PropertyAccess(receiverExpr) {
@@ -1142,7 +1172,7 @@ sealed class ConstraintExpr {
       return (receiver.value.isFinite()).toBool()
     }
 
-    override fun computeType(base: PklBaseModule): Type = base.booleanType
+    override fun computeType(base: PklBaseModule, context: PklProject?): Type = base.booleanType
   }
 
   class FloatIsInfinite(receiverExpr: ConstraintExpr) : PropertyAccess(receiverExpr) {
@@ -1154,7 +1184,7 @@ sealed class ConstraintExpr {
       return (receiver.value.isInfinite()).toBool()
     }
 
-    override fun computeType(base: PklBaseModule): Type = base.booleanType
+    override fun computeType(base: PklBaseModule, context: PklProject?): Type = base.booleanType
   }
 
   class FloatIsNaN(receiverExpr: ConstraintExpr) : PropertyAccess(receiverExpr) {
@@ -1166,7 +1196,7 @@ sealed class ConstraintExpr {
       return (receiver.value.isNaN()).toBool()
     }
 
-    override fun computeType(base: PklBaseModule): Type = base.booleanType
+    override fun computeType(base: PklBaseModule, context: PklProject?): Type = base.booleanType
   }
 
   class DurationIsPositive(receiverExpr: ConstraintExpr) : PropertyAccess(receiverExpr) {
@@ -1178,7 +1208,7 @@ sealed class ConstraintExpr {
       return (receiver.value >= 0.0).toBool()
     }
 
-    override fun computeType(base: PklBaseModule): Type = base.booleanType
+    override fun computeType(base: PklBaseModule, context: PklProject?): Type = base.booleanType
   }
 
   class DataSizeIsPositive(receiverExpr: ConstraintExpr) : PropertyAccess(receiverExpr) {
@@ -1190,7 +1220,7 @@ sealed class ConstraintExpr {
       return (receiver.value >= 0.0).toBool()
     }
 
-    override fun computeType(base: PklBaseModule): Type = base.booleanType
+    override fun computeType(base: PklBaseModule, context: PklProject?): Type = base.booleanType
   }
 
   class DataSizeIsBinaryUnit(receiverExpr: ConstraintExpr) : PropertyAccess(receiverExpr) {
@@ -1203,7 +1233,7 @@ sealed class ConstraintExpr {
       return (ordinal % 2 == 0).toBool()
     }
 
-    override fun computeType(base: PklBaseModule): Type = base.booleanType
+    override fun computeType(base: PklBaseModule, context: PklProject?): Type = base.booleanType
   }
 
   class DataSizeIsDecimalUnit(receiverExpr: ConstraintExpr) : PropertyAccess(receiverExpr) {
@@ -1216,7 +1246,7 @@ sealed class ConstraintExpr {
       return (ordinal == 0 || ordinal % 2 == 1).toBool()
     }
 
-    override fun computeType(base: PklBaseModule): Type = base.booleanType
+    override fun computeType(base: PklBaseModule, context: PklProject?): Type = base.booleanType
   }
 
   class StringIsEmpty(receiverExpr: ConstraintExpr) : PropertyAccess(receiverExpr) {
@@ -1228,7 +1258,7 @@ sealed class ConstraintExpr {
       return receiver.value.isEmpty().toBool()
     }
 
-    override fun computeType(base: PklBaseModule): Type = base.booleanType
+    override fun computeType(base: PklBaseModule, context: PklProject?): Type = base.booleanType
   }
 
   class StringIsRegex(receiverExpr: ConstraintExpr) : PropertyAccess(receiverExpr) {
@@ -1245,7 +1275,7 @@ sealed class ConstraintExpr {
       }
     }
 
-    override fun computeType(base: PklBaseModule): Type = base.booleanType
+    override fun computeType(base: PklBaseModule, context: PklProject?): Type = base.booleanType
   }
 
   class ListIsEmpty(receiverExpr: ConstraintExpr) : PropertyAccess(receiverExpr) {
@@ -1257,7 +1287,7 @@ sealed class ConstraintExpr {
       return receiver.elements.isEmpty().toBool()
     }
 
-    override fun computeType(base: PklBaseModule): Type = base.booleanType
+    override fun computeType(base: PklBaseModule, context: PklProject?): Type = base.booleanType
   }
 
   class SetIsEmpty(receiverExpr: ConstraintExpr) : PropertyAccess(receiverExpr) {
@@ -1269,7 +1299,7 @@ sealed class ConstraintExpr {
       return receiver.elements.isEmpty().toBool()
     }
 
-    override fun computeType(base: PklBaseModule): Type = base.booleanType
+    override fun computeType(base: PklBaseModule, context: PklProject?): Type = base.booleanType
   }
 
   class MapIsEmpty(receiverExpr: ConstraintExpr) : PropertyAccess(receiverExpr) {
@@ -1281,7 +1311,7 @@ sealed class ConstraintExpr {
       return receiver.entries.isEmpty().toBool()
     }
 
-    override fun computeType(base: PklBaseModule): Type = base.booleanType
+    override fun computeType(base: PklBaseModule, context: PklProject?): Type = base.booleanType
   }
 
   class StringLength(receiverExpr: ConstraintExpr) : PropertyAccess(receiverExpr) {
@@ -1293,7 +1323,7 @@ sealed class ConstraintExpr {
       return IntValue(receiver.value.length.toLong())
     }
 
-    override fun computeType(base: PklBaseModule): Type = base.intType
+    override fun computeType(base: PklBaseModule, context: PklProject?): Type = base.intType
   }
 
   class ListLength(receiverExpr: ConstraintExpr) : PropertyAccess(receiverExpr) {
@@ -1305,7 +1335,7 @@ sealed class ConstraintExpr {
       return IntValue(receiver.elements.size.toLong())
     }
 
-    override fun computeType(base: PklBaseModule): Type = base.intType
+    override fun computeType(base: PklBaseModule, context: PklProject?): Type = base.intType
   }
 
   class SetLength(receiverExpr: ConstraintExpr) : PropertyAccess(receiverExpr) {
@@ -1317,7 +1347,7 @@ sealed class ConstraintExpr {
       return IntValue(receiver.elements.size.toLong())
     }
 
-    override fun computeType(base: PklBaseModule): Type = base.intType
+    override fun computeType(base: PklBaseModule, context: PklProject?): Type = base.intType
   }
 
   class MapLength(receiverExpr: ConstraintExpr) : PropertyAccess(receiverExpr) {
@@ -1329,7 +1359,7 @@ sealed class ConstraintExpr {
       return IntValue(receiver.entries.size.toLong())
     }
 
-    override fun computeType(base: PklBaseModule): Type = base.intType
+    override fun computeType(base: PklBaseModule, context: PklProject?): Type = base.intType
   }
 
   class IntIsBetween(
@@ -1365,7 +1395,7 @@ sealed class ConstraintExpr {
       }
     }
 
-    override fun computeType(base: PklBaseModule): Type = base.booleanType
+    override fun computeType(base: PklBaseModule, context: PklProject?): Type = base.booleanType
   }
 
   class FloatIsBetween(
@@ -1400,7 +1430,7 @@ sealed class ConstraintExpr {
       }
     }
 
-    override fun computeType(base: PklBaseModule): Type = base.booleanType
+    override fun computeType(base: PklBaseModule, context: PklProject?): Type = base.booleanType
   }
 
   class DurationIsBetween(
@@ -1420,7 +1450,7 @@ sealed class ConstraintExpr {
       return (receiver in argument1..argument2).toBool()
     }
 
-    override fun computeType(base: PklBaseModule): Type = base.booleanType
+    override fun computeType(base: PklBaseModule, context: PklProject?): Type = base.booleanType
   }
 
   class DataSizeIsBetween(
@@ -1440,7 +1470,7 @@ sealed class ConstraintExpr {
       return (receiver in argument1..argument2).toBool()
     }
 
-    override fun computeType(base: PklBaseModule): Type = base.booleanType
+    override fun computeType(base: PklBaseModule, context: PklProject?): Type = base.booleanType
   }
 
   class UnaryMinus(operandExpr: ConstraintExpr) : PrefixExpr(operandExpr) {
@@ -1456,8 +1486,8 @@ sealed class ConstraintExpr {
       }
     }
 
-    override fun computeType(base: PklBaseModule): Type {
-      return when (val operandType = operandExpr.computeType(base)) {
+    override fun computeType(base: PklBaseModule, context: PklProject?): Type {
+      return when (val operandType = operandExpr.computeType(base, context)) {
         base.intType,
         base.floatType,
         base.durationType,
@@ -1478,7 +1508,7 @@ sealed class ConstraintExpr {
       }
     }
 
-    override fun computeType(base: PklBaseModule): Type = base.booleanType
+    override fun computeType(base: PklBaseModule, context: PklProject?): Type = base.booleanType
   }
 
   class And(leftExpr: ConstraintExpr, rightExpr: ConstraintExpr) : InfixExpr(leftExpr, rightExpr) {
@@ -1501,7 +1531,7 @@ sealed class ConstraintExpr {
       }
     }
 
-    override fun computeType(base: PklBaseModule): Type = base.booleanType
+    override fun computeType(base: PklBaseModule, context: PklProject?): Type = base.booleanType
   }
 
   class Or(leftExpr: ConstraintExpr, rightExpr: ConstraintExpr) : InfixExpr(leftExpr, rightExpr) {
@@ -1525,7 +1555,7 @@ sealed class ConstraintExpr {
       }
     }
 
-    override fun computeType(base: PklBaseModule): Type = base.booleanType
+    override fun computeType(base: PklBaseModule, context: PklProject?): Type = base.booleanType
   }
 
   class Xor(receiverExpr: ConstraintExpr, argumentExpr: ConstraintExpr) :
@@ -1555,7 +1585,7 @@ sealed class ConstraintExpr {
       }
     }
 
-    override fun computeType(base: PklBaseModule): Type = base.booleanType
+    override fun computeType(base: PklBaseModule, context: PklProject?): Type = base.booleanType
   }
 
   class Implies(receiverExpr: ConstraintExpr, argumentExpr: ConstraintExpr) :
@@ -1585,7 +1615,7 @@ sealed class ConstraintExpr {
       }
     }
 
-    override fun computeType(base: PklBaseModule): Type = base.booleanType
+    override fun computeType(base: PklBaseModule, context: PklProject?): Type = base.booleanType
   }
 
   class ListExpr(argumentExprs: List<ConstraintExpr>) :
@@ -1597,8 +1627,10 @@ sealed class ConstraintExpr {
       return ListValue(argumentExprs.map { it.evaluate(thisValue) })
     }
 
-    override fun computeType(base: PklBaseModule): Type =
-      base.listType.withTypeArguments(Type.union(argumentExprs.map { it.computeType(base) }, base))
+    override fun computeType(base: PklBaseModule, context: PklProject?): Type =
+      base.listType.withTypeArguments(
+        Type.union(argumentExprs.map { it.computeType(base, context) }, base, context)
+      )
   }
 
   class SetExpr(argumentExprs: List<ConstraintExpr>) : VarArgMethodCall(BaseModule, argumentExprs) {
@@ -1609,8 +1641,10 @@ sealed class ConstraintExpr {
       return SetValue(argumentExprs.mapTo(mutableSetOf()) { it.evaluate(thisValue) })
     }
 
-    override fun computeType(base: PklBaseModule): Type =
-      base.listType.withTypeArguments(Type.union(argumentExprs.map { it.computeType(base) }, base))
+    override fun computeType(base: PklBaseModule, context: PklProject?): Type =
+      base.listType.withTypeArguments(
+        Type.union(argumentExprs.map { it.computeType(base, context) }, base, context)
+      )
   }
 
   class MapExpr(argumentExprs: List<ConstraintExpr>) : VarArgMethodCall(BaseModule, argumentExprs) {
@@ -1626,15 +1660,15 @@ sealed class ConstraintExpr {
       return MapValue(entries)
     }
 
-    override fun computeType(base: PklBaseModule): Type {
+    override fun computeType(base: PklBaseModule, context: PklProject?): Type {
       var keyType: Type = Type.Nothing
       var valueType: Type = Type.Nothing
 
       for ((index, expr) in argumentExprs.withIndex()) {
         if (index % 2 == 0) {
-          keyType = Type.union(keyType, expr.computeType(base), base)
+          keyType = Type.union(keyType, expr.computeType(base, context), base, context)
         } else {
-          valueType = Type.union(valueType, expr.computeType(base), base)
+          valueType = Type.union(valueType, expr.computeType(base, context), base, context)
         }
       }
 
@@ -1649,7 +1683,8 @@ private inline fun expectOneArg(
   builder: (ConstraintExpr) -> ConstraintExpr
 ): ConstraintExpr =
   when (arguments.size) {
-    1 -> builder(arguments[0].toConstraintExpr(base))
+    // no need to pass on context; constraint support only operates on stdlib types.
+    1 -> builder(arguments[0].toConstraintExpr(base, null))
     else -> Error
   }
 
@@ -1659,7 +1694,9 @@ private inline fun expectTwoArgs(
   builder: (ConstraintExpr, ConstraintExpr) -> ConstraintExpr
 ): ConstraintExpr =
   when (arguments.size) {
-    2 -> builder(arguments[0].toConstraintExpr(base), arguments[1].toConstraintExpr(base))
+    // no need to pass on context; constraint support only operates on stdlib types.
+    2 ->
+      builder(arguments[0].toConstraintExpr(base, null), arguments[1].toConstraintExpr(base, null))
     else -> Error
   }
 

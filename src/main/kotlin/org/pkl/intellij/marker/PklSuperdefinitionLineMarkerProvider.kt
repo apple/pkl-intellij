@@ -47,13 +47,13 @@ class PklSuperdefinitionLineMarkerProvider : RelatedItemLineMarkerProvider() {
         // TODO: use index to point to methods implementing or overriding this method
         when (val owner = parent.owner) {
           is PklClass -> {
-            owner.superclass?.let { superclass ->
-              val supermethod = superclass.cache.methods[element.text] ?: return
+            owner.superclass(null)?.let { superclass ->
+              val supermethod = superclass.cache(null).methods[element.text] ?: return
               markSupermethod(element, supermethod, superclass, result)
               return
             }
-            owner.supermodule?.let { supermodule ->
-              val supermethod = supermodule.cache.methods[element.text] ?: return
+            owner.supermodule(null)?.let { supermodule ->
+              val supermethod = supermodule.cache(null).methods[element.text] ?: return
               markSupermethod(element, supermethod, supermodule, result)
             }
           }
@@ -61,8 +61,8 @@ class PklSuperdefinitionLineMarkerProvider : RelatedItemLineMarkerProvider() {
             // only show markers for module classes
             if (owner.extendsAmendsClause.isAmend) return
 
-            val supermodule = owner.supermodule ?: return
-            val supermethod = supermodule.cache.methods[element.text] ?: return
+            val supermodule = owner.supermodule(null) ?: return
+            val supermethod = supermodule.cache(null).methods[element.text] ?: return
             markSupermethod(element, supermethod, supermodule, result)
           }
           else -> return
@@ -79,12 +79,12 @@ class PklSuperdefinitionLineMarkerProvider : RelatedItemLineMarkerProvider() {
             )
         ) {
           is PklClass -> {
-            enclosingDef.superclass?.let { superclass ->
-              val superproperty = superclass.cache.properties[element.text] ?: return
+            enclosingDef.superclass(null)?.let { superclass ->
+              val superproperty = superclass.cache(null).properties[element.text] ?: return
               markSuperproperty(element, superproperty, superclass, result)
             }
-            enclosingDef.supermodule?.let { supermodule ->
-              val superproperty = supermodule.cache.properties[element.text] ?: return
+            enclosingDef.supermodule(null)?.let { supermodule ->
+              val superproperty = supermodule.cache(null).properties[element.text] ?: return
               markSuperproperty(element, superproperty, supermodule, result)
             }
           }
@@ -92,9 +92,10 @@ class PklSuperdefinitionLineMarkerProvider : RelatedItemLineMarkerProvider() {
             // only show markers for module classes
             if (enclosingDef.extendsAmendsClause.isAmend) return
 
-            val supermodule = enclosingDef.supermodule ?: return
+            val supermodule = enclosingDef.supermodule(null) ?: return
             val superproperty =
-              supermodule.cache.typeDefsAndProperties[element.text] as? PklClassProperty? ?: return
+              supermodule.cache(null).typeDefsAndProperties[element.text] as? PklClassProperty?
+                ?: return
             markSuperproperty(element, superproperty, supermodule, result)
           }
           else -> return

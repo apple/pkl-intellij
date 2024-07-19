@@ -24,6 +24,7 @@ import com.intellij.refactoring.suggested.createSmartPointer
 import com.jetbrains.rd.util.first
 import org.pkl.intellij.intention.PklAddModifierQuickFix
 import org.pkl.intellij.intention.PklDefinePropertiesValuesQuickFix
+import org.pkl.intellij.packages.dto.PklProject
 import org.pkl.intellij.psi.*
 import org.pkl.intellij.type.toType
 import org.pkl.intellij.util.canModify
@@ -45,7 +46,9 @@ class PklExtendsClauseAnnotator : PklAnnotator() {
   ) {
     if (!clause.isExtend) return
     val moduleUri = clause.moduleUri ?: return
-    val resolved = moduleUri.resolve() ?: return // checked by [PklModuleUriAndVersionAnnotator]
+    val context = clause.enclosingModule?.pklProject
+    val resolved =
+      moduleUri.resolve(context) ?: return // checked by [PklModuleUriAndVersionAnnotator]
     if (!resolved.isAbstractOrOpen) {
       val moduleName = resolved.shortDisplayName
       val annotation =
@@ -69,7 +72,7 @@ class PklExtendsClauseAnnotator : PklAnnotator() {
       annotation.create()
     }
     val module = clause.parentOfTypes(PklModule::class) ?: return
-    checkParentClassDef(clause, module, holder.currentProject.pklBaseModule, holder)
+    checkParentClassDef(clause, module, holder.currentProject.pklBaseModule, holder, context)
   }
 
   private fun checkClassExtendsClause(
@@ -77,6 +80,7 @@ class PklExtendsClauseAnnotator : PklAnnotator() {
     holder: AnnotationHolder,
     supertype: PklType?
   ) {
+    val context = clause.enclosingModule?.pklProject
     fun reportError(message: String, fixes: List<IntentionAction> = listOf()) {
       val element =
         when (val type = clause.type!!) {
@@ -113,7 +117,7 @@ class PklExtendsClauseAnnotator : PklAnnotator() {
       null -> {}
       is PklDeclaredType -> {
         val typeName = supertype.typeName
-        val resolved = typeName.resolve() ?: return // checked by [PklTypeNameAnnotator]
+        val resolved = typeName.resolve(context) ?: return // checked by [PklTypeNameAnnotator]
 
         when (resolved) {
           is PklClass -> {
@@ -158,7 +162,7 @@ class PklExtendsClauseAnnotator : PklAnnotator() {
       }
     }
     val parent = clause.parentOfTypes(PklClass::class) ?: return
-    checkParentClassDef(clause, parent, holder.currentProject.pklBaseModule, holder)
+    checkParentClassDef(clause, parent, holder.currentProject.pklBaseModule, holder, context)
   }
 
   /**
@@ -169,12 +173,13 @@ class PklExtendsClauseAnnotator : PklAnnotator() {
     element: PsiElement,
     def: PklTypeDefOrModule,
     base: PklBaseModule,
-    holder: AnnotationHolder
+    holder: AnnotationHolder,
+    context: PklProject?
   ) {
     if (def.isAbstract) return
     // skip annotation if parent is not abstract nor open
-    if (def.parentTypeDef?.isAbstractOrOpen == false) return
-    val parentProperties = def.effectiveParentProperties ?: return
+    if (def.parentTypeDef(context)?.isAbstractOrOpen == false) return
+    val parentProperties = def.effectiveParentProperties(context) ?: return
     val definedProperties =
       when (def) {
         is PklClass -> def.properties.associateBy { it.name }
@@ -185,11 +190,11 @@ class PklExtendsClauseAnnotator : PklAnnotator() {
       }
     val missingProperties =
       parentProperties.filter { (propName, property) ->
-        val type = property.type.toType(base, mapOf())
+        val type = property.type.toType(base, mapOf(), context)
         property.isFixedOrConst &&
           property.expr == null &&
           definedProperties[propName] == null &&
-          !type.hasDefault(base)
+          !type.hasDefault(base, context)
       }
     if (missingProperties.isEmpty()) return
     val entityName = if (def is PklModule) "module" else "class"

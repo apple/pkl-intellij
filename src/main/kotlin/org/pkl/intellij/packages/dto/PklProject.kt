@@ -18,7 +18,6 @@
 package org.pkl.intellij.packages.dto
 
 import com.intellij.openapi.vfs.LocalFileSystem
-import com.intellij.openapi.vfs.VfsUtil
 import com.intellij.openapi.vfs.VirtualFile
 import java.net.URI
 import java.nio.charset.StandardCharsets
@@ -30,7 +29,7 @@ import kotlinx.serialization.json.Json
 import org.pkl.intellij.packages.Dependency
 import org.pkl.intellij.packages.LocalProjectDependency
 import org.pkl.intellij.packages.PackageDependency
-import org.pkl.intellij.util.dropRoot
+import org.pkl.intellij.packages.toDependency
 
 data class PklProject(val metadata: DerivedProjectMetadata, val projectDeps: ProjectDeps?) {
 
@@ -53,6 +52,7 @@ data class PklProject(val metadata: DerivedProjectMetadata, val projectDeps: Pro
     @Serializable
     data class DerivedProjectMetadata(
       val projectFileUri: String,
+      val packageUri: PackageUri?,
       val declaredDependencies: Map<String, PackageUri>,
       val evaluatorSettings: EvaluatorSettings
     )
@@ -104,34 +104,35 @@ data class PklProject(val metadata: DerivedProjectMetadata, val projectDeps: Pro
 
   val projectDirVirtualFile: VirtualFile? by lazy { localFs.findFileByNioFile(projectDir) }
 
-  val projectPackageCacheDirPath: Path? by lazy {
-    VfsUtil.getUserHomeDir()
-      ?.toNioPath()
-      ?.resolve(".pkl/editor-support/projectpackage/${projectDir.dropRoot()}")
-  }
-
-  fun projectPackagesCacheDir(): VirtualFile? {
-    return projectPackageCacheDirPath?.let(localFs::findFileByNioFile)
-  }
-
   private val localFs: LocalFileSystem = LocalFileSystem.getInstance()
 
   /** The dependencies declared within the PklProject file */
   val myDependencies: Map<String, Dependency>
     get() {
       return metadata.declaredDependencies.entries.fold(mapOf()) { acc, (name, packageUri) ->
-        val dep = projectDeps?.getResolvedDependency(packageUri)?.toDependency ?: return@fold acc
+        val dep = projectDeps?.getResolvedDependency(packageUri)?.asDependency ?: return@fold acc
         acc.plus(name to dep)
       }
     }
 
+  fun getResolvedDependencies(context: PklProject?): Map<String, Dependency> {
+    if (context == null || context === this) return myDependencies
+    return myDependencies.mapValues { (_, dep) ->
+      // best-effort approach; if the dependency is not found in [context], show what's found in
+      // [myDependencies].
+      context.projectDeps?.getResolvedDependency(dep.packageUri)?.toDependency(context) ?: dep
+    }
+  }
+
   private val self = this
 
-  private val ResolvedDependency.toDependency: Dependency?
+  private val ResolvedDependency.asDependency: Dependency?
     get() =
       when (this) {
         is LocalDependency ->
-          projectDirVirtualFile?.findFileByRelativePath(path)?.let { LocalProjectDependency(it) }
+          projectDirVirtualFile?.findFileByRelativePath(path)?.let {
+            LocalProjectDependency(uri, it)
+          }
         else -> PackageDependency(uri, self)
       }
 }

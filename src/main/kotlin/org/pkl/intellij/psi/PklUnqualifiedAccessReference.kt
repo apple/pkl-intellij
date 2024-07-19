@@ -18,21 +18,30 @@ package org.pkl.intellij.psi
 import com.intellij.openapi.util.TextRange
 import com.intellij.psi.*
 import com.intellij.psi.util.parentOfType
+import org.pkl.intellij.packages.dto.PklProject
 import org.pkl.intellij.resolve.ResolveVisitors
 
 class PklUnqualifiedAccessReference(private val accessName: PklUnqualifiedAccessName) :
-  PsiReferenceBase<PklUnqualifiedAccessName>(accessName) {
+  PsiReferenceBase<PklUnqualifiedAccessName>(accessName), PklReference {
 
   override fun getRangeInElement(): TextRange = ElementManipulators.getValueTextRange(accessName)
 
-  override fun resolve(): PklElement? {
+  override fun resolveContextual(context: PklProject?): PsiElement? {
     val accessExpr = accessName.parentOfType<PklUnqualifiedAccessExpr>() ?: return null
     val base = accessExpr.project.pklBaseModule
     return accessExpr.resolve(
       base,
       null,
       mapOf(),
-      ResolveVisitors.firstElementNamed(accessExpr.memberNameText, base)
+      ResolveVisitors.firstElementNamed(
+        accessExpr.memberNameText,
+        base,
+      ),
+      context
     )
+  }
+
+  override fun resolve(): PsiElement? {
+    return resolveContextual(accessName.enclosingModule?.pklProject)
   }
 }

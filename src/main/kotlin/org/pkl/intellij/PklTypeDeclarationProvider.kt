@@ -18,6 +18,7 @@ package org.pkl.intellij
 import com.intellij.codeInsight.navigation.actions.TypeDeclarationProvider
 import com.intellij.psi.PsiElement
 import org.pkl.intellij.psi.PklAccessExpr
+import org.pkl.intellij.psi.enclosingModule
 import org.pkl.intellij.psi.pklBaseModule
 import org.pkl.intellij.resolve.ResolveVisitors
 import org.pkl.intellij.type.computeResolvedImportType
@@ -25,19 +26,22 @@ import org.pkl.intellij.type.computeResolvedImportType
 class PklTypeDeclarationProvider : TypeDeclarationProvider {
   override fun getSymbolTypeDeclarations(element: PsiElement): Array<PsiElement> {
     val base = element.project.pklBaseModule
-
+    val context = element.enclosingModule?.pklProject
     return when (element) {
       is PklAccessExpr -> {
         val visitor = ResolveVisitors.elementsNamed(element.memberNameText, base)
         // assume that filtering out identical PSIs is good enough
         val result = mutableSetOf<PsiElement>()
-        for (target in element.resolve(base, null, mapOf(), visitor)) {
+        for (target in element.resolve(base, null, mapOf(), visitor, context)) {
           getSymbolTypeDeclarations(target).let { result.addAll(it) }
         }
         result.toTypedArray()
       }
       else ->
-        element.computeResolvedImportType(base, mapOf()).resolveToDefinitions(base).toTypedArray()
+        element
+          .computeResolvedImportType(base, mapOf(), context)
+          .resolveToDefinitions(base)
+          .toTypedArray()
     }
   }
 }

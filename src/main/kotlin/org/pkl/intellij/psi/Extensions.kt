@@ -31,11 +31,12 @@ import javax.swing.Icon
 import org.pkl.intellij.PklIcons
 import org.pkl.intellij.PklImportOptimizer.ImportInfo
 import org.pkl.intellij.PklLanguage
+import org.pkl.intellij.packages.dto.PklProject
 import org.pkl.intellij.packages.pklPackageService
 import org.pkl.intellij.psi.PklElementTypes.IMPORT_GLOB
-import org.pkl.intellij.psi.PklModuleUriReference.Companion.resolve
 import org.pkl.intellij.type.*
 import org.pkl.intellij.util.appendNumericSuffix
+import org.pkl.intellij.util.getContextualCachedValue
 import org.pkl.intellij.util.inferImportPropertyName
 import org.pkl.intellij.util.unexpectedType
 
@@ -274,7 +275,9 @@ val PklMethod.isOverridable: Boolean
 fun PklMethod.isVarArgs(base: PklBaseModule): Boolean {
   val varArgsType = base.varArgsType ?: return false
   val lastParam = parameterList?.elements?.lastOrNull() ?: return false
-  val lastParamType = lastParam.type.toType(base, mapOf()).toClassType(base)
+  val lastParamType =
+    // optimization: varargs is only available in stdlib, no need to provide context.
+    lastParam.type.toType(base, mapOf(), null).toClassType(base, null)
   return lastParamType != null && lastParamType.classEquals(varArgsType)
 }
 
@@ -284,20 +287,23 @@ val PklModuleMember.owner: PklTypeDefOrModule?
 val PklClass.supertype: PklType?
   get() = extendsClause?.type
 
-inline fun PklClass.eachSuperclassOrModule(consumer: (PklTypeDefOrModule) -> Unit) {
-  var clazz = superclass
+inline fun PklClass.eachSuperclassOrModule(
+  context: PklProject?,
+  consumer: (PklTypeDefOrModule) -> Unit
+) {
+  var clazz = superclass(context)
   var supermostClass = this
 
   while (clazz != null) {
     consumer(clazz)
     supermostClass = clazz
-    clazz = clazz.superclass
+    clazz = clazz.superclass(context)
   }
 
-  var module = supermostClass.supermodule
+  var module = supermostClass.supermodule(context)
   while (module != null) {
     consumer(module)
-    module = module.supermodule
+    module = module.supermodule(context)
     if (module == null) {
       val base = project.pklBaseModule
       consumer(base.moduleType.psi)
@@ -306,34 +312,32 @@ inline fun PklClass.eachSuperclassOrModule(consumer: (PklTypeDefOrModule) -> Uni
   }
 }
 
-val PklClass.superclass: PklClass?
-  get() {
-    return when (val st = supertype) {
-      is PklDeclaredType -> st.typeName.resolve() as? PklClass?
-      is PklModuleType -> null // see PklClass.supermodule
-      null ->
-        when {
-          isPklBaseAnyClass -> null
-          else -> project.pklBaseModule.typedType.psi
-        }
-      else -> unexpectedType(st)
-    }
+fun PklClass.superclass(context: PklProject?): PklClass? {
+  return when (val st = supertype) {
+    is PklDeclaredType -> st.typeName.resolve(context) as? PklClass?
+    is PklModuleType -> null // see PklClass.supermodule
+    null ->
+      when {
+        isPklBaseAnyClass -> null
+        else -> project.pklBaseModule.typedType.psi
+      }
+    else -> unexpectedType(st)
   }
+}
 
 // Non-null when [this] extends a module (class).
 // Ideally, [PklClass.superclass] would cover this case,
 // but we don't have a common abstraction for PklClass and PklModule(Class),
 // and it seems challenging to introduce one.
-val PklClass.supermodule: PklModule?
-  get() {
-    return when (val st = supertype) {
-      is PklDeclaredType -> st.typeName.resolve() as? PklModule?
-      is PklModuleType -> enclosingModule
-      else -> null
-    }
+fun PklClass.supermodule(context: PklProject?): PklModule? {
+  return when (val st = supertype) {
+    is PklDeclaredType -> st.typeName.resolve(context) as? PklModule?
+    is PklModuleType -> enclosingModule
+    else -> null
   }
+}
 
-fun PklClass.isSubclassOf(other: PklClass): Boolean {
+fun PklClass.isSubclassOf(other: PklClass, context: PklProject?): Boolean {
   // optimization
   if (this === other) return true
 
@@ -343,42 +347,43 @@ fun PklClass.isSubclassOf(other: PklClass): Boolean {
   var clazz: PklClass? = this
   while (clazz != null) {
     if (areElementsEquivalent(clazz, other)) return true
-    if (clazz.supermodule != null) {
-      return project.pklBaseModule.moduleType.psi.isSubclassOf(other)
+    if (clazz.supermodule(context) != null) {
+      return project.pklBaseModule.moduleType.psi.isSubclassOf(other, context)
     }
-    clazz = clazz.superclass
+    clazz = clazz.superclass(context)
   }
   return false
 }
 
-fun PklClass.isStrictSubclassOf(other: PklClass): Boolean {
-  superclass?.let {
-    return it.isSubclassOf(other)
+fun PklClass.isStrictSubclassOf(other: PklClass, context: PklProject?): Boolean {
+  superclass(context)?.let {
+    return it.isSubclassOf(other, context)
   }
-  supermodule?.let { project.pklBaseModule.moduleType.psi.isSubclassOf(other) }
+  supermodule(context)?.let { project.pklBaseModule.moduleType.psi.isSubclassOf(other, context) }
   return false
 }
 
-fun PklClass.isSubclassOf(other: PklModule): Boolean {
+fun PklClass.isSubclassOf(other: PklModule, context: PklProject?): Boolean {
   // optimization
   if (!other.isAbstractOrOpen) return false
 
   var clazz = this
-  var superclass = clazz.superclass
+  var superclass = clazz.superclass(context)
   while (superclass != null) {
     clazz = superclass
-    superclass = superclass.superclass
+    superclass = superclass.superclass(context)
   }
-  var module = clazz.supermodule
+  var module = clazz.supermodule(context)
   while (module != null) {
     if (areElementsEquivalent(module, other)) return true
-    module = module.supermodule
+    module = module.supermodule(context)
   }
   return false
 }
 
 /** Assumes `!this.isSubclassOf(other)`. */
-fun PklClass.hasCommonSubclassWith(other: PklClass): Boolean = other.isSubclassOf(this)
+fun PklClass.hasCommonSubclassWith(other: PklClass, context: PklProject?): Boolean =
+  other.isSubclassOf(this, context)
 
 val PklClass.isPklBaseAnyClass: Boolean
   get() {
@@ -386,34 +391,40 @@ val PklClass.isPklBaseAnyClass: Boolean
   }
 
 // returns PklTypeDefOrModule or PklTypeParameter
-fun PklTypeName.resolve(): PklElement? = simpleName.resolve()
+fun PklTypeName.resolve(context: PklProject?): PklElement? = simpleName.resolve(context)
 
 // returns PklTypeOrModule or PklTypeParameter
-fun PklSimpleTypeName.resolve(): PklElement? = (reference as PklSimpleTypeNameReference?)?.resolve()
+fun PklSimpleTypeName.resolve(context: PklProject?): PklElement? =
+  pklReference?.resolveContextual(context) as? PklElement
+
+fun PklPropertyName.resolve(context: PklProject?): PklElement? =
+  pklReference?.resolveContextual(context) as? PklElement
 
 val PklModuleUri.escapedContent: String?
   get() = stringConstant.content.escapedText()
 
-fun PklModuleUri.resolve(): PklModule? =
+fun PklModuleUri.resolve(context: PklProject?): PklModule? =
   escapedContent?.let { text ->
-    resolve(text, text, containingFile, enclosingModule, project) as? PklModule?
+    PklModuleUriReference.resolve(text, text, containingFile, enclosingModule, project, context)
+      as? PklModule?
   }
 
-fun resolveModuleUriGlob(element: PklModuleUri): List<PklModule> =
+fun resolveModuleUriGlob(element: PklModuleUri, context: PklProject?): List<PklModule> =
   element.escapedContent
     ?.let { text ->
       val psiManager = PsiManager.getInstance(element.project)
       CachedValuesManager.getManager(element.project).getCachedValue(element) {
         CachedValueProvider.Result.create(
-          PklModuleUriReference.resolveGlob(text, text, element),
-          psiManager.modificationTracker.forLanguage(PklLanguage)
+          PklModuleUriReference.resolveGlob(text, text, element, context),
+          psiManager.modificationTracker.forLanguage(PklLanguage),
         )
       }
     }
     ?.filterIsInstance<PklModule>()
     ?: emptyList()
 
-fun PklModuleUri.resolveGlob(): List<PklModule> = resolveModuleUriGlob(this)
+fun PklModuleUri.resolveGlob(context: PklProject?): List<PklModule> =
+  resolveModuleUriGlob(this, context)
 
 /**
  * Finds or inserts (in sort order) an import for [uri] and returns its member name. Returns `null`
@@ -466,7 +477,8 @@ sealed class ModuleResolutionResult {
   abstract fun computeResolvedImportType(
     base: PklBaseModule,
     bindings: TypeParameterBindings,
-    preserveUnboundedVars: Boolean
+    preserveUnboundedVars: Boolean,
+    context: PklProject?
   ): Type
 }
 
@@ -474,9 +486,15 @@ class SimpleModuleResolutionResult(val resolved: PklModule?) : ModuleResolutionR
   override fun computeResolvedImportType(
     base: PklBaseModule,
     bindings: TypeParameterBindings,
-    preserveUnboundedVars: Boolean
+    preserveUnboundedVars: Boolean,
+    context: PklProject?
   ): Type {
-    return resolved.computeResolvedImportType(base, bindings, preserveUnboundedVars)
+    return resolved.computeResolvedImportType(
+      base,
+      bindings,
+      context,
+      preserveUnboundedVars,
+    )
   }
 }
 
@@ -484,42 +502,53 @@ class GlobModuleResolutionResult(val resolved: List<PklModule>) : ModuleResoluti
   override fun computeResolvedImportType(
     base: PklBaseModule,
     bindings: TypeParameterBindings,
-    preserveUnboundedVars: Boolean
+    preserveUnboundedVars: Boolean,
+    context: PklProject?
   ): Type {
     if (resolved.isEmpty())
       return base.mappingType.withTypeArguments(base.stringType, base.moduleType)
     val allTypes =
       resolved.map {
-        it.computeResolvedImportType(base, bindings, preserveUnboundedVars) as Type.Module
+        it.computeResolvedImportType(
+          base,
+          bindings,
+          context,
+          preserveUnboundedVars,
+        ) as Type.Module
       }
     val firstType = allTypes.first()
     val unifiedType =
       allTypes.drop(1).fold<Type.Module, Type>(firstType) { acc, type ->
         val currentModule = acc as? Type.Module ?: return@fold acc
-        inferCommonType(base, currentModule, type)
+        inferCommonType(base, currentModule, type, context)
       }
     return base.mappingType.withTypeArguments(base.stringType, unifiedType)
   }
 
-  private fun inferCommonType(base: PklBaseModule, modA: Type.Module, modB: Type.Module): Type {
+  private fun inferCommonType(
+    base: PklBaseModule,
+    modA: Type.Module,
+    modB: Type.Module,
+    context: PklProject?
+  ): Type {
     return when {
-      modA.isSubtypeOf(modB, base) -> modB
-      modB.isSubtypeOf(modA, base) -> modA
+      modA.isSubtypeOf(modB, base, context) -> modB
+      modB.isSubtypeOf(modA, base, context) -> modA
       else -> {
-        val superModA = modA.supermodule() ?: return base.moduleType
-        val superModB = modB.supermodule() ?: return base.moduleType
-        inferCommonType(base, superModA, superModB)
+        val superModA = modA.supermodule(context) ?: return base.moduleType
+        val superModB = modB.supermodule(context) ?: return base.moduleType
+        inferCommonType(base, superModA, superModB, context)
       }
     }
   }
 }
 
-fun PklImportBase.resolve(): ModuleResolutionResult =
-  if (isGlob) GlobModuleResolutionResult(moduleUri?.resolveGlob() ?: emptyList())
-  else SimpleModuleResolutionResult(moduleUri?.resolve())
+fun PklImportBase.resolve(context: PklProject?): ModuleResolutionResult =
+  if (isGlob) GlobModuleResolutionResult(moduleUri?.resolveGlob(context) ?: emptyList())
+  else SimpleModuleResolutionResult(moduleUri?.resolve(context))
 
-fun PklImportBase.resolveModules(): List<PklModule> =
-  resolve().let { result ->
+fun PklImportBase.resolveModules(context: PklProject?): List<PklModule> =
+  resolve(context).let { result ->
     when (result) {
       is SimpleModuleResolutionResult -> result.resolved?.let(::listOf) ?: emptyList()
       else -> {
@@ -529,7 +558,8 @@ fun PklImportBase.resolveModules(): List<PklModule> =
     }
   }
 
-fun PklModuleName.resolve(): PklModule? = (reference as PklModuleNameReference?)?.resolve()
+fun PklModuleName.resolve(context: PklProject?): PklModule? =
+  (reference as PklModuleNameReference?)?.resolveContextual(context)
 
 val PklModuleExtendsAmendsClause.keyword: LeafPsiElement?
   get() = firstChildTokenOfEitherType(PklElementTypes.EXTENDS, PklElementTypes.AMENDS)
@@ -552,33 +582,32 @@ val PklType?.hasConstraints: Boolean
       else -> false
     }
 
-val PklTypeAlias.isRecursive: Boolean
-  get() {
+fun PklTypeAlias.isRecursive(context: PklProject?): Boolean =
+  getContextualCachedValue(context) {
     val project = project
     val psiManager = PsiManager.getInstance(project)
-    val cacheManager = CachedValuesManager.getManager(project)
-    return cacheManager.getCachedValue(this) {
-      CachedValueProvider.Result.create(
-        isRecursive(mutableSetOf()),
-        psiManager.modificationTracker.forLanguage(PklLanguage)
-      )
-    }
+    CachedValueProvider.Result.create(
+      isRecursive(mutableSetOf(), context),
+      psiManager.modificationTracker.forLanguage(PklLanguage)
+    )
   }
 
-private fun PklTypeAlias.isRecursive(seen: MutableSet<PklTypeAlias>): Boolean =
-  !seen.add(this) || body.isRecursive(seen)
+private fun PklTypeAlias.isRecursive(
+  seen: MutableSet<PklTypeAlias>,
+  context: PklProject?
+): Boolean = !seen.add(this) || body.isRecursive(seen, context)
 
-private fun PklType?.isRecursive(seen: MutableSet<PklTypeAlias>): Boolean =
+private fun PklType?.isRecursive(seen: MutableSet<PklTypeAlias>, context: PklProject?): Boolean =
   when (this) {
     is PklDeclaredType -> {
-      val resolved = typeName.simpleName.resolve()
-      resolved is PklTypeAlias && resolved.isRecursive(seen)
+      val resolved = typeName.simpleName.resolve(context)
+      resolved is PklTypeAlias && resolved.isRecursive(seen, context)
     }
-    is PklNullableType -> type.isRecursive(seen)
-    is PklDefaultType -> type.isRecursive(seen)
-    is PklUnionType -> leftType.isRecursive(seen) || rightType.isRecursive(seen)
-    is PklConstrainedType -> type.isRecursive(seen)
-    is PklParenthesizedType -> type.isRecursive(seen)
+    is PklNullableType -> type.isRecursive(seen, context)
+    is PklDefaultType -> type.isRecursive(seen, context)
+    is PklUnionType -> leftType.isRecursive(seen, context) || rightType.isRecursive(seen, context)
+    is PklConstrainedType -> type.isRecursive(seen, context)
+    is PklParenthesizedType -> type.isRecursive(seen, context)
     else -> false
   }
 
@@ -849,18 +878,24 @@ val PklObjectMember.nonGeneratorMember: PklObjectMember?
 val PklProperty.isAmendsDeclaration: Boolean
   get() = objectBodyList.isNotEmpty()
 
-val PklTypeDefOrModule.parentTypeDef: PklTypeDefOrModule?
-  get() =
-    when (this) {
-      is PklClass -> superclass ?: supermodule
-      is PklModule -> supermodule
-      else -> null
-    }
+fun PklTypeDefOrModule.parentTypeDef(context: PklProject?): PklTypeDefOrModule? {
+  return when (this) {
+    is PklClass -> superclass(context) ?: supermodule(context)
+    is PklModule -> supermodule(context)
+    else -> null
+  }
+}
 
-val PklTypeDefOrModule.effectiveParentProperties: Map<String, PklClassProperty>?
-  get() =
-    when (val def = parentTypeDef) {
-      is PklClass -> def.cache.leafProperties
-      is PklModule -> def.cache.leafProperties
-      else -> null
-    }
+fun PklTypeDefOrModule.effectiveParentProperties(
+  context: PklProject?
+): Map<String, PklClassProperty>? {
+
+  return when (val def = parentTypeDef(context)) {
+    is PklClass -> def.cache(context).leafProperties
+    is PklModule -> def.cache(context).leafProperties
+    else -> null
+  }
+}
+
+val PsiElement.pklReference: PklReference?
+  get() = reference as? PklReference

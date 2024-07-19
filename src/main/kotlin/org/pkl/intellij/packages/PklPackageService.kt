@@ -46,8 +46,6 @@ import org.pkl.intellij.packages.dto.PklProject
 import org.pkl.intellij.psi.PklModuleUri
 import org.pkl.intellij.stubs.PklModuleUriIndex
 import org.pkl.intellij.toolchain.pklCli
-import org.pkl.intellij.util.dropRoot
-import org.pkl.intellij.util.editorSupportDir
 import org.pkl.intellij.util.pklCacheDir
 
 val Project.pklPackageService: PklPackageService
@@ -223,24 +221,27 @@ class PklPackageService(val project: Project) : Disposable, UserDataHolderBase()
     )
   }
 
-  fun getResolvedDependencies(packageDependency: PackageDependency): Map<String, Dependency>? {
+  fun getResolvedDependencies(
+    packageDependency: PackageDependency,
+    context: PklProject?
+  ): Map<String, Dependency>? {
     val metadata = getPackageMetadata(packageDependency) ?: return null
     if (packageDependency.pklProject != null) {
       return getResolvedDependenciesOfProjectPackage(packageDependency.pklProject, metadata)
     }
-    return metadata.dependencies.mapValues { PackageDependency(it.value.uri, null) }
+    return metadata.dependencies.mapValues { (_, dep) ->
+      if (context != null) {
+        val resolvedDep = context.projectDeps?.getResolvedDependency(dep.uri) ?: dep
+        resolvedDep.toDependency(context) ?: PackageDependency(dep.uri, null)
+      } else {
+        PackageDependency(dep.uri, null)
+      }
+    }
   }
 
   private fun doGetRoots(dependency: PackageDependency): PackageLibraryRoots? {
     thisLogger().info("Getting library roots for ${dependency.packageUri}")
-    val cacheDir =
-      if (dependency.pklProject == null) pklCacheDir?.toNioPath() ?: return null
-      else
-        editorSupportDir
-          ?.toNioPath()
-          ?.resolve("projectpackage")
-          ?.resolve(dependency.pklProject.projectFile.parent.dropRoot().toString())
-          ?: return null
+    val cacheDir = pklCacheDir?.toNioPath() ?: return null
     val metadataFile =
       dependency.packageUri.relativeMetadataFiles.firstNotNullOfOrNull { path ->
         localFs.findFileByNioFile(cacheDir.resolve(path))
