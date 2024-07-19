@@ -221,7 +221,6 @@ sealed class Type(val constraints: List<ConstraintExpr> = listOf()) {
 
   fun nullable(base: PklBaseModule): Type =
     // Foo? is syntactic sugar for Null|Foo
-    // Null|Foo and Foo|Null are equivalent for typing purposes but have different defaults
     union(base.nullType, this, base, null)
 
   open val bindings: TypeParameterBindings = mapOf()
@@ -697,7 +696,7 @@ sealed class Type(val constraints: List<ConstraintExpr> = listOf()) {
 
     override fun amending(base: PklBaseModule, context: PklProject?): Type {
       return when {
-        isSubtypeOf(base.objectType, base, null) -> this
+        isSubtypeOf(base.objectType, base, context) -> this
         classEquals(base.classType) -> typeArguments[0].amending(base, context)
         isFunctionType -> uncurriedResultType(base, context).amending(base, context)
         else -> {
@@ -725,7 +724,7 @@ sealed class Type(val constraints: List<ConstraintExpr> = listOf()) {
 
     override fun hasDefaultImpl(base: PklBaseModule, context: PklProject?): Boolean =
       when (base.objectType) {
-        is Class -> isSubtypeOf(base.objectType, base, null) && !psi.isAbstract
+        is Class -> isSubtypeOf(base.objectType, base, context) && !psi.isAbstract
         else -> false
       }
 

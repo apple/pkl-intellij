@@ -46,10 +46,9 @@ class PklExtendsClauseAnnotator : PklAnnotator() {
   ) {
     if (!clause.isExtend) return
     val moduleUri = clause.moduleUri ?: return
-    val resolved =
-      moduleUri.resolve(clause.enclosingModule?.pklProject)
-        ?: return // checked by [PklModuleUriAndVersionAnnotator]
     val context = clause.enclosingModule?.pklProject
+    val resolved =
+      moduleUri.resolve(context) ?: return // checked by [PklModuleUriAndVersionAnnotator]
     if (!resolved.isAbstractOrOpen) {
       val moduleName = resolved.shortDisplayName
       val annotation =

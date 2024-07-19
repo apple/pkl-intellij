@@ -57,7 +57,7 @@ abstract class PklClassPropertyBase(node: ASTNode) : PklClassMemberBase(node), P
       else -> {
         when (val owner = parentOfTypes(PklModule::class, PklClass::class)) {
           is PklModule -> {
-            if (owner.extendsAmendsClause.isAmend) return false
+            if (owner.extendsAmendsClause.isAmend) false
             else
               when (val supermodule = owner.supermodule(context)) {
                 null ->
@@ -72,9 +72,9 @@ abstract class PklClassPropertyBase(node: ASTNode) : PklClassMemberBase(node), P
             owner.supermodule(context)?.let { supermodule ->
               return !supermodule.cache(context).properties.containsKey(name)
             }
-            return true
+            true
           }
-          else -> return false
+          else -> false
         }
       }
     }

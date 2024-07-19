@@ -219,7 +219,7 @@ class PklExprAnnotator : PklAnnotator() {
           val type =
             when (element.type) {
               null -> expectedType
-              else -> element.type.toType(base, mapOf(), element.enclosingModule?.pklProject)
+              else -> element.type.toType(base, mapOf(), context)
             }
           checkIsInstantiable(element, type, base, holder)
         }

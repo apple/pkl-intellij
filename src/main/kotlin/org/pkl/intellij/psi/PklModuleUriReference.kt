@@ -306,20 +306,6 @@ class PklModuleUriReference(uri: PklModuleUri, rangeInElement: TextRange) :
       val dependencies = enclosingModule?.dependencies(context) ?: return null
       val dependency = dependencies[dependencyName] ?: return null
       return dependency.getRoot(project)
-      //
-      //      // if this resolution originates from within a Pkl project, inform resolution of this
-      //      // dependency from the
-      //      // project's resolved deps.
-      //      if (context != null) {
-      //        val dep =
-      //          dependency
-      //            .packageUri(project)
-      //            ?.let { pklProject.projectDeps?.getResolvedDependency(it) }
-      //            ?.toDependency(pklProject)
-      //            ?: dependency
-      //        return dep.getRoot(project)
-      //      }
-      //      return dependency.getRoot(project)
     }
 
     private fun resolveVirtual(
