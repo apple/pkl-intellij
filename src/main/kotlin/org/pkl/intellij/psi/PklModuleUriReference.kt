@@ -38,7 +38,10 @@ import org.pkl.intellij.util.*
 
 /** A reference within a module URI. May reference a package/directory or file. */
 class PklModuleUriReference(uri: PklModuleUri, rangeInElement: TextRange) :
-  PsiReferenceBase<PklModuleUri>(uri, rangeInElement), PsiPolyVariantReference, UserDataHolder {
+  PsiReferenceBase<PklModuleUri>(uri, rangeInElement),
+  PsiPolyVariantReference,
+  UserDataHolder,
+  PklReference {
 
   val moduleUri: String = element.stringConstant.content.text
 
@@ -55,7 +58,7 @@ class PklModuleUriReference(uri: PklModuleUri, rangeInElement: TextRange) :
 
   private val isGlobImport = (uri.parent as? PklImportBase)?.isGlob ?: false
 
-  fun resolveContextual(context: PklProject?): PsiElement? =
+  override fun resolveContextual(context: PklProject?): PsiElement? =
     when {
       isGlobImport && GlobResolver.isRegularPathPart(targetUri) ->
         resolve(

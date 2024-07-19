@@ -24,14 +24,14 @@ import org.pkl.intellij.resolve.Resolvers
 
 /** May refer to a class, type alias, module (via import), or type variable. */
 class PklSimpleTypeNameReference(private val simpleTypeName: PklSimpleTypeName) :
-  PsiReferenceBase<PklSimpleTypeName>(simpleTypeName) {
+  PsiReferenceBase<PklSimpleTypeName>(simpleTypeName), PklReference {
 
   override fun getRangeInElement(): TextRange =
     ElementManipulators.getValueTextRange(simpleTypeName)
 
   override fun getCanonicalText(): String = simpleTypeName.identifier.text
 
-  fun resolveContextual(context: PklProject?): PklElement? {
+  override fun resolveContextual(context: PklProject?): PklElement? {
     val typeName = simpleTypeName.parentOfType<PklTypeName>() ?: return null
     val moduleName = typeName.moduleName
     val simpleTypeNameText = simpleTypeName.identifier.text
@@ -52,6 +52,6 @@ class PklSimpleTypeNameReference(private val simpleTypeName: PklSimpleTypeName) 
 
   // returns PklTypeOrModule or PklTypeParameter
   override fun resolve(): PklElement? {
-    return resolveContextual(null)
+    return resolveContextual(simpleTypeName.enclosingModule?.pklProject)
   }
 }

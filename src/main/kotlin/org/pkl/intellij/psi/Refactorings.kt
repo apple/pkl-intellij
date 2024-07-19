@@ -117,7 +117,8 @@ fun PklAmendExpr.updateInstantiationSyntax(
   when (parentExpr) {
     is PklUnqualifiedAccessExpr -> {
       if (parentExpr.isPropertyAccess) {
-        val target = parentExpr.memberName.reference?.resolve()
+        val target =
+          parentExpr.memberName.pklReference?.resolveContextual(enclosingModule?.pklProject)
         if ((target is PklClass || target is PklTypeAlias)) {
           if (!isDryRun) {
             val newExpr =

@@ -18,16 +18,17 @@ package org.pkl.intellij.psi
 import com.intellij.openapi.util.TextRange
 import com.intellij.psi.*
 import com.intellij.psi.util.parentOfType
+import org.pkl.intellij.packages.dto.PklProject
 import org.pkl.intellij.resolve.PklResolveResult
 import org.pkl.intellij.resolve.ResolveVisitors
 import org.pkl.intellij.resolve.Resolvers
 
 class PklQualifiedAccessReference(private val accessName: PklQualifiedAccessName) :
-  PsiPolyVariantReferenceBase<PklQualifiedAccessName>(accessName) {
+  PsiPolyVariantReferenceBase<PklQualifiedAccessName>(accessName), PklReference {
 
   override fun getRangeInElement(): TextRange = ElementManipulators.getValueTextRange(accessName)
 
-  override fun resolve(): PsiElement? {
+  override fun resolveContextual(context: PklProject?): PsiElement? {
     val accessExpr = accessName.parentOfType<PklQualifiedAccessExpr>() ?: return null
     val base = accessExpr.project.pklBaseModule
     val visitor =
@@ -35,7 +36,6 @@ class PklQualifiedAccessReference(private val accessName: PklQualifiedAccessName
         accessExpr.memberNameText,
         base,
       )
-    val context = accessExpr.enclosingModule?.pklProject
     if (accessExpr.receiverExpr is PklModuleExpr) {
       val result =
         Resolvers.resolveUnqualifiedAccess(
@@ -51,6 +51,8 @@ class PklQualifiedAccessReference(private val accessName: PklQualifiedAccessName
     }
     return accessExpr.resolve(base, null, mapOf(), visitor, context)
   }
+
+  override fun resolve(): PsiElement? = resolveContextual(null)
 
   override fun multiResolve(incompleteCode: Boolean): Array<PklResolveResult> {
     val accessExpr =

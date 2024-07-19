@@ -395,10 +395,10 @@ fun PklTypeName.resolve(context: PklProject?): PklElement? = simpleName.resolve(
 
 // returns PklTypeOrModule or PklTypeParameter
 fun PklSimpleTypeName.resolve(context: PklProject?): PklElement? =
-  (reference as PklSimpleTypeNameReference?)?.resolveContextual(context)
+  pklReference?.resolveContextual(context) as? PklElement
 
 fun PklPropertyName.resolve(context: PklProject?): PklElement? =
-  (reference as? PklPropertyNameReference)?.resolveContextual(context)
+  pklReference?.resolveContextual(context) as? PklElement
 
 val PklModuleUri.escapedContent: String?
   get() = stringConstant.content.escapedText()
@@ -896,3 +896,6 @@ fun PklTypeDefOrModule.effectiveParentProperties(
     else -> null
   }
 }
+
+val PsiElement.pklReference: PklReference?
+  get() = reference as? PklReference

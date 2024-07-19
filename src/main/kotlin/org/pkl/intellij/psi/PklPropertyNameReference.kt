@@ -28,11 +28,11 @@ import org.pkl.intellij.type.computeThisType
 import org.pkl.intellij.util.unexpectedType
 
 class PklPropertyNameReference(private val propertyName: PklPropertyName) :
-  PsiPolyVariantReferenceBase<PklPropertyName>(propertyName) {
+  PsiPolyVariantReferenceBase<PklPropertyName>(propertyName), PklReference {
 
   override fun getRangeInElement(): TextRange = ElementManipulators.getValueTextRange(propertyName)
 
-  fun resolveContextual(context: PklProject?): PklElement? {
+  override fun resolveContextual(context: PklProject?): PklElement? {
     val name = propertyName.identifier.text
     val base = propertyName.project.pklBaseModule
     return doResolve(

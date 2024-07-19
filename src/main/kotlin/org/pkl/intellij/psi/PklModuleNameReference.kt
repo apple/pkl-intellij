@@ -20,13 +20,13 @@ import com.intellij.psi.*
 import org.pkl.intellij.packages.dto.PklProject
 
 class PklModuleNameReference(private val moduleName: PklModuleName) :
-  PsiReferenceBase<PklModuleName>(moduleName) {
+  PsiReferenceBase<PklModuleName>(moduleName), PklReference {
 
   override fun getRangeInElement(): TextRange = ElementManipulators.getValueTextRange(moduleName)
 
   override fun getCanonicalText(): String = moduleName.identifier.text
 
-  fun resolveContextual(context: PklProject?): PklModule? {
+  override fun resolveContextual(context: PklProject?): PklModule? {
     val module = moduleName.enclosingModule ?: return null
     val moduleNameText = moduleName.identifier.text
     for (import in module.imports) {
