@@ -366,13 +366,14 @@ class PklModuleUriAndVersionAnnotator : PklAnnotator() {
     val base = project.pklBaseModule
 
     for ((index, reference) in references.withIndex()) {
+      if (reference !is PklModuleUriReference) return
       if (index == 0) {
         // don't blame unresolved import on leading ".../"
         if (uriText.startsWith(".../")) {
           continue
         }
       }
-      val resolved = reference.resolve()
+      val resolved = reference.resolveContextual(context)
       if (index == 0) {
         checkDependencyNotation(
           element,

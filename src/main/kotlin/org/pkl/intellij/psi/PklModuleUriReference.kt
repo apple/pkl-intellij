@@ -55,7 +55,7 @@ class PklModuleUriReference(uri: PklModuleUri, rangeInElement: TextRange) :
 
   private val isGlobImport = (uri.parent as? PklImportBase)?.isGlob ?: false
 
-  override fun resolve(): PsiElement? =
+  fun resolveContextual(context: PklProject?): PsiElement? =
     when {
       isGlobImport && GlobResolver.isRegularPathPart(targetUri) ->
         resolve(
@@ -64,7 +64,7 @@ class PklModuleUriReference(uri: PklModuleUri, rangeInElement: TextRange) :
           element.containingFile,
           element.enclosingModule,
           project,
-          null
+          context
         )
       isGlobImport -> null
       else ->
@@ -74,9 +74,11 @@ class PklModuleUriReference(uri: PklModuleUri, rangeInElement: TextRange) :
           element.containingFile,
           element.enclosingModule,
           project,
-          null
+          context
         )
     }
+
+  override fun resolve(): PsiElement? = resolveContextual(null)
 
   fun resolveGlob(context: PklProject?): List<PsiFileSystemItem>? {
     val psiManager = PsiManager.getInstance(element.project)
