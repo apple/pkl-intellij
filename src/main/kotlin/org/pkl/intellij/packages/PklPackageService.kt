@@ -46,6 +46,7 @@ import org.pkl.intellij.packages.dto.PklProject
 import org.pkl.intellij.psi.PklModuleUri
 import org.pkl.intellij.stubs.PklModuleUriIndex
 import org.pkl.intellij.toolchain.pklCli
+import org.pkl.intellij.util.noCacheResult
 import org.pkl.intellij.util.pklCacheDir
 
 val Project.pklPackageService: PklPackageService
@@ -165,8 +166,8 @@ class PklPackageService(val project: Project) : Disposable, UserDataHolderBase()
       this,
       Key.create("all-deps-${dep.packageUri}"),
       {
-        val libraryRoots = getLibraryRoots(dep) ?: return@getCachedValue null
-        val metadata = getPackageMetadata(dep) ?: return@getCachedValue null
+        val libraryRoots = getLibraryRoots(dep) ?: return@getCachedValue noCacheResult()
+        val metadata = getPackageMetadata(dep) ?: return@getCachedValue noCacheResult()
         val dependencies = metadata.dependencies.values.map { it.uri.asPackageDependency() }
         val collectedDeps =
           listOf(dep) +
@@ -211,9 +212,9 @@ class PklPackageService(val project: Project) : Disposable, UserDataHolderBase()
       this,
       Key.create("${packageDependency.packageUri}-metadata"),
       {
-        val roots = getLibraryRoots(packageDependency) ?: return@getCachedValue null
+        val roots = getLibraryRoots(packageDependency) ?: return@getCachedValue noCacheResult()
         CachedValueProvider.Result.create(
-          PackageMetadata.load(roots.metadataFile),
+          getLibraryRoots(packageDependency)?.let { PackageMetadata.load(it.metadataFile) },
           roots.metadataFile
         )
       },
@@ -272,7 +273,7 @@ class PklPackageService(val project: Project) : Disposable, UserDataHolderBase()
         "${dependency.packageUri}-${dependency.pklProject?.metadata?.projectFileUri}-library-roots"
       ),
       {
-        val roots = doGetRoots(dependency) ?: return@getCachedValue null
+        val roots = doGetRoots(dependency) ?: return@getCachedValue noCacheResult()
         CachedValueProvider.Result.create(roots, roots.zipFile, roots.metadataFile)
       },
       false

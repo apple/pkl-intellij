@@ -15,8 +15,7 @@
  */
 package org.pkl.intellij.resolve
 
-import com.intellij.testFramework.fixtures.*
-import com.intellij.testFramework.fixtures.impl.TempDirTestFixtureImpl
+import java.nio.file.Path
 import org.assertj.core.api.Assertions.assertThat
 import org.pkl.intellij.PklTestCase
 import org.pkl.intellij.psi.PklClassProperty
@@ -30,11 +29,7 @@ class LocalProjectResolveTest : PklTestCase() {
     syncProjects()
   }
 
-  override fun getTestDataPath(): String = "src/test/resources/resolve/projects"
-
-  // force use of real temp dirs instead of in-memory virtual files because we need to resolve them
-  // using the pkl CLI.
-  override fun createTempDirTestFixture(): TempDirTestFixture = TempDirTestFixtureImpl()
+  override val fixtureDir: Path = Path.of("src/test/resources/resolve/projects")
 
   fun `test that imports resolve to package dependencies`() {
     myFixture.configureByFile("project1/moduleCompletion1.pkl")

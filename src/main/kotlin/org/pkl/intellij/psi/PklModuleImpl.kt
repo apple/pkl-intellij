@@ -21,7 +21,7 @@ import com.intellij.openapi.fileTypes.FileType
 import com.intellij.openapi.util.Key
 import com.intellij.openapi.util.ModificationTracker
 import com.intellij.openapi.vfs.JarFileSystem
-import com.intellij.openapi.vfs.LocalFileSystem
+import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.openapi.vfs.VirtualFileManager
 import com.intellij.openapi.vfs.findFile
 import com.intellij.psi.FileViewProvider
@@ -48,7 +48,7 @@ internal val jarFs: JarFileSystem =
 class PklModuleImpl(viewProvider: FileViewProvider) :
   PsiFileBase(viewProvider, PklLanguage), PklModule {
   companion object {
-    private val projectCacheKey: Key<CachedValue<PklProject>> = Key.create("pklProject")
+    private val projectDirCacheKey: Key<CachedValue<VirtualFile>> = Key.create("projectDir")
     private val packageKey: Key<CachedValue<PackageDependency>> = Key.create("package")
   }
 
@@ -114,7 +114,7 @@ class PklModuleImpl(viewProvider: FileViewProvider) :
         declaredName?.text?.substringAfterLast('.') ?: viewProvider.virtualFile.name
 
       override fun getLocationString(): String? {
-        val file: com.intellij.openapi.vfs.VirtualFile? = viewProvider.virtualFile.parent
+        val file: VirtualFile? = viewProvider.virtualFile.parent
         return if (file != null && file.isValid && file.isDirectory)
           project.basePath?.let { file.presentableUrl.substringAfter("$it/") }
             ?: file.presentableUrl
@@ -237,31 +237,33 @@ class PklModuleImpl(viewProvider: FileViewProvider) :
       )
     }
 
-  /** Find the closest project to this module. */
-  override val pklProject: PklProject?
-    get() {
-      return cacheManager.getCachedValue(
+  override val isInPklProject: Boolean
+    get() = pklProjectDir != null
+
+  private val pklProjectDir
+    get(): VirtualFile? =
+      cacheManager.getCachedValue(
         this,
-        projectCacheKey,
+        projectDirCacheKey,
         {
-          val virtualFile = originalFile.virtualFile
-          if (virtualFile.fileSystem !is LocalFileSystem) {
-            return@getCachedValue null
-          }
-          var dir = virtualFile.parent
+          val dependency = project.pklProjectModificationTracker()
+          var dir = originalFile.parent
           while (dir != null) {
-            if (dir.findChild(PKL_PROJECT_FILENAME) != null) {
-              return@getCachedValue project.pklProjectService.getPklProject(dir)?.let {
-                CachedValueProvider.Result(it, project.pklProjectService)
-              }
+            if (dir.findFile(PKL_PROJECT_FILENAME) != null) {
+              return@getCachedValue CachedValueProvider.Result.createSingleDependency(
+                dir.virtualFile,
+                dependency
+              )
             }
             dir = dir.parent
           }
-          return@getCachedValue null
+          CachedValueProvider.Result.createSingleDependency(null, dependency)
         },
         false
       )
-    }
+
+  override val pklProject: PklProject?
+    get() = pklProjectDir?.let { project.pklProjectService.getPklProject(it) }
 
   override fun dependencies(context: PklProject?): Map<String, Dependency>? =
     `package`?.let { project.pklPackageService.getResolvedDependencies(it, context) }

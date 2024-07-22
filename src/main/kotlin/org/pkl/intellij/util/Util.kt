@@ -21,6 +21,7 @@ import com.intellij.openapi.module.ModuleUtil
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.roots.OrderEnumerator
 import com.intellij.openapi.util.Key
+import com.intellij.openapi.util.ModificationTracker
 import com.intellij.openapi.util.text.StringUtil
 import com.intellij.openapi.vfs.VfsUtil
 import com.intellij.openapi.vfs.VirtualFile
@@ -362,7 +363,7 @@ fun <T> PklElement.getContextualCachedValue(
       this,
       Key.create("${context.projectFile}-cache"),
       {
-        val result = provider.compute() ?: return@getCachedValue null
+        val result = provider.compute() ?: return@getCachedValue noCacheResult()
         CachedValueProvider.Result.create(
           result.value,
           project.pklProjectService,
@@ -372,3 +373,6 @@ fun <T> PklElement.getContextualCachedValue(
       false
     )
 }
+
+fun <T> noCacheResult(): CachedValueProvider.Result<T> =
+  CachedValueProvider.Result.create(null, ModificationTracker.EVER_CHANGED)

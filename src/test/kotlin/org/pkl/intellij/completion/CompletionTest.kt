@@ -15,6 +15,7 @@
  */
 package org.pkl.intellij.completion
 
+import java.nio.file.Path
 import org.assertj.core.api.Assertions.assertThat
 import org.pkl.intellij.PklFileType
 import org.pkl.intellij.PklTestCase
@@ -99,7 +100,6 @@ class CompletionTest : PklTestCase() {
     assertThat(lookupStrings).contains("configMaps = ")
   }
 
-  override fun getTestDataPath(): String {
-    return "src/test/resources/completion"
-  }
+  override val fixtureDir: Path?
+    get() = Path.of("src/test/resources/completion")
 }
