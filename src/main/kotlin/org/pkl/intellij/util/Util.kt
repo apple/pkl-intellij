@@ -32,7 +32,6 @@ import com.intellij.psi.util.CachedValuesManager
 import java.math.BigInteger
 import java.net.URI
 import java.net.URISyntaxException
-import java.nio.file.Path
 import java.util.*
 import java.util.regex.Pattern
 import kotlin.math.max
