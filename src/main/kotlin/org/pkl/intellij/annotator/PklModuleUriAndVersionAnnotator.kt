@@ -19,12 +19,13 @@ import com.intellij.lang.annotation.AnnotationHolder
 import com.intellij.lang.annotation.HighlightSeverity
 import com.intellij.openapi.diagnostic.Logger
 import com.intellij.openapi.util.TextRange
-import com.intellij.openapi.vfs.LocalFileSystem
+import com.intellij.psi.PsiDirectory
 import com.intellij.psi.PsiElement
 import com.intellij.psi.PsiReference
 import java.net.URI
 import java.net.URISyntaxException
 import org.pkl.intellij.PklVersion
+import org.pkl.intellij.action.PklDownloadDependencySourcesAction
 import org.pkl.intellij.action.PklDownloadPackageAction
 import org.pkl.intellij.intention.PklPrefixDependencyNotationQuickFix
 import org.pkl.intellij.packages.PackageDependency
@@ -70,11 +71,6 @@ class PklModuleUriAndVersionAnnotator : PklAnnotator() {
             return
           }
         }
-        if (uriText.startsWith("@")) {
-          if (annotateDependencyNotation(element, uriText, holder)) {
-            return
-          }
-        }
         if (isGlobImport) {
           annotateGlobUri(element, references, uriText, holder, context)
         } else {
@@ -82,32 +78,6 @@ class PklModuleUriAndVersionAnnotator : PklAnnotator() {
         }
       }
     }
-  }
-
-  private fun annotateDependencyNotation(
-    element: PklModuleUri,
-    uriText: String,
-    holder: AnnotationHolder
-  ): Boolean {
-    val dependencyName = uriText.substringBefore('/').drop(1)
-    val dependencies = element.enclosingModule?.dependencies(null)
-    val resolved = dependencies?.get(dependencyName)
-    if (resolved == null) {
-      logger.info(
-        "Could not find dependency $dependencyName. Known dependencies: ${dependencies?.keys ?: "<none>"}"
-      )
-      createAnnotation(
-        HighlightSeverity.WARNING,
-        TextRange(0, dependencyName.length)
-          .shiftRight(element.stringConstant.content.textRange.startOffset)
-          .grown(1),
-        "Cannot find dependency '$dependencyName'",
-        "Cannot find dependency <code>${dependencyName.escapeXml()}",
-        holder
-      )
-      return true
-    }
-    return false
   }
 
   private fun annotatePackageUri(
@@ -234,7 +204,7 @@ class PklModuleUriAndVersionAnnotator : PklAnnotator() {
     }
     val packageService = holder.currentProject.pklPackageService
     val packageUri = PackageUri(uri.authority, uri.path, version, checksum)
-    val packageDependency = PackageDependency(packageUri, null)
+    val packageDependency = PackageDependency(packageUri, null, null)
     val roots = packageService.getLibraryRoots(packageDependency)
     if (roots == null) {
       buildAnnotation(
@@ -255,27 +225,56 @@ class PklModuleUriAndVersionAnnotator : PklAnnotator() {
     element: PklModuleUri,
     reference: PsiReference,
     resolved: List<PsiElement>,
-    holder: AnnotationHolder
-  ) {
-    if (!element.stringConstant.content.text.startsWith("@")) return
-    if (element.isInPklProject || element.isInPackage) return
-    if (!element.isPhysical) return
-    if (element.containingFile.virtualFile.fileSystem !is LocalFileSystem) {
-      return
+    holder: AnnotationHolder,
+    context: PklProject?
+  ): Boolean {
+    if (!element.stringConstant.content.text.startsWith("@")) return false
+    if (!element.isPhysical) return false
+    if (resolved.isNotEmpty() && resolved.all { it.isInPackage }) return false
+
+    val dependencyName = element.escapedContent?.substringBefore('/')?.drop(1) ?: return false
+    if (resolved.isEmpty()) {
+      val deps = element.enclosingModule?.dependencies(context) ?: return false
+      if (deps.containsKey(dependencyName)) {
+        buildAnnotation(
+            HighlightSeverity.WARNING,
+            reference.rangeInElement.shiftRight(element.textOffset),
+            "Missing sources for dependency '$dependencyName'",
+            "Missing sources for dependency <code>${dependencyName.escapeXml()}</code>",
+            holder
+          )
+          ?.apply { withFix(PklDownloadDependencySourcesAction()) }
+          ?.create()
+        return true
+      } else {
+        createAnnotation(
+          HighlightSeverity.WARNING,
+          reference.rangeInElement.shiftRight(element.textOffset),
+          "Cannot find dependency '$dependencyName'",
+          "Cannot find dependency <code>${dependencyName.escapeXml()}</code>.",
+          holder
+        )
+        return true
+      }
     }
-    if (resolved.isNotEmpty() && resolved.all { it.isInPackage }) return
-    buildAnnotation(
-        HighlightSeverity.WARNING,
-        reference.rangeInElement.shiftRight(element.textOffset),
-        "Invalid path",
-        """
-          Paths starting with <code>@</code> is notation for importing a dependency.
-        """
-          .trimIndent(),
-        holder
-      )
-      ?.apply { withFix(PklPrefixDependencyNotationQuickFix(element)) }
-      ?.create()
+    resolved.singleOrNull()?.let { res ->
+      if (res is PsiDirectory && res.name == "@$dependencyName") {
+        buildAnnotation(
+            HighlightSeverity.WARNING,
+            reference.rangeInElement.shiftRight(element.textOffset),
+            "Invalid path",
+            """
+              Paths starting with <code>@</code> is notation for importing a dependency.
+            """
+              .trimIndent(),
+            holder
+          )
+          ?.apply { withFix(PklPrefixDependencyNotationQuickFix(element)) }
+          ?.create()
+        return true
+      }
+    }
+    return false
   }
 
   private fun checkScheme(
@@ -327,8 +326,8 @@ class PklModuleUriAndVersionAnnotator : PklAnnotator() {
     for ((index, reference) in references.withIndex()) {
       if (reference !is PklModuleUriReference) return
       val resolved = reference.resolveGlob(context) ?: return
-      if (index == 0) {
-        checkDependencyNotation(element, reference, resolved, holder)
+      if (index == 0 && checkDependencyNotation(element, reference, resolved, holder, context)) {
+        return
       }
       if (resolved.isEmpty()) {
         createAnnotation(
@@ -374,13 +373,17 @@ class PklModuleUriAndVersionAnnotator : PklAnnotator() {
         }
       }
       val resolved = reference.resolveContextual(context)
-      if (index == 0) {
-        checkDependencyNotation(
-          element,
-          reference,
-          resolved?.let { listOf(it) } ?: emptyList(),
-          holder
-        )
+      if (
+        index == 0 &&
+          checkDependencyNotation(
+            element,
+            reference,
+            resolved?.let { listOf(it) } ?: emptyList(),
+            holder,
+            context
+          )
+      ) {
+        return
       }
       if (resolved == null) {
         createAnnotation(

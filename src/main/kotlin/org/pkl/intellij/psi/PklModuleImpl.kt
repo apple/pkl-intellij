@@ -223,8 +223,9 @@ class PklModuleImpl(viewProvider: FileViewProvider) :
     }
     val jarFile = jarFs.getLocalByEntry(virtualFile) ?: return null
     val jsonFile = jarFile.parent.findFile(jarFile.nameWithoutExtension + ".json") ?: return null
-    val packageUri = PackageMetadata.load(jsonFile).packageUri
-    return PackageDependency(packageUri, null)
+    val metadata = PackageMetadata.load(jsonFile)
+    val packageUri = metadata.packageUri
+    return packageUri.asPackageDependency(null)
   }
 
   override val `package`: PackageDependency?

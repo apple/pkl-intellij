@@ -132,6 +132,19 @@ class PklPackageService(val project: Project) : Disposable, UserDataHolderBase()
     return projectPackages + declaredPackages
   }
 
+  fun downloadPackage(packages: List<PackageUri>): CompletableFuture<Unit> {
+    return CompletableFuture<Unit>().apply {
+      runBackgroundableTask("Download packages") {
+        try {
+          project.pklCli.downloadPackage(packages)
+          complete(Unit)
+        } catch (e: Throwable) {
+          completeExceptionally(e)
+        }
+      }
+    }
+  }
+
   fun downloadPackage(packageUri: PackageUri): CompletableFuture<Unit> {
     return CompletableFuture<Unit>().apply {
       runBackgroundableTask("download $packageUri") {
@@ -233,9 +246,9 @@ class PklPackageService(val project: Project) : Disposable, UserDataHolderBase()
     return metadata.dependencies.mapValues { (_, dep) ->
       if (context != null) {
         val resolvedDep = context.projectDeps?.getResolvedDependency(dep.uri) ?: dep
-        resolvedDep.toDependency(context) ?: PackageDependency(dep.uri, null)
+        resolvedDep.toDependency(context) ?: PackageDependency(dep.uri, null, dep.checksums)
       } else {
-        PackageDependency(dep.uri, null)
+        PackageDependency(dep.uri, null, dep.checksums)
       }
     }
   }

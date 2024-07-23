@@ -19,6 +19,7 @@ import com.intellij.openapi.project.Project
 import com.intellij.openapi.vfs.JarFileSystem
 import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.openapi.vfs.VirtualFileManager
+import org.pkl.intellij.packages.dto.Checksums
 import org.pkl.intellij.packages.dto.PackageUri
 import org.pkl.intellij.packages.dto.PklProject
 
@@ -38,8 +39,11 @@ sealed interface Dependency {
 internal val jarFs: JarFileSystem =
   VirtualFileManager.getInstance().getFileSystem("jar") as JarFileSystem
 
-data class PackageDependency(override val packageUri: PackageUri, val pklProject: PklProject?) :
-  Dependency {
+data class PackageDependency(
+  override val packageUri: PackageUri,
+  val pklProject: PklProject?,
+  val checksums: Checksums?
+) : Dependency {
   override fun getRoot(project: Project): VirtualFile? =
     project.pklPackageService.getLibraryRoots(this)?.packageRoot
 }
@@ -57,5 +61,8 @@ fun PklProject.Companion.ResolvedDependency.toDependency(pklProject: PklProject)
       pklProject.projectDirVirtualFile?.findFileByRelativePath(path)?.let {
         LocalProjectDependency(uri, it)
       }
-    else -> PackageDependency(uri, pklProject)
+    else -> {
+      this as PklProject.Companion.RemoteDependency
+      PackageDependency(uri, pklProject, this.checksums)
+    }
   }

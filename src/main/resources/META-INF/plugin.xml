@@ -151,7 +151,6 @@
     <action id="Pkl.NewPklProject" class="org.pkl.intellij.action.PklCreateProjectAction">
       <add-to-group group-id="NewGroup" anchor="before" relative-to-action="NewFile"/>
     </action>
-    <action id="Pkl.DownloadPackagesForPklProject" class="org.pkl.intellij.action.PklDownloadPackagesForPklProjectAction"/>
     <action id="Pkl.ShowSyncError" class="org.pkl.intellij.action.PklShowSyncErrorAction"/>
     <action id="Pkl.OpenSettingsPanelAction" class="org.pkl.intellij.action.PklOpenSettingsPanelAction"/>
     <group id="Pkl" text="Pkl" popup="true" compact="true" icon="/org/pkl/intellij/logo.svg">

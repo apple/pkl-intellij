@@ -21,15 +21,15 @@ import com.intellij.openapi.editor.Editor
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.ui.Messages
 import com.intellij.psi.PsiFile
-import org.pkl.intellij.packages.dto.PackageUri
+import org.pkl.intellij.packages.PackageDependency
 import org.pkl.intellij.packages.pklPackageService
+import org.pkl.intellij.psi.enclosingModule
 import org.pkl.intellij.toolchain.pklCli
 
-// Not registered in plugin.xml because we only use this as an intention.
-class PklDownloadPackageAction(private val packageUri: PackageUri) : IntentionAction {
+class PklDownloadDependencySourcesAction : IntentionAction {
   override fun startInWriteAction(): Boolean = false
 
-  override fun getText(): String = "Download $packageUri"
+  override fun getText(): String = "Download dependencies"
 
   override fun getFamilyName(): String = "Download Pkl packages"
 
@@ -37,15 +37,29 @@ class PklDownloadPackageAction(private val packageUri: PackageUri) : IntentionAc
     project.pklCli.isAvailable()
 
   override fun invoke(project: Project, editor: Editor?, file: PsiFile?) {
-    project.pklPackageService.downloadPackage(packageUri).handleOnEdt(null) { _, err ->
+    val pklModule = file?.enclosingModule ?: return
+    val packageService = project.pklPackageService
+    val packagesToDownload =
+      pklModule
+        .dependencies(pklModule.pklProject)
+        ?.values
+        ?.filterIsInstance<PackageDependency>()
+        ?.filter { dep ->
+          packageService.getLibraryRoots(PackageDependency(dep.packageUri, null, dep.checksums)) ==
+            null
+        }
+        ?.map { it.packageUri.copy(checksums = it.checksums) }
+        ?: return
+    if (packagesToDownload.isEmpty()) return
+    packageService.downloadPackage(packagesToDownload).handleOnEdt(null) { _, err ->
       if (err != null) {
         Messages.showErrorDialog(
           project,
           """
-              Failed to download package:
-              
-              <code>${err.message}</code>
-            """
+                Failed to download packages:
+                
+                <code>${err.message}</code>
+              """
             .trimIndent(),
           "Pkl Download Failed"
         )
