@@ -176,12 +176,10 @@ private fun PklExpr?.doInferExprTypeFromContext(
           val paramTypes = accessExpr.resolve(base, null, bindings, visitor, context)
           if (paramTypes.isNullOrEmpty()) return Type.Unknown
 
-          base.varArgsType?.let { varArgsType ->
-            if (argIndex >= paramTypes.lastIndex) {
-              val lastParamType = paramTypes.last()
-              if (lastParamType is Type.Class && lastParamType.classEquals(varArgsType)) {
-                return lastParamType.typeArguments[0]
-              }
+          if (argIndex >= paramTypes.lastIndex) {
+            val lastParamType = paramTypes.last()
+            if (lastParamType is Type.Class && lastParamType.classEquals(base.varArgsType)) {
+              return lastParamType.typeArguments[0]
             }
           }
 

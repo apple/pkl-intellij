@@ -16,18 +16,6 @@
 package org.pkl.intellij.psi
 
 import com.intellij.openapi.project.Project
-import com.intellij.psi.PsiElement
-
-fun PsiElement.replaceDeprecated(
-  module: PklModule,
-  isDryRun: Boolean = false,
-  applyIf: (PklAnnotationListOwner, Deprecated) -> Boolean = { _, _ -> true }
-): Boolean =
-  when (this) {
-    is PklAccessExpr -> replaceDeprecated(module, isDryRun, applyIf)
-    is PklTypeName -> replaceDeprecated(module, isDryRun, applyIf)
-    else -> false
-  }
 
 fun PklAccessExpr.replaceDeprecated(
   module: PklModule,

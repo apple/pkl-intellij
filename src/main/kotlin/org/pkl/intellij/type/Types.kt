@@ -779,7 +779,7 @@ sealed class Type(val constraints: List<ConstraintExpr> = listOf()) {
       Alias(psi, typeArguments, constraints)
 
     override val hasConstraints: Boolean
-      get() = constraints.isNotEmpty() || psi.body.hasConstraints
+      get() = constraints.isNotEmpty() || psi.body.hasConstraints()
 
     override val bindings: TypeParameterBindings = typeParameters.zip(typeArguments).toMap()
 
@@ -842,7 +842,7 @@ sealed class Type(val constraints: List<ConstraintExpr> = listOf()) {
 
     override fun instantiated(base: PklBaseModule, context: PklProject?): Type {
       // special case: `Mixin` is instantiable even though `Function1` isn't
-      if (areElementsEquivalent(psi, base.mixinType?.psi)) return this
+      if (areElementsEquivalent(psi, base.mixinType.psi)) return this
 
       val aliased = aliasedType(base, context)
       val instantiated = aliased.instantiated(base, context)

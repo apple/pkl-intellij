@@ -45,7 +45,7 @@ sourceSets {
   }
 }
 
-val pklCli by configurations.creating
+val pklCli: Configuration by configurations.creating
 
 dependencies {
   // put stdlib ZIP on plugin class path instead of exploding it into plugin JAR

@@ -24,6 +24,7 @@ import com.intellij.util.LocalTimeCounter
 import org.pkl.intellij.PklFileType
 import org.pkl.intellij.util.escapeString
 
+@Suppress("unused")
 object PklPsiFactory {
   @Suppress("MemberVisibilityCanBePrivate")
   fun createModule(text: String, project: Project): PklModule =

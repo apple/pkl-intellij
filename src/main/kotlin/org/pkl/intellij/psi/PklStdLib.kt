@@ -40,6 +40,7 @@ val Project.pklStdLib: PklStdLib
       )
     }
 
+@Suppress("unused")
 class PklStdLib(val modules: List<PklStdLibModule>) {
   private val modulesByName: Map<String, PklStdLibModule> = modules.associateBy { it.name }
   private val modulesByShortName: Map<String, PklStdLibModule> =

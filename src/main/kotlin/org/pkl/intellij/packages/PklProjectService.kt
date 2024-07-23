@@ -30,9 +30,7 @@ import com.intellij.util.messages.Topic
 import com.jetbrains.rd.util.concurrentMapOf
 import java.net.URI
 import java.nio.file.Path
-import java.util.*
 import java.util.concurrent.atomic.AtomicLong
-import kotlin.io.path.name
 import org.jdom.Element
 import org.pkl.intellij.PklFileType
 import org.pkl.intellij.packages.dto.Checksums

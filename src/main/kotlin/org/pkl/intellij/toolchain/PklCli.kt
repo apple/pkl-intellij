@@ -47,7 +47,6 @@ val Project.pklCli
  * All methods must be run in a background thread. The simplest way to do this is to call the CLI
  * within [runBackgroundableTask].
  */
-@OptIn(ExperimentalStdlibApi::class)
 class PklCli(private val proj: Project) {
   fun isAvailable(): Boolean = pathToPklExecutable() != null
 
