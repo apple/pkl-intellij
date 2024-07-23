@@ -63,6 +63,7 @@ val PsiElement.enclosingModule: PklModule?
 val PsiElement.isInPklBaseModule: Boolean
   get() = enclosingModule?.declaredName?.textMatches("pkl.base") == true
 
+@Suppress("unused")
 val PsiElement.isInPklStdLibModule: Boolean
   get() = enclosingModule?.declaredName?.text?.startsWith("pkl.") == true
 
@@ -273,7 +274,7 @@ val PklMethod.isOverridable: Boolean
     }
 
 fun PklMethod.isVarArgs(base: PklBaseModule): Boolean {
-  val varArgsType = base.varArgsType ?: return false
+  val varArgsType = base.varArgsType
   val lastParam = parameterList?.elements?.lastOrNull() ?: return false
   val lastParamType =
     // optimization: varargs is only available in stdlib, no need to provide context.
@@ -572,15 +573,14 @@ val PklModuleExtendsAmendsClause?.isExtend: Boolean
 
 fun PklType.unknownToNull(): PklType? = if (this is PklUnknownType) null else this
 
-val PklType?.hasConstraints: Boolean
-  get() =
-    when (this) {
-      null -> false
-      is PklConstrainedType -> true
-      is PklTypeAlias -> body.hasConstraints
-      is PklUnionType -> leftType.hasConstraints || rightType.hasConstraints
-      else -> false
-    }
+fun PklType?.hasConstraints(): Boolean =
+  when (this) {
+    null -> false
+    is PklConstrainedType -> true
+    is PklTypeAlias -> body.hasConstraints()
+    is PklUnionType -> leftType.hasConstraints() || rightType.hasConstraints()
+    else -> false
+  }
 
 fun PklTypeAlias.isRecursive(context: PklProject?): Boolean =
   getContextualCachedValue(context) {

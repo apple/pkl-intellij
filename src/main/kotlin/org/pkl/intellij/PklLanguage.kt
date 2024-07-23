@@ -17,6 +17,7 @@ package org.pkl.intellij
 
 import com.intellij.lang.Language
 
+@Suppress("JavaIoSerializableObjectMustHaveReadResolve")
 object PklLanguage : Language("Pkl", "text/pkl", "text/x-pkl", "application/x-pkl") {
   override fun isCaseSensitive() = true
 }

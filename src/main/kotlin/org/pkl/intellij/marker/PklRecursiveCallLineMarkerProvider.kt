@@ -39,17 +39,17 @@ class PklRecursiveCallLineMarkerProvider : LineMarkerProvider {
     // add at most one recursive line marker per line
     val lineNumbers = mutableSetOf<Int>()
 
+    // cache enclosing document (assumes [elements] are contained in the same document)
+    var document: Document? = null
+
+    var base: PklBaseModule? = null
+
     nextElement@ for (element in elements) {
       // line markers should be added for leaf elements only
       // (see docs for LineMarkerProvider.getLineMarkerInfo)
       if (element.elementType != PklElementTypes.IDENTIFIER) continue
 
       ProgressManager.checkCanceled()
-
-      // cache enclosing document (assumes [elements] are contained in the same document)
-      var document: Document? = null
-
-      var base: PklBaseModule? = null
 
       when (val accessName = element.parent) {
         is PklUnqualifiedAccessName -> {

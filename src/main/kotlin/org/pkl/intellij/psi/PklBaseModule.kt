@@ -37,6 +37,7 @@ val Project.pklBaseModule: PklBaseModule
       )
     }
 
+@Suppress("unused")
 class PklBaseModule(private val stdLib: PklStdLib) {
   val psi: PklModule = stdLib.baseModule.psi
 

@@ -260,8 +260,6 @@ fun parseUriOrNull(uriStr: String): URI? =
     null
   }
 
-fun Path.dropRoot(): Path = toAbsolutePath().let { it.subpath(0, it.count()) }
-
 /**
  * Windows reserves characters `<>:"\|?*` in filenames.
  *

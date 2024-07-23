@@ -66,7 +66,7 @@ class PklPropertyNameReference(private val propertyName: PklPropertyName) :
             Resolvers.resolveQualifiedAccess(receiverType, true, base, visitor, context)
           }
         }
-      else -> unexpectedType(property)
+      else -> unexpectedType(null)
     }
   }
 }

@@ -40,7 +40,7 @@ abstract class PklAnnotationListBase(node: ASTNode) :
       val annotation =
         elements.find {
           val resolved = it.typeName?.resolve(enclosingModule?.pklProject)
-          resolved != null && resolved === project.pklBaseModule.sourceCodeType?.psi
+          resolved != null && resolved === project.pklBaseModule.sourceCodeType.psi
         }
           ?: return null
       val body = annotation.objectBody ?: return null

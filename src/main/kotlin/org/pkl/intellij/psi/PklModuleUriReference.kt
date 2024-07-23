@@ -137,7 +137,7 @@ class PklModuleUriReference(uri: PklModuleUri, rangeInElement: TextRange) :
      * multiple directories with the same name. However, it is easier to implement and simplifies
      * highlighting the first problematic path segment of unresolvable `...` URIs.
      *
-     * [position] is the source element where the resolution started from, if exists.
+     * [context] is the source element where the resolution started from, if exists.
      */
     fun resolve(
       targetUri: String,
