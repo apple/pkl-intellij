@@ -21,6 +21,17 @@
     ]]></description>
   <!-- language=html -->
   <change-notes><![CDATA[
+    <b>0.28.0</b>
+    <ul>
+      <li>Fix an issue where transitive dependencies within a project show an incorrect type mismatch error.</li>
+      <li>Fix an issue where the "Sync Projects" action does not enable the plugin to resolve dependencies until after an editor restart.</li>
+      <li>More metadata added to `.idea/workspace.xml` (a new project sync is required upon first restart).</li>
+      <li>Show project-related notification banners on any Pkl file that is within a project directory.</li>
+      <li>Skip ignored files when syncing projects.</li>
+      <li>Change project dependeny downloading from an action to an intention.</li>
+      <li>Remove check for missing dependency sources when viewing a PklProject file to improve general performance.</li>
+      <li>Add check for missing dependecy sources when viewing dependency notation.</li>
+    </ul>
     <b>0.27.0</b>
     <ul>
       <li>Change Pkl file icon to the logo</li>
