@@ -31,7 +31,6 @@ import com.intellij.psi.util.CachedValuesManager
 import java.net.URI
 import java.net.URISyntaxException
 import org.pkl.intellij.PklLanguage
-import org.pkl.intellij.packages.PackageDependency
 import org.pkl.intellij.packages.dto.PackageUri
 import org.pkl.intellij.packages.dto.PklProject
 import org.pkl.intellij.util.*
@@ -305,7 +304,7 @@ class PklModuleUriReference(uri: PklModuleUri, rangeInElement: TextRange) :
     ): VirtualFile? {
       if (targetUriStr.startsWith("package:")) {
         val packageUri = PackageUri.create(targetUriStr) ?: return null
-        return PackageDependency(packageUri, null).getRoot(project)
+        return packageUri.asPackageDependency(null).getRoot(project)
       }
       val dependencyName = targetUriStr.substringBefore('/').drop(1)
       val dependencies = enclosingModule?.dependencies(context) ?: return null
@@ -383,11 +382,13 @@ class PklModuleUriReference(uri: PklModuleUri, rangeInElement: TextRange) :
 
           if (targetUriStr.startsWith("@")) {
             val root = getDependencyRoot(project, targetUriStr, enclosingModule, context)
-            val resolvedTargetUri =
-              targetUriStr.substringAfter('/', "").ifEmpty {
-                return root
-              }
-            return root?.findFileByRelativePath(resolvedTargetUri)
+            if (root != null) {
+              val resolvedTargetUri =
+                targetUriStr.substringAfter('/', "").ifEmpty {
+                  return root
+                }
+              return root.findFileByRelativePath(resolvedTargetUri)
+            }
           }
 
           val projectRootManager = ProjectRootManager.getInstance(sourcePsiFile.project)

@@ -71,7 +71,7 @@ val PsiElement.isInPklProject: Boolean
   get() = enclosingModule?.pklProject != null
 
 val PsiElement.isInPackage: Boolean
-  get() = containingFile.virtualFile?.let { project.pklPackageService.isInPackage(it) } ?: false
+  get() = containingFile?.virtualFile?.let { project.pklPackageService.isInPackage(it) } ?: false
 
 val PsiElement.elementType: IElementType?
   get() = PsiUtilCore.getElementType(this)
@@ -414,7 +414,7 @@ fun resolveModuleUriGlob(element: PklModuleUri, context: PklProject?): List<PklM
   element.escapedContent
     ?.let { text ->
       val psiManager = PsiManager.getInstance(element.project)
-      CachedValuesManager.getManager(element.project).getCachedValue(element) {
+      element.getContextualCachedValue(context) {
         CachedValueProvider.Result.create(
           PklModuleUriReference.resolveGlob(text, text, element, context),
           psiManager.modificationTracker.forLanguage(PklLanguage),

@@ -16,7 +16,6 @@
 package org.pkl.intellij.notification
 
 import com.intellij.ide.scratch.ScratchUtil
-import com.intellij.openapi.diagnostic.thisLogger
 import com.intellij.openapi.fileEditor.FileEditor
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.vfs.VirtualFile
@@ -64,34 +63,19 @@ class PklSyncProjectNotificationProvider(project: Project) : EditorNotificationP
       val psiFile = PsiManager.getInstance(project).findFile(file)
       if (psiFile !is PklModule) return@Function null
       if (!psiFile.isInPklProject) return@Function null
-      val pklProject =
-        psiFile.pklProject
-          ?: return@Function PklEditorNotificationPanel().apply {
-            val error = project.pklProjectService.getError(file)
-            if (error != null) {
-              text = "Project Sync error"
-
-              createActionLabel("View details", "Pkl.ShowSyncError")
-              createActionLabel("Retry", "Pkl.SyncPklProjects")
-            } else {
-              text = "Sync Pkl project"
-
-              createActionLabel("Sync", "Pkl.SyncPklProjects")
-            }
-          }
-      val packageService = project.pklPackageService
-      val missingDependencies =
-        pklProject.myDependencies.values.filterIsInstance<PackageDependency>().filter {
-          packageService.getLibraryRoots(it) == null
-        }
-      if (missingDependencies.isNotEmpty()) {
-        thisLogger()
-          .info(
-            "Missing dependencies in project: ${missingDependencies.joinToString(", ") { it.packageUri.toString() }}"
-          )
+      if (psiFile.pklProject == null) {
         return@Function PklEditorNotificationPanel().apply {
-          text = "Missing sources for packages"
-          createActionLabel("Download", "Pkl.DownloadPackagesForPklProject")
+          val error = project.pklProjectService.getError(file)
+          if (error != null) {
+            text = "Project Sync error"
+
+            createActionLabel("View details", "Pkl.ShowSyncError")
+            createActionLabel("Retry", "Pkl.SyncPklProjects")
+          } else {
+            text = "Sync Pkl project"
+
+            createActionLabel("Sync", "Pkl.SyncPklProjects")
+          }
         }
       }
       if (project.pklProjectService.isOutOfDate()) {

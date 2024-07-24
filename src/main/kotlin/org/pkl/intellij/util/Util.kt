@@ -195,8 +195,8 @@ val AnnotationHolder.currentFile: PsiFile
 val AnnotationHolder.currentProject: Project
   get() = currentFile.project
 
-val AnnotationHolder.currentModule: PklModule
-  get() = currentFile as PklModule
+val AnnotationHolder.currentModule: PklModule?
+  get() = currentFile as? PklModule
 
 /**
  * Not sure what the difference between `BaseIntentionAction.canModify()` and

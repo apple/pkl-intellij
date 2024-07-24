@@ -37,7 +37,7 @@ class PklExprAnnotator : PklAnnotator() {
   override fun doAnnotate(element: PsiElement, holder: AnnotationHolder) {
     if (element !is PklExpr) return
 
-    val module = holder.currentModule
+    val module = holder.currentModule ?: return
     val project = module.project
     val base = project.pklBaseModule
     val context = element.enclosingModule?.pklProject

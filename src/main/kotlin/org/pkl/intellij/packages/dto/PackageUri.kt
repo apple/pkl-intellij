@@ -108,5 +108,5 @@ data class PackageUri(
     listOf(encodePath("package-2/$packageFilenameBase.json"), "package-1/$packageFilenameBase.json")
 
   fun asPackageDependency(pklProject: PklProject? = null): PackageDependency =
-    PackageDependency(this, pklProject)
+    PackageDependency(this, pklProject, this.checksums)
 }

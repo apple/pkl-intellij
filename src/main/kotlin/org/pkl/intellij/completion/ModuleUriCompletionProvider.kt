@@ -35,7 +35,6 @@ import java.nio.file.Path
 import javax.swing.Icon
 import kotlin.io.path.name
 import org.pkl.intellij.PklIcons
-import org.pkl.intellij.packages.PackageDependency
 import org.pkl.intellij.packages.dto.PackageAssetUri
 import org.pkl.intellij.packages.pklPackageService
 import org.pkl.intellij.psi.*
@@ -154,7 +153,7 @@ class ModuleUriCompletionProvider(private val packageUriOnly: Boolean = false) :
           else -> {
             val packageService = project.pklPackageService
             val libraryRoots =
-              packageService.getLibraryRoots(PackageDependency(packageAssetUri.packageUri, null))
+              packageService.getLibraryRoots(packageAssetUri.packageUri.asPackageDependency(null))
                 ?: return
             completeHierarchicalUri(
               arrayOf(libraryRoots.packageRoot),

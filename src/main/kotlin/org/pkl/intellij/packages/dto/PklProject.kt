@@ -133,6 +133,9 @@ data class PklProject(val metadata: DerivedProjectMetadata, val projectDeps: Pro
           projectDirVirtualFile?.findFileByRelativePath(path)?.let {
             LocalProjectDependency(uri, it)
           }
-        else -> PackageDependency(uri, self)
+        else -> {
+          this as RemoteDependency
+          PackageDependency(uri, self, checksums)
+        }
       }
 }
