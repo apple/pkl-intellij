@@ -29,7 +29,7 @@ import org.pkl.intellij.toolchain.pklCli
 class PklDownloadDependencySourcesAction : IntentionAction {
   override fun startInWriteAction(): Boolean = false
 
-  override fun getText(): String = "Download dependencies"
+  override fun getText(): String = "Download dependency sources"
 
   override fun getFamilyName(): String = "Download Pkl packages"
 
