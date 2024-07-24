@@ -17,7 +17,6 @@ package org.pkl.intellij.annotator
 
 import com.intellij.lang.annotation.AnnotationHolder
 import com.intellij.lang.annotation.HighlightSeverity
-import com.intellij.openapi.diagnostic.Logger
 import com.intellij.openapi.util.TextRange
 import com.intellij.psi.PsiDirectory
 import com.intellij.psi.PsiElement
@@ -40,10 +39,6 @@ import org.pkl.intellij.util.escapeXml
 import org.pkl.intellij.util.parseUriOrNull
 
 class PklModuleUriAndVersionAnnotator : PklAnnotator() {
-  companion object {
-    val logger = Logger.getInstance(PklModuleUriAndVersionAnnotator::class.java)
-  }
-
   override fun doAnnotate(element: PsiElement, holder: AnnotationHolder) {
     val project = holder.currentProject
     val base = project.pklBaseModule
