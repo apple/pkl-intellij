@@ -19,8 +19,8 @@ jobs:
     - checkout
     - run:
         command: |2-
-            ./gradlew --info --stacktrace -DtestReportsDir=${HOME}/test-results build \
-              || ./gradlew --info --stacktrace -DtestReportsDir=${HOME}/test-results build
+            ./gradlew -DreleaseBuild=true --info --stacktrace -DtestReportsDir=${HOME}/test-results build \
+              || ./gradlew -DreleaseBuild=true --info --stacktrace -DtestReportsDir=${HOME}/test-results build
     - run:
         command: ./gradlew --info --stacktrace -DtestReportsDir=${HOME}/test-results publish
     - store_test_results:
