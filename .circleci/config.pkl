@@ -53,7 +53,7 @@ jobs {
           """#
       }
       new RunStep {
-        command = "./gradlew --info --stacktrace -DtestReportsDir=${HOME}/test-results publish"
+        command = "./gradlew -DreleaseBuild=true --info --stacktrace -DtestReportsDir=${HOME}/test-results publish"
       }
       new StoreTestResults { path = "~/test-results" }
       new PersistToWorkspaceStep {

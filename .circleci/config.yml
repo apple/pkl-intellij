@@ -22,7 +22,7 @@ jobs:
             ./gradlew -DreleaseBuild=true --info --stacktrace -DtestReportsDir=${HOME}/test-results build \
               || ./gradlew -DreleaseBuild=true --info --stacktrace -DtestReportsDir=${HOME}/test-results build
     - run:
-        command: ./gradlew --info --stacktrace -DtestReportsDir=${HOME}/test-results publish
+        command: ./gradlew -DreleaseBuild=true --info --stacktrace -DtestReportsDir=${HOME}/test-results publish
     - store_test_results:
         path: ~/test-results
     - persist_to_workspace:
