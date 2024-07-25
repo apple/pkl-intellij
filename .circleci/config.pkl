@@ -48,8 +48,8 @@ jobs {
       new RunStep {
         // TODO: figure out why this needs to be run twice.
         command = #"""
-            ./gradlew --info --stacktrace -DtestReportsDir=${HOME}/test-results build \
-              || ./gradlew --info --stacktrace -DtestReportsDir=${HOME}/test-results build
+            ./gradlew -DreleaseBuild=true --info --stacktrace -DtestReportsDir=${HOME}/test-results build \
+              || ./gradlew -DreleaseBuild=true --info --stacktrace -DtestReportsDir=${HOME}/test-results build
           """#
       }
       new RunStep {
