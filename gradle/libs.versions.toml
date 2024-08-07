@@ -11,11 +11,11 @@ grammarKitPlugin = "2021.2.2"
 intellij = "2023.1.5"
 # IntelliJ version to run against (`runIde` task). Use latest version.
 # https://www.jetbrains.com/idea/download/#section=mac
-intellijRunIde = "2023.2"
+intellijRunIde = "2024.2"
 intellijPlugin = "1.17.4"
 intellijSinceBuild = "231"
 # set to "999.*" to disable upper bound
-intellijUntilBuild = "241.*"
+intellijUntilBuild = "242.*"
 # Grammar-Kit isn't compatible with 1.7.0-2
 jflex = "1.7.0-1"
 # use same version that ships with `intellijSinceBuild`
