@@ -452,7 +452,7 @@ nullableType ::= type '?'
 
 constrainedType ::= type typeConstraintList
 
-typeConstraintList ::= SEP? '(' expr (',' expr)* ')' {
+typeConstraintList ::= '(' expr (',' expr)* ')' {
   pin(".*") = 2
   methods = [
     elements = "expr"
