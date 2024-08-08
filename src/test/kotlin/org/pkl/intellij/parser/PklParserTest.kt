@@ -214,4 +214,18 @@ class PklParserTest : ParsingTestCase("", "pkl", PklParserDefinition()) {
         .trimIndent()
     )
   }
+
+  fun testTypeTestWithAmends() {
+    doCodeTest(
+      """
+      test = new { base = "" }
+      
+      foo = new {
+        (test) { base = "a" } is Dynamic
+        (test) { base = "b" } is Dynamic
+      }
+      """
+        .trimIndent()
+    )
+  }
 }
