@@ -18,14 +18,17 @@ package org.pkl.intellij.psi
 import com.intellij.lang.ASTNode
 import com.intellij.psi.PsiElement
 import com.intellij.psi.util.CachedValueProvider
+import com.intellij.psi.util.CachedValuesManager
+import com.intellij.psi.util.ParameterizedCachedValueProvider
 import javax.swing.Icon
 import org.pkl.intellij.PklIcons
+import org.pkl.intellij.cacheKeyService
 import org.pkl.intellij.packages.dto.PklProject
+import org.pkl.intellij.packages.pklProjectService
 import org.pkl.intellij.resolve.ResolveVisitor
 import org.pkl.intellij.resolve.visitIfNotNull
 import org.pkl.intellij.type.Type
 import org.pkl.intellij.type.TypeParameterBindings
-import org.pkl.intellij.util.getContextualCachedValue
 
 abstract class PklClassBase(node: ASTNode) : PklTypeDefBase(node), PklClass {
   override val keyword: PsiElement
@@ -60,11 +63,30 @@ abstract class PklClassBase(node: ASTNode) : PklTypeDefBase(node), PklClass {
     get() = body?.methods ?: emptySequence()
 }
 
-fun PklClass.cache(context: PklProject?): ClassMemberCache =
-  getContextualCachedValue(context) {
-    val cache = ClassMemberCache.create(this, context)
-    CachedValueProvider.Result.create(cache, cache.dependencies)
+private val classMemberCacheProvider:
+  ParameterizedCachedValueProvider<ClassMemberCache, Pair<PklClass, PklProject?>> =
+  ParameterizedCachedValueProvider { (clazz, context) ->
+    val cache = ClassMemberCache.create(clazz, context)
+    if (context == null) {
+      CachedValueProvider.Result.create(cache, cache.dependencies)
+    } else {
+      val dependencies = buildList {
+        addAll(cache.dependencies)
+        add(clazz.project.pklProjectService)
+      }
+      CachedValueProvider.Result.create(cache, dependencies)
+    }
   }
+
+fun PklClass.cache(context: PklProject?): ClassMemberCache =
+  CachedValuesManager.getManager(project)
+    .getParameterizedCachedValue(
+      this,
+      project.cacheKeyService.getKey("PklClass.cache", context),
+      classMemberCacheProvider,
+      false,
+      this to context
+    )
 
 /** Caches non-local, i.e., externally accessible, members of a class. */
 class ClassMemberCache(

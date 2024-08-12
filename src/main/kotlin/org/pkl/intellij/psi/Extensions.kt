@@ -31,12 +31,13 @@ import javax.swing.Icon
 import org.pkl.intellij.PklIcons
 import org.pkl.intellij.PklImportOptimizer.ImportInfo
 import org.pkl.intellij.PklLanguage
+import org.pkl.intellij.cacheKeyService
 import org.pkl.intellij.packages.dto.PklProject
 import org.pkl.intellij.packages.pklPackageService
+import org.pkl.intellij.packages.pklProjectService
 import org.pkl.intellij.psi.PklElementTypes.IMPORT_GLOB
 import org.pkl.intellij.type.*
 import org.pkl.intellij.util.appendNumericSuffix
-import org.pkl.intellij.util.getContextualCachedValue
 import org.pkl.intellij.util.inferImportPropertyName
 import org.pkl.intellij.util.unexpectedType
 
@@ -412,15 +413,7 @@ fun PklModuleUri.resolve(context: PklProject?): PklModule? =
 
 fun resolveModuleUriGlob(element: PklModuleUri, context: PklProject?): List<PklModule> =
   element.escapedContent
-    ?.let { text ->
-      val psiManager = PsiManager.getInstance(element.project)
-      element.getContextualCachedValue(context) {
-        CachedValueProvider.Result.create(
-          PklModuleUriReference.resolveGlob(text, text, element, context),
-          psiManager.modificationTracker.forLanguage(PklLanguage),
-        )
-      }
-    }
+    ?.let { PklModuleUriReference.resolveGlob(it, it, element, context) }
     ?.filterIsInstance<PklModule>()
     ?: emptyList()
 
@@ -582,15 +575,31 @@ fun PklType?.hasConstraints(): Boolean =
     else -> false
   }
 
-fun PklTypeAlias.isRecursive(context: PklProject?): Boolean =
-  getContextualCachedValue(context) {
-    val project = project
+private val isRecursiveProvider:
+  ParameterizedCachedValueProvider<Boolean, Pair<PklTypeAlias, PklProject?>> =
+  ParameterizedCachedValueProvider { (element, context) ->
+    val project = element.project
     val psiManager = PsiManager.getInstance(project)
-    CachedValueProvider.Result.create(
-      isRecursive(mutableSetOf(), context),
-      psiManager.modificationTracker.forLanguage(PklLanguage)
-    )
+    val result = element.isRecursive(mutableSetOf(), context)
+    val dependencies = buildList {
+      add(psiManager.modificationTracker.forLanguage(PklLanguage))
+      if (context != null) {
+        add(project.pklProjectService)
+      }
+    }
+    CachedValueProvider.Result.create(result, dependencies)
   }
+
+fun PklTypeAlias.isRecursive(context: PklProject?): Boolean {
+  val cachedValuesManager = CachedValuesManager.getManager(project)
+  return cachedValuesManager.getParameterizedCachedValue(
+    this,
+    project.cacheKeyService.getKey("PklTypeAlias.isRecursive", context),
+    isRecursiveProvider,
+    false,
+    this to context
+  )
+}
 
 private fun PklTypeAlias.isRecursive(
   seen: MutableSet<PklTypeAlias>,

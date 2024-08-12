@@ -22,13 +22,30 @@ import com.intellij.openapi.util.RecursionManager
 import com.intellij.psi.PsiElement
 import com.intellij.psi.PsiManager
 import com.intellij.psi.util.CachedValueProvider
+import com.intellij.psi.util.CachedValuesManager
+import com.intellij.psi.util.ParameterizedCachedValueProvider
 import org.pkl.intellij.PklLanguage
+import org.pkl.intellij.cacheKeyService
 import org.pkl.intellij.packages.dto.PklProject
+import org.pkl.intellij.packages.pklProjectService
 import org.pkl.intellij.psi.*
 import org.pkl.intellij.resolve.ResolveVisitors
-import org.pkl.intellij.util.getContextualCachedValue
 
 private val logger: Logger = Logger.getInstance("org.pkl.intellij.type")
+
+private val exprTypeProvider:
+  ParameterizedCachedValueProvider<Type, Pair<PsiElement, PklProject?>> =
+  ParameterizedCachedValueProvider { (elem, context) ->
+    val project = elem.project
+    val result = elem.doComputeExprType(project.pklBaseModule, mapOf(), context)
+    val dependencies = buildList {
+      add(PsiManager.getInstance(project).modificationTracker.forLanguage(PklLanguage))
+      if (context != null) {
+        add(project.pklProjectService)
+      }
+    }
+    CachedValueProvider.Result.create(result, dependencies)
+  }
 
 fun PsiElement?.computeExprType(
   base: PklBaseModule,
@@ -37,16 +54,15 @@ fun PsiElement?.computeExprType(
 ): Type {
   return when {
     this == null || this !is PklExpr -> Type.Unknown
-    bindings.isEmpty() -> {
-      val project = base.project
-      val psiManager = PsiManager.getInstance(project)
-      getContextualCachedValue(context) {
-        CachedValueProvider.Result.create(
-          doComputeExprType(project.pklBaseModule, mapOf(), context),
-          psiManager.modificationTracker.forLanguage(PklLanguage)
+    bindings.isEmpty() ->
+      CachedValuesManager.getManager(base.project)
+        .getParameterizedCachedValue(
+          this,
+          project.cacheKeyService.getKey("PsiElement.computeExprType", context),
+          exprTypeProvider,
+          false,
+          this to context
         )
-      }
-    }
     else -> doComputeExprType(base, bindings, context)
   }
 }

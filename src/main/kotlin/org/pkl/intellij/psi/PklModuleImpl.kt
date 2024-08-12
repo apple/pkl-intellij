@@ -26,21 +26,15 @@ import com.intellij.openapi.vfs.VirtualFileManager
 import com.intellij.openapi.vfs.findFile
 import com.intellij.psi.FileViewProvider
 import com.intellij.psi.PsiElement
-import com.intellij.psi.util.CachedValue
-import com.intellij.psi.util.CachedValueProvider
-import com.intellij.psi.util.CachedValuesManager
+import com.intellij.psi.util.*
 import javax.swing.Icon
-import org.pkl.intellij.PklFileType
-import org.pkl.intellij.PklIcons
-import org.pkl.intellij.PklLanguage
-import org.pkl.intellij.PklVersion
+import org.pkl.intellij.*
 import org.pkl.intellij.packages.*
 import org.pkl.intellij.packages.PklProjectService.Companion.PKL_PROJECT_FILENAME
 import org.pkl.intellij.packages.dto.PackageMetadata
 import org.pkl.intellij.packages.dto.PklProject
 import org.pkl.intellij.type.Type
 import org.pkl.intellij.type.TypeParameterBindings
-import org.pkl.intellij.util.getContextualCachedValue
 
 internal val jarFs: JarFileSystem =
   VirtualFileManager.getInstance().getFileSystem("jar") as JarFileSystem
@@ -48,8 +42,25 @@ internal val jarFs: JarFileSystem =
 class PklModuleImpl(viewProvider: FileViewProvider) :
   PsiFileBase(viewProvider, PklLanguage), PklModule {
   companion object {
+    private val moduleMemberCacheValueProvider:
+      ParameterizedCachedValueProvider<ModuleMemberCache, Pair<PklModule, PklProject?>> =
+      ParameterizedCachedValueProvider { (pklModule, context) ->
+        val cache = ModuleMemberCache.create(pklModule, context)
+        if (context == null) {
+          CachedValueProvider.Result.create(cache, cache.dependencies)
+        } else {
+          val dependencies = buildList {
+            addAll(cache.dependencies)
+            add(pklModule.project.pklProjectService)
+          }
+          CachedValueProvider.Result.create(cache, dependencies)
+        }
+      }
+
     private val projectDirCacheKey: Key<CachedValue<VirtualFile>> = Key.create("projectDir")
-    private val packageKey: Key<CachedValue<PackageDependency>> = Key.create("package")
+
+    private val packageCacheKey: Key<CachedValue<PackageDependency>> =
+      Key.create("packageDependency")
   }
 
   private val cacheManager = CachedValuesManager.getManager(project)
@@ -210,10 +221,14 @@ class PklModuleImpl(viewProvider: FileViewProvider) :
   override val isStdLibModule: Boolean = declaredName?.text?.startsWith("pkl.") ?: false
 
   override fun cache(context: PklProject?): ModuleMemberCache =
-    getContextualCachedValue(context) {
-      val cache = ModuleMemberCache.create(this, context)
-      CachedValueProvider.Result.create(cache, cache.dependencies)
-    }
+    CachedValuesManager.getManager(project)
+      .getParameterizedCachedValue(
+        this,
+        project.cacheKeyService.getKey("PklModuleImpl.cache", context),
+        moduleMemberCacheValueProvider,
+        false,
+        this to context
+      )
 
   private fun doGetPackage(): PackageDependency? {
     if (virtualFile == null) return null
@@ -232,7 +247,7 @@ class PklModuleImpl(viewProvider: FileViewProvider) :
     get() {
       return cacheManager.getCachedValue(
         this,
-        packageKey,
+        packageCacheKey,
         { CachedValueProvider.Result(doGetPackage(), ModificationTracker.NEVER_CHANGED) },
         false
       )

@@ -24,7 +24,6 @@ import com.intellij.openapi.progress.runBackgroundableTask
 import com.intellij.openapi.project.DumbService
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.roots.ProjectRootManager
-import com.intellij.openapi.util.Key
 import com.intellij.openapi.util.UserDataHolderBase
 import com.intellij.openapi.vfs.LocalFileSystem
 import com.intellij.openapi.vfs.VirtualFile
@@ -33,12 +32,12 @@ import com.intellij.psi.PsiTreeChangeAdapter
 import com.intellij.psi.PsiTreeChangeEvent
 import com.intellij.psi.search.GlobalSearchScope
 import com.intellij.psi.stubs.StubIndex
-import com.intellij.psi.util.CachedValueProvider
-import com.intellij.psi.util.CachedValuesManager
+import com.intellij.psi.util.*
 import java.time.Duration
 import java.util.*
 import java.util.concurrent.CompletableFuture
 import org.pkl.intellij.PklFileType
+import org.pkl.intellij.cacheKeyService
 import org.pkl.intellij.packages.PklProjectService.Companion.PKL_PROJECTS_TOPIC
 import org.pkl.intellij.packages.dto.PackageMetadata
 import org.pkl.intellij.packages.dto.PackageUri
@@ -78,6 +77,42 @@ internal val localFs: LocalFileSystem by lazy { LocalFileSystem.getInstance() }
 class PklPackageService(val project: Project) : Disposable, UserDataHolderBase() {
   companion object {
     fun getInstance(project: Project): PklPackageService = project.service()
+
+    private val packageMetadataCachedValuesProvider:
+      ParameterizedCachedValueProvider<PackageMetadata, Pair<Project, PackageDependency>> =
+      ParameterizedCachedValueProvider { (project, dep) ->
+        val roots =
+          project.pklPackageService.getLibraryRoots(dep)
+            ?: return@ParameterizedCachedValueProvider noCacheResult()
+        CachedValueProvider.Result.create(
+          PackageMetadata.load(roots.metadataFile),
+          roots.metadataFile
+        )
+      }
+
+    private val libraryRootsProvider:
+      ParameterizedCachedValueProvider<PackageLibraryRoots, Pair<Project, PackageDependency>> =
+      ParameterizedCachedValueProvider { (project, dep) ->
+        val roots =
+          project.pklPackageService.doGetRoots(dep)
+            ?: return@ParameterizedCachedValueProvider noCacheResult()
+        CachedValueProvider.Result.create(roots, roots.zipFile, roots.metadataFile)
+      }
+
+    private val allDepsProvider:
+      ParameterizedCachedValueProvider<List<PackageDependency>, Pair<Project, PackageDependency>> =
+      ParameterizedCachedValueProvider { (project, dep) ->
+        val svc = project.pklPackageService
+        val libraryRoots =
+          svc.getLibraryRoots(dep) ?: return@ParameterizedCachedValueProvider noCacheResult()
+        val metadata =
+          svc.getPackageMetadata(dep) ?: return@ParameterizedCachedValueProvider noCacheResult()
+        val dependencies = metadata.dependencies.values.map { it.uri.asPackageDependency() }
+        val collectedDeps =
+          listOf(dep) +
+            dependencies.flatMap { svc.collectAllDependenciesOfPackage(it) ?: emptyList() }
+        CachedValueProvider.Result.create(collectedDeps, libraryRoots.metadataFile)
+      }
   }
 
   private val dumbService: DumbService = project.service()
@@ -174,22 +209,17 @@ class PklPackageService(val project: Project) : Disposable, UserDataHolderBase()
 
   private val projectRootManager = ProjectRootManager.getInstance(project)
 
-  private fun collectAllDependenciesOfPackage(dep: PackageDependency): List<PackageDependency>? {
-    return cachedValuesManager.getCachedValue(
+  private fun collectAllDependenciesOfPackage(dep: PackageDependency): List<PackageDependency>? =
+    cachedValuesManager.getParameterizedCachedValue(
       this,
-      Key.create("all-deps-${dep.packageUri}"),
-      {
-        val libraryRoots = getLibraryRoots(dep) ?: return@getCachedValue noCacheResult()
-        val metadata = getPackageMetadata(dep) ?: return@getCachedValue noCacheResult()
-        val dependencies = metadata.dependencies.values.map { it.uri.asPackageDependency() }
-        val collectedDeps =
-          listOf(dep) +
-            dependencies.flatMap { dep -> collectAllDependenciesOfPackage(dep) ?: emptyList() }
-        CachedValueProvider.Result.create(collectedDeps, libraryRoots.metadataFile)
-      },
-      false
+      project.cacheKeyService.getKey(
+        "PklPackageService.collectAllDependenciesOfPacakge",
+        dep.packageUri.toString()
+      ),
+      allDepsProvider,
+      false,
+      project to dep
     )
-  }
 
   private var timerTask: TimerTask? = null
 
@@ -220,20 +250,17 @@ class PklPackageService(val project: Project) : Disposable, UserDataHolderBase()
 
   override fun dispose() {}
 
-  fun getPackageMetadata(packageDependency: PackageDependency): PackageMetadata? {
-    return cachedValuesManager.getCachedValue(
+  fun getPackageMetadata(packageDependency: PackageDependency): PackageMetadata? =
+    cachedValuesManager.getParameterizedCachedValue(
       this,
-      Key.create("${packageDependency.packageUri}-metadata"),
-      {
-        val roots = getLibraryRoots(packageDependency) ?: return@getCachedValue noCacheResult()
-        CachedValueProvider.Result.create(
-          getLibraryRoots(packageDependency)?.let { PackageMetadata.load(it.metadataFile) },
-          roots.metadataFile
-        )
-      },
-      false
+      project.cacheKeyService.getKey(
+        "PklPackageService.collectAllDependenciesOfPacakge",
+        packageDependency.packageUri.toString()
+      ),
+      packageMetadataCachedValuesProvider,
+      false,
+      project to packageDependency
     )
-  }
 
   fun getResolvedDependencies(
     packageDependency: PackageDependency,
@@ -279,19 +306,17 @@ class PklPackageService(val project: Project) : Disposable, UserDataHolderBase()
     return PackageLibraryRoots(zipFile, metadataFile, jarRoot)
   }
 
-  fun getLibraryRoots(dependency: PackageDependency): PackageLibraryRoots? {
-    return cachedValuesManager.getCachedValue(
+  fun getLibraryRoots(dependency: PackageDependency): PackageLibraryRoots? =
+    cachedValuesManager.getParameterizedCachedValue(
       this,
-      Key.create(
-        "${dependency.packageUri}-${dependency.pklProject?.metadata?.projectFileUri}-library-roots"
+      project.cacheKeyService.getKey(
+        "PklPackageService.getLibraryRoots",
+        dependency.packageUri.toString()
       ),
-      {
-        val roots = doGetRoots(dependency) ?: return@getCachedValue noCacheResult()
-        CachedValueProvider.Result.create(roots, roots.zipFile, roots.metadataFile)
-      },
-      false
+      libraryRootsProvider,
+      false,
+      project to dependency
     )
-  }
 
   private fun getResolvedDependenciesOfProjectPackage(
     pklProject: PklProject,

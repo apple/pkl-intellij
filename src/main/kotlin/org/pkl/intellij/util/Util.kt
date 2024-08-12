@@ -20,7 +20,6 @@ import com.intellij.lang.annotation.AnnotationHolder
 import com.intellij.openapi.module.ModuleUtil
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.roots.OrderEnumerator
-import com.intellij.openapi.util.Key
 import com.intellij.openapi.util.ModificationTracker
 import com.intellij.openapi.util.text.StringUtil
 import com.intellij.openapi.vfs.VfsUtil
@@ -28,16 +27,13 @@ import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.psi.PsiElement
 import com.intellij.psi.PsiFile
 import com.intellij.psi.util.CachedValueProvider
-import com.intellij.psi.util.CachedValuesManager
 import java.math.BigInteger
 import java.net.URI
 import java.net.URISyntaxException
 import java.util.*
 import java.util.regex.Pattern
 import kotlin.math.max
-import org.pkl.intellij.packages.dto.PklProject
-import org.pkl.intellij.packages.pklProjectService
-import org.pkl.intellij.psi.*
+import org.pkl.intellij.psi.PklModule
 
 private const val SIGNIFICAND_MASK = 0x000fffffffffffffL
 
@@ -340,35 +336,6 @@ fun decodePath(path: String): String {
       i++
     }
   }
-}
-
-/** Cache values in terms of the given [context]. */
-fun <T> PklElement.getContextualCachedValue(
-  context: PklProject?,
-  provider: CachedValueProvider<T>
-): T {
-  val manager = CachedValuesManager.getManager(project)
-  // Optimization: if the context is null, or if this element is not in a project or a package, no
-  // need to create a new CachedValueProvider.
-  if (
-    context == null || (enclosingModule?.isInPackage ?: enclosingModule?.isInPklProject) != true
-  ) {
-    return manager.getCachedValue(this, Key.create("static"), provider, false)
-  }
-  return CachedValuesManager.getManager(project)
-    .getCachedValue(
-      this,
-      Key.create("${context.projectFile}-cache"),
-      {
-        val result = provider.compute() ?: return@getCachedValue noCacheResult()
-        CachedValueProvider.Result.create(
-          result.value,
-          project.pklProjectService,
-          *result.dependencyItems
-        )
-      },
-      false
-    )
 }
 
 fun <T> noCacheResult(): CachedValueProvider.Result<T> =

@@ -28,11 +28,15 @@ import com.intellij.openapi.vfs.impl.http.RemoteFileState
 import com.intellij.psi.*
 import com.intellij.psi.util.CachedValueProvider
 import com.intellij.psi.util.CachedValuesManager
+import com.intellij.psi.util.ParameterizedCachedValueProvider
+import com.intellij.psi.util.PsiModificationTracker
 import java.net.URI
 import java.net.URISyntaxException
 import org.pkl.intellij.PklLanguage
+import org.pkl.intellij.cacheKeyService
 import org.pkl.intellij.packages.dto.PackageUri
 import org.pkl.intellij.packages.dto.PklProject
+import org.pkl.intellij.packages.pklProjectService
 import org.pkl.intellij.util.*
 
 /** A reference within a module URI. May reference a package/directory or file. */
@@ -83,14 +87,7 @@ class PklModuleUriReference(uri: PklModuleUri, rangeInElement: TextRange) :
   override fun resolve(): PsiElement? = resolveContextual(null)
 
   fun resolveGlob(context: PklProject?): List<PsiFileSystemItem>? {
-    val psiManager = PsiManager.getInstance(element.project)
-    return CachedValuesManager.getManager(element.project).getCachedValue(this) {
-      val resolved = resolveGlob(targetUri, moduleUri, element, context)
-      CachedValueProvider.Result.create(
-        resolved,
-        psiManager.modificationTracker.forLanguage(PklLanguage)
-      )
-    }
+    return resolveGlob(targetUri, moduleUri, element, context)
   }
 
   override fun multiResolve(incompleteCode: Boolean): Array<ResolveResult> {
@@ -195,11 +192,46 @@ class PklModuleUriReference(uri: PklModuleUri, rangeInElement: TextRange) :
       return result.values.toTypedArray()
     }
 
+    private val resolvedGlobProvider:
+      ParameterizedCachedValueProvider<
+        List<PsiFileSystemItem>, Quadruple<String, String, PklModuleUri, PklProject?>
+      > =
+      ParameterizedCachedValueProvider { (targetUriString, moduleUriString, element, context) ->
+        val result =
+          doResolveGlob(targetUriString, moduleUriString, element, context)
+            ?: return@ParameterizedCachedValueProvider noCacheResult()
+        val dependencies = buildList {
+          add(PsiModificationTracker.getInstance(element.project).forLanguage(PklLanguage))
+          if (context != null) {
+            add(element.project.pklProjectService)
+          }
+        }
+        CachedValueProvider.Result.create(result, dependencies)
+      }
+
     /**
      * @param targetUriString The prefix of [moduleUriString] that this reference refers to
      * @param moduleUriString The whole URI
      */
     fun resolveGlob(
+      targetUriString: String,
+      moduleUriString: String,
+      element: PklModuleUri,
+      context: PklProject?
+    ): List<PsiFileSystemItem>? =
+      CachedValuesManager.getManager(element.project)
+        .getParameterizedCachedValue(
+          element,
+          element.project.cacheKeyService.getKey(
+            "PklModuleUriReference.resolveGlob",
+            "${context?.projectFile}-resolveGlob-${targetUriString}-${moduleUriString}"
+          ),
+          resolvedGlobProvider,
+          false,
+          Quadruple(targetUriString, moduleUriString, element, context)
+        )
+
+    private fun doResolveGlob(
       targetUriString: String,
       moduleUriString: String,
       element: PklModuleUri,
