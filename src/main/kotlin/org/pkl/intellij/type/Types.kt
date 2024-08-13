@@ -19,16 +19,19 @@ package org.pkl.intellij.type
 
 import com.intellij.psi.PsiManager
 import com.intellij.psi.util.CachedValueProvider
+import com.intellij.psi.util.CachedValuesManager
+import com.intellij.psi.util.ParameterizedCachedValueProvider
 import java.util.*
 import kotlin.math.min
 import org.pkl.intellij.PklLanguage
+import org.pkl.intellij.cacheKeyService
 import org.pkl.intellij.packages.dto.PklProject
+import org.pkl.intellij.packages.pklProjectService
 import org.pkl.intellij.psi.*
 import org.pkl.intellij.resolve.ResolveVisitor
 import org.pkl.intellij.type.Type.*
 import org.pkl.intellij.type.Type.Nothing
 import org.pkl.intellij.util.escapeString
-import org.pkl.intellij.util.getContextualCachedValue
 import org.pkl.intellij.util.unexpectedType
 
 /**
@@ -1127,6 +1130,20 @@ sealed class Type(val constraints: List<ConstraintExpr> = listOf()) {
 
 typealias TypeParameterBindings = Map<PklTypeParameter, Type>
 
+private val constraintExprProvider:
+  ParameterizedCachedValueProvider<List<ConstraintExpr>, Pair<PklConstrainedType, PklProject?>> =
+  ParameterizedCachedValueProvider { (elem, context) ->
+    val project = elem.project
+    val result = elem.typeConstraintList.elements.toConstraintExprs(project.pklBaseModule, context)
+    val dependencies = buildList {
+      add(PsiManager.getInstance(project).modificationTracker.forLanguage(PklLanguage))
+      if (context != null) {
+        add(project.pklProjectService)
+      }
+    }
+    CachedValueProvider.Result.create(result, dependencies)
+  }
+
 fun PklType?.toType(
   base: PklBaseModule,
   bindings: Map<PklTypeParameter, Type>,
@@ -1185,14 +1202,15 @@ fun PklType?.toType(
     is PklDefaultType -> type.toType(base, bindings, context, preserveUnboundTypeVars)
     is PklConstrainedType -> {
       val project = base.project
-      val psiManager = PsiManager.getInstance(project)
       val constraintExprs =
-        getContextualCachedValue(context) {
-          CachedValueProvider.Result.create(
-            typeConstraintList.elements.toConstraintExprs(project.pklBaseModule, context),
-            psiManager.modificationTracker.forLanguage(PklLanguage)
+        CachedValuesManager.getManager(project)
+          .getParameterizedCachedValue(
+            this,
+            project.cacheKeyService.getKey("PklType.toType", context),
+            constraintExprProvider,
+            false,
+            this to context
           )
-        }
       type.toType(base, bindings, context, preserveUnboundTypeVars).withConstraints(constraintExprs)
     }
     is PklNullableType ->

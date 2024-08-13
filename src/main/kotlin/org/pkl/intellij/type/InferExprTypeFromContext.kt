@@ -18,12 +18,36 @@ package org.pkl.intellij.type
 import com.intellij.psi.PsiElement
 import com.intellij.psi.PsiManager
 import com.intellij.psi.util.CachedValueProvider
+import com.intellij.psi.util.CachedValuesManager
+import com.intellij.psi.util.ParameterizedCachedValueProvider
 import com.intellij.psi.util.parentOfType
 import org.pkl.intellij.PklLanguage
+import org.pkl.intellij.cacheKeyService
 import org.pkl.intellij.packages.dto.PklProject
+import org.pkl.intellij.packages.pklProjectService
 import org.pkl.intellij.psi.*
 import org.pkl.intellij.resolve.ResolveVisitors
-import org.pkl.intellij.util.getContextualCachedValue
+
+private val inferExprTypeProvider:
+  ParameterizedCachedValueProvider<Type, Pair<PklExpr, PklProject?>> =
+  ParameterizedCachedValueProvider { (expr, context) ->
+    val project = expr.project
+    val result =
+      expr.doInferExprTypeFromContext(
+        project.pklBaseModule,
+        mapOf(),
+        expr.parent,
+        context,
+        true,
+      )
+    val dependencies = buildList {
+      add(PsiManager.getInstance(project).modificationTracker.forLanguage(PklLanguage))
+      if (context != null) {
+        add(project.pklProjectService)
+      }
+    }
+    CachedValueProvider.Result.create(result, dependencies)
+  }
 
 // TODO: Returns upper bounds for some binary expression operands,
 //  but since this isn't communicated to the caller,
@@ -38,22 +62,15 @@ fun PklExpr?.inferExprTypeFromContext(
 ): Type =
   when {
     this == null -> Type.Unknown
-    bindings.isEmpty() && resolveTypeParamsInParamTypes && canInferParentExpr -> {
-      val project = base.project
-      val psiManager = PsiManager.getInstance(project)
-      getContextualCachedValue(context) {
-        CachedValueProvider.Result.create(
-          doInferExprTypeFromContext(
-            project.pklBaseModule,
-            mapOf(),
-            parent,
-            context,
-            true,
-          ),
-          psiManager.modificationTracker.forLanguage(PklLanguage)
+    bindings.isEmpty() && resolveTypeParamsInParamTypes && canInferParentExpr ->
+      CachedValuesManager.getManager(base.project)
+        .getParameterizedCachedValue(
+          this,
+          project.cacheKeyService.getKey("PklExpr.inferExprTypeFromContext", context),
+          inferExprTypeProvider,
+          false,
+          this to context
         )
-      }
-    }
     else ->
       doInferExprTypeFromContext(
         base,
