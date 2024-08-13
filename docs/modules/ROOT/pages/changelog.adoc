@@ -1,5 +1,12 @@
 = Changelog
 
+[[release-0.30.0]]
+== 0.30.0 (2024-08-13)
+
+=== Fixes
+
+* Fixes a performance bug that causes spikes in CPU and memory when browsing or editing Pkl files (https://github.com/apple/pkl-intellij/pull/55[#55]).
+
 [[release-0.29.0]]
 == 0.29.0 (2024-08-07)
 
