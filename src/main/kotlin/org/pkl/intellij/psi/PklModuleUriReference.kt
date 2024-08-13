@@ -192,10 +192,15 @@ class PklModuleUriReference(uri: PklModuleUri, rangeInElement: TextRange) :
       return result.values.toTypedArray()
     }
 
+    data class ResolveGlobParams(
+      val targetUriString: String,
+      val moduleUriString: String,
+      val element: PklModuleUri,
+      val context: PklProject?
+    )
+
     private val resolvedGlobProvider:
-      ParameterizedCachedValueProvider<
-        List<PsiFileSystemItem>, Quadruple<String, String, PklModuleUri, PklProject?>
-      > =
+      ParameterizedCachedValueProvider<List<PsiFileSystemItem>, ResolveGlobParams> =
       ParameterizedCachedValueProvider { (targetUriString, moduleUriString, element, context) ->
         val result =
           doResolveGlob(targetUriString, moduleUriString, element, context)
@@ -228,7 +233,7 @@ class PklModuleUriReference(uri: PklModuleUri, rangeInElement: TextRange) :
           ),
           resolvedGlobProvider,
           false,
-          Quadruple(targetUriString, moduleUriString, element, context)
+          ResolveGlobParams(targetUriString, moduleUriString, element, context)
         )
 
     private fun doResolveGlob(
