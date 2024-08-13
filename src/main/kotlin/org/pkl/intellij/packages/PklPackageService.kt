@@ -225,7 +225,7 @@ class PklPackageService(val project: Project) : Disposable, UserDataHolderBase()
     cachedValuesManager.getParameterizedCachedValue(
       this,
       project.cacheKeyService.getKey(
-        "PklPackageService.collectAllDependenciesOfPacakge",
+        "PklPackageService.collectAllDependenciesOfPackage",
         dep.packageUri.toString()
       ),
       allDepsProvider,
@@ -266,7 +266,7 @@ class PklPackageService(val project: Project) : Disposable, UserDataHolderBase()
     cachedValuesManager.getParameterizedCachedValue(
       this,
       project.cacheKeyService.getKey(
-        "PklPackageService.collectAllDependenciesOfPacakge",
+        "PklPackageService.collectAllDependenciesOfPackage",
         packageDependency.packageUri.toString()
       ),
       packageMetadataCachedValuesProvider,
