@@ -141,21 +141,33 @@ class PklPackageService(val project: Project) : Disposable, UserDataHolderBase()
         }
       )
     }
+    val self = this
     PsiManager.getInstance(project)
       .addPsiTreeChangeListener(
         object : PsiTreeChangeAdapter() {
           override fun childrenChanged(event: PsiTreeChangeEvent) {
-            if (event.file?.fileType == PklFileType) {
-              if (timerTask != null) {
-                timerTask!!.cancel()
-              }
-              timerTask =
-                object : TimerTask() {
-                  override fun run() {
-                    refreshDeclaredPackages()
-                  }
+            synchronized(self) {
+              if (event.file?.fileType == PklFileType) {
+                if (timerTask != null) {
+                  timerTask!!.cancel()
                 }
-              timer.schedule(timerTask, Duration.ofSeconds(3).toMillis())
+                timerTask =
+                  object : TimerTask() {
+                    override fun run() {
+                      refreshDeclaredPackages()
+                    }
+                  }
+                try {
+                  timer.schedule(timerTask, Duration.ofSeconds(3).toMillis())
+                } catch (e: IllegalStateException) {
+                  thisLogger()
+                    .warn(
+                      "IllegalStateException when attempting to schedule task to refresh declared packages: $e"
+                    )
+                  timer.cancel()
+                  timer = Timer()
+                }
+              }
             }
           }
         },
