@@ -59,7 +59,7 @@ fun ASTNode.findPrevByType(type: IElementType): ASTNode? {
 }
 
 val PsiElement.enclosingModule: PklModule?
-  get() = containingFile as PklModule?
+  get() = containingFile as? PklModule
 
 val PsiElement.isInPklBaseModule: Boolean
   get() = enclosingModule?.declaredName?.textMatches("pkl.base") == true
