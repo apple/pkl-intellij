@@ -1104,6 +1104,10 @@ sealed class Type(val constraints: List<ConstraintExpr> = listOf()) {
       if (rightType is Union) rightType.eachElementType(processor) else processor(rightType)
     }
 
+    fun <T> map(f: (Type) -> T): List<T> {
+      return buildList { eachElementType { add(f(it)) } }
+    }
+
     override fun equals(other: Any?): Boolean =
       when {
         this === other -> true
@@ -1124,6 +1128,12 @@ sealed class Type(val constraints: List<ConstraintExpr> = listOf()) {
     val isUnionOfStringLiterals: Boolean by lazy {
       (leftType is StringLiteral || leftType is Union && leftType.isUnionOfStringLiterals) &&
         (rightType is StringLiteral || rightType is Union && rightType.isUnionOfStringLiterals)
+    }
+
+    val cardinality: Int by lazy {
+      val left = if (leftType is Union) leftType.cardinality else 1
+      val right = if (rightType is Union) rightType.cardinality else 1
+      left + right
     }
   }
 }
