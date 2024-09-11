@@ -21,6 +21,7 @@ import com.intellij.openapi.diagnostic.Logger
 import com.intellij.openapi.util.RecursionManager
 import com.intellij.psi.PsiElement
 import com.intellij.psi.PsiManager
+import com.intellij.psi.TokenType
 import com.intellij.psi.util.CachedValueProvider
 import com.intellij.psi.util.CachedValuesManager
 import com.intellij.psi.util.ParameterizedCachedValueProvider
@@ -109,14 +110,8 @@ private fun PsiElement.doComputeExprType(
       }
       is PklTrueLiteral,
       is PklFalseLiteral -> base.booleanType
-      is PklStringLiteral -> {
-        val unescaped = content.escapedText()
-        if (unescaped == null) base.stringType else Type.StringLiteral(unescaped)
-      }
-      is PklMlStringLiteral -> {
-        val unescaped = content.escapedText()
-        if (unescaped == null) base.stringType else Type.StringLiteral(unescaped)
-      }
+      is PklStringLiteral -> this.content.computeStringLiteralType(base, context)
+      is PklMlStringLiteral -> this.content.computeStringLiteralType(base, context)
       is PklNullLiteral -> base.nullType
       // TODO: consider having separate tokens/rules for `Int` and `Float`
       is PklNumberLiteral -> {
@@ -414,6 +409,72 @@ private fun PsiElement.doComputeExprType(
     }
   }
     ?: Type.Unknown
+}
+
+/**
+ * Computes `"foobar"|"foobaz"` in the case of `"foo\(barbaz)"`, where `barbaz` computes to type
+ * `"bar"|"baz"`.
+ */
+private fun PklStringContent.computeStringLiteralType(
+  base: PklBaseModule,
+  context: PklProject?
+): Type {
+  var stringLiterals = listOf(StringBuilder())
+  eachChild { child ->
+    when (child.elementType) {
+      PklElementTypes.STRING_CHARS,
+      TokenType.WHITE_SPACE -> stringLiterals.forEach { it.append(child.text) }
+      PklElementTypes.CHAR_ESCAPE -> {
+        val text = child.text
+        val char =
+          when (text[text.lastIndex]) {
+            'n' -> '\n'
+            'r' -> '\r'
+            't' -> '\t'
+            '\\' -> '\\'
+            '"' -> '"'
+            else -> throw AssertionError("Unknown char escape: $text")
+          }
+        stringLiterals.forEach { it.append(char) }
+      }
+      PklElementTypes.UNICODE_ESCAPE -> {
+        val text = child.text
+        val index = text.indexOf('{') + 1
+        if (index != -1) {
+          val hexString = text.substring(index, text.length - 1)
+          try {
+            stringLiterals.forEach { it.append(Character.toChars(Integer.parseInt(hexString, 16))) }
+          } catch (ignored: NumberFormatException) {} catch (ignored: IllegalArgumentException) {}
+        }
+      }
+      PklElementTypes.INTERPOLATION_START,
+      PklElementTypes.INTERPOLATION_END -> {}
+      else -> {
+        val childType = child.computeExprType(base, mapOf(), context)
+        when {
+          childType is Type.Union && childType.isUnionOfStringLiterals -> {
+            // bail out if this results in over 100 string literals to avoid getting too expensive.
+            if (childType.cardinality * stringLiterals.size > 100) return base.stringType
+            stringLiterals =
+              stringLiterals.flatMap { stringLiteral ->
+                childType.map { type ->
+                  type as Type.StringLiteral
+                  StringBuilder(stringLiteral).append(type.value)
+                }
+              }
+          }
+          childType is Type.StringLiteral -> {
+            stringLiterals.forEach { it.append(childType.value) }
+          }
+          else -> return base.stringType
+        }
+      }
+    }
+  }
+  if (stringLiterals.size == 1) {
+    return Type.StringLiteral(stringLiterals.single().toString())
+  }
+  return Type.union(stringLiterals.map { Type.StringLiteral(it.toString()) }, base, context)
 }
 
 private fun doComputeSubscriptExprType(
