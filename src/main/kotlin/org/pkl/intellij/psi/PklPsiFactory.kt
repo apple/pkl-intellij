@@ -184,7 +184,8 @@ object PklPsiFactory {
   }
 
   fun createIdentifier(name: String, project: Project): PsiElement {
-    val module = createModule("$name = 42", project)
+    val moduleName = name.removeSuffix(".pkl")
+    val module = createModule("$moduleName = 42", project)
     return module.properties.single().nameIdentifier
   }
 
