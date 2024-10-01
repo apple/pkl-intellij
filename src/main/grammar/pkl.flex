@@ -251,6 +251,7 @@ INTERPOLATION_START = {ESCAPE_PREFIX} "("
 "as"        { return AS; }
 "class"     { return CLASS_KEYWORD; }
 "const"     { return CONST; }
+"delete"    { return DELETE;  }
 "else"      { return ELSE; }
 "extends"   { return EXTENDS; }
 "external"  { return EXTERNAL; }
@@ -291,7 +292,6 @@ INTERPOLATION_START = {ESCAPE_PREFIX} "("
 "protected" { return PROTECTED;  }
 "override"  { return OVERRIDE;  }
 "record"    { return RECORD;  }
-"delete"    { return DELETE;  }
 "case"      { return CASE; }
 "switch"    { return SWITCH; }
 "vararg"    { return VARARG; }
