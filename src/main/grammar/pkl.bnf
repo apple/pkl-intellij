@@ -41,6 +41,7 @@
     AS         = 'as'
     CLASS_KEYWORD = 'class'
     CONST      = 'const'
+    DELETE     = 'delete'
     ELSE       = 'else'
     EXTENDS    = 'extends'
     EXTERNAL   = 'external'
@@ -77,7 +78,6 @@
     PROTECTED = 'protected'
     OVERRIDE  = 'override'
     RECORD    = 'record'
-    DELETE    = 'delete'
     CASE      = 'case'
     SWITCH    = 'switch'
     VARARG    = 'vararg'
@@ -419,9 +419,9 @@ private recoverType ::= !('!!' | '!' | '!=' | '%' | '&&' | '(' | ')' | '*' | '**
    | ':' | '<' | '<=' | '=' | '==' | '>' | '>=' | '?' | '?.' | '??' | '@' | '[' | '[['
    | ']' | ']]' | 'class' | 'else' | 'import' | 'import*' | 'module' | 'read' | 'read?' | 'read*' | '{' | '|' | '|>'
    | '||' | '}' | '~/' | DOC_COMMENT_LINE | IDENTIFIER | INTERPOLATION_END | ML_STRING_START | NUMBER | SEP
-   | STRING_START | abstract | amends | as | const | else | expr | extends | external | false | for | function | hidden
-   | if | in | is | let | local | new | null | open | fixed | outer | super | this | throw | trace | true | typealias
-   | when)
+   | STRING_START | abstract | amends | as | const | delete | else | expr | extends | external | false | for | function
+   | hidden | if | in | is | let | local | new | null | open | fixed | outer | super | this | throw | trace | true
+   | typealias | when)
 
 unknownType ::= unknown
 
@@ -667,7 +667,7 @@ objectProperty ::= modifierList propertyName (objectPropertyAssign | objectPrope
   mixin = "org.pkl.intellij.psi.PklObjectPropertyBase"
 }
 
-private objectPropertyAssign ::= typeAnnotation? '=' expr { pin = 2 }
+private objectPropertyAssign ::= typeAnnotation? '=' (expr | delete) { pin = 2 }
 
 private objectPropertyAmend ::= objectBody !(infixOp) { pin = 1 }
 
@@ -702,7 +702,7 @@ objectEntry ::= SEP? '[' expr ']' (objectMemberAssign | objectBody+) {
   ]
 }
 
-private objectMemberAssign ::= '=' expr { pin = 1 }
+private objectMemberAssign ::= '=' (expr | delete) { pin = 1 }
 
 memberPredicate ::= SEP? '[[' expr ']]' (objectMemberAssign | objectBody+) {
   pin = 2
