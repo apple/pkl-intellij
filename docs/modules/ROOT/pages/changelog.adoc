@@ -1,5 +1,16 @@
 = Changelog
 
+[[release-0.30.1]]
+== 0.30.1 (2024-10-10)
+
+=== Fixes
+
+* Fix a bug that causes a `ClassCastException` to be thrown (https://github.com/apple/pkl-intellij/pull/61[#61])
+
+=== Changes
+
+* Improve type inference when expressions contain interpolated strings (https://github.com/apple/pkl-intellij/pull/64[#64]).
+
 [[release-0.30.0]]
 == 0.30.0 (2024-08-13)
 
