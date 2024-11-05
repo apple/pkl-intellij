@@ -24,6 +24,7 @@ import com.intellij.psi.tree.TokenSet
 import com.intellij.psi.util.elementType
 import com.intellij.psi.util.parentOfType
 import com.intellij.psi.util.parentOfTypes
+import org.pkl.intellij.PklVersion
 import org.pkl.intellij.intention.PklAddDefaultValueQuickFix
 import org.pkl.intellij.intention.PklAddModifierQuickFix
 import org.pkl.intellij.intention.PklReplaceWithSpreadQuickFix
@@ -47,8 +48,8 @@ class PklMemberAnnotator : PklAnnotator() {
     private val CLASS_METHOD_MODIFIERS = TokenSet.create(ABSTRACT, EXTERNAL, LOCAL, CONST)
     private val CLASS_PROPERTY_MODIFIERS =
       TokenSet.create(ABSTRACT, EXTERNAL, HIDDEN, LOCAL, FIXED, CONST)
-    private val OBJECT_METHOD_MODIFIERS = TokenSet.create(LOCAL)
-    private val OBJECT_PROPERTY_MODIFIERS = TokenSet.create(LOCAL)
+    private val OBJECT_METHOD_MODIFIERS = TokenSet.create(LOCAL, CONST)
+    private val OBJECT_PROPERTY_MODIFIERS = TokenSet.create(LOCAL, CONST)
   }
 
   override fun doAnnotate(element: PsiElement, holder: AnnotationHolder) {
@@ -366,6 +367,7 @@ class PklMemberAnnotator : PklAnnotator() {
     var openModifier: PsiElement? = null
     var hiddenModifier: PsiElement? = null
     var fixedModifier: PsiElement? = null
+    var constModifier: PsiElement? = null
 
     for (modifier in modifiers) {
       when (modifier.elementType) {
@@ -374,6 +376,7 @@ class PklMemberAnnotator : PklAnnotator() {
         OPEN -> openModifier = modifier
         HIDDEN -> hiddenModifier = modifier
         FIXED -> fixedModifier = modifier
+        CONST -> constModifier = modifier
       }
     }
 
@@ -409,6 +412,23 @@ class PklMemberAnnotator : PklAnnotator() {
             missingLocalModifier(owner, owner.name, owner.anchor)
             return
           }
+        }
+      }
+    }
+
+    if (module.effectivePklVersion >= PklVersion.VERSION_0_27) {
+      if (constModifier != null && owner is PklObjectMember) {
+        if (localModifier == null) {
+          val annotation = holder
+            .newAnnotation(HighlightSeverity.ERROR, "Modifier 'const' can only be applied to object members who are also 'local'")
+            .range(constModifier)
+          if (holder.currentFile.canModify()) {
+            val modifierList = owner.modifierList!!
+            annotation.withFix(
+              PklAddModifierQuickFix("Add modifier 'local'", modifierList, LOCAL)
+            )
+          }
+          annotation.create()
         }
       }
     }

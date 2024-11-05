@@ -115,8 +115,7 @@
     <annotator language="Pkl" implementationClass="org.pkl.intellij.annotator.PklExtendsClauseAnnotator"/>
     <annotator language="Pkl" implementationClass="org.pkl.intellij.annotator.PklTypeNameAnnotator"/>
     <annotator language="Pkl" implementationClass="org.pkl.intellij.annotator.PklHighlightingAnnotator"/>
-    <!-- Not used for now because all Pkl features are supported in all versions -->
-    <!-- <annotator language="Pkl" implementationClass="org.pkl.intellij.annotator.PklUnsupportedFeatureAnnotator"/> -->
+    <annotator language="Pkl" implementationClass="org.pkl.intellij.annotator.PklUnsupportedFeatureAnnotator"/>
     <annotator language="Pkl" implementationClass="org.pkl.intellij.annotator.PklReservedKeywordAnnotator"/>
     <annotator language="Pkl" implementationClass="org.pkl.intellij.annotator.PklIgnoreAnnotator"/>
     <annotator language="Pkl" implementationClass="org.pkl.intellij.annotator.PklTypeAnnotator"/>

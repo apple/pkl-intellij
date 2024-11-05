@@ -26,9 +26,10 @@ import org.pkl.intellij.util.escapeXml
 class PklUnsupportedFeatureAnnotator : PklAnnotator() {
 
   private fun getToolTip(feature: Feature, detectedVersion: PklVersion): String {
+    val message = feature.message ?: "Unsupported feature: ${feature.featureName}."
     // language=html
     return """
-      Unsupported feature: ${feature.featureName}.
+      $message
       <table>
         <tr><td style="text-align: right">Required Pkl version:</td><td><code>${feature.requiredVersion.toString().escapeXml()}</code></td></tr>
         <tr><td style="text-align: right">Detected Pkl version:</td><td><code>${detectedVersion.toString().escapeXml()}</code></td></tr>
@@ -42,10 +43,11 @@ class PklUnsupportedFeatureAnnotator : PklAnnotator() {
     val feature: Feature = Feature.features.find { it.predicate(element) } ?: return
     if (feature.isSupported(containingModule)) return
     val tooltip = getToolTip(feature, containingModule.effectivePklVersion)
+    val message = feature.message ?: "Unsupported feature: ${feature.featureName}"
     createAnnotation(
       HighlightSeverity.WARNING,
       element.textRange,
-      "Unsupported feature: ${feature.featureName}." +
+      message +
         " Required Pkl version: ${feature.requiredVersion}. Detected Pkl version: ${containingModule.effectivePklVersion}.",
       tooltip,
       holder,
