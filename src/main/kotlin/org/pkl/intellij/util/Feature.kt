@@ -23,7 +23,8 @@ sealed interface Feature {
   val featureName: String
   val requiredVersion: PklVersion
   val predicate: (PsiElement) -> Boolean
-  val message: String? get() = null
+  val message: String?
+    get() = null
 
   fun isSupported(module: PklModule): Boolean = module.effectivePklVersion >= requiredVersion
 
@@ -36,7 +37,8 @@ sealed interface Feature {
       override val predicate: (PsiElement) -> Boolean = { elem ->
         elem.elementType == PklElementTypes.CONST && elem.parent.parent is PklObjectMember
       }
-      override val message: String = "Modifier 'const' cannot be applied to object members in this Pkl version."
+      override val message: String =
+        "Modifier 'const' cannot be applied to object members in this Pkl version."
     }
   }
 }

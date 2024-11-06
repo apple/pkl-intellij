@@ -419,14 +419,16 @@ class PklMemberAnnotator : PklAnnotator() {
     if (module.effectivePklVersion >= PklVersion.VERSION_0_27) {
       if (constModifier != null && owner is PklObjectMember) {
         if (localModifier == null) {
-          val annotation = holder
-            .newAnnotation(HighlightSeverity.ERROR, "Modifier 'const' can only be applied to object members who are also 'local'")
-            .range(constModifier)
+          val annotation =
+            holder
+              .newAnnotation(
+                HighlightSeverity.ERROR,
+                "Modifier 'const' can only be applied to object members who are also 'local'"
+              )
+              .range(constModifier)
           if (holder.currentFile.canModify()) {
             val modifierList = owner.modifierList!!
-            annotation.withFix(
-              PklAddModifierQuickFix("Add modifier 'local'", modifierList, LOCAL)
-            )
+            annotation.withFix(PklAddModifierQuickFix("Add modifier 'local'", modifierList, LOCAL))
           }
           annotation.create()
         }
