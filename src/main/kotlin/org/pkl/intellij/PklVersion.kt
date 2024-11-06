@@ -58,6 +58,7 @@ class PklVersion(
 
     @Suppress("unused") val VERSION_0_25: PklVersion = PklVersion(0, 25, 0, null, null)
     val VERSION_0_26: PklVersion = PklVersion(0, 26, 0, null, null)
+    val VERSION_0_27: PklVersion = PklVersion(0, 27, 0, null, null)
 
     fun parse(versionString: String): PklVersion? {
       val result = REGEX.matchEntire(versionString) ?: return null
