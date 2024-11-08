@@ -25,8 +25,8 @@ import com.intellij.openapi.roots.ModuleRootManager
 import com.intellij.openapi.util.ModificationTracker
 import com.intellij.openapi.vfs.LocalFileSystem
 import com.intellij.openapi.vfs.VfsUtil
+import com.intellij.openapi.vfs.VfsUtilCore
 import com.intellij.openapi.vfs.VirtualFile
-import com.intellij.util.io.isAncestor
 import com.intellij.util.messages.Topic
 import com.jetbrains.rd.util.concurrentMapOf
 import java.net.URI
@@ -305,12 +305,12 @@ class PklProjectService(private val project: Project) :
   }
 
   private fun discoverProjectFiles(): List<VirtualFile> {
-    val excludedRoots = mutableSetOf<Path>()
+    val excludedRoots = mutableSetOf<VirtualFile>()
     return project.modules
       .toList()
       .flatMap { mod ->
         val rootManager = ModuleRootManager.getInstance(mod)
-        excludedRoots.addAll(rootManager.excludeRoots.map { it.toNioPath() })
+        excludedRoots.addAll(rootManager.excludeRoots)
         rootManager.contentRoots.toList()
       }
       .flatMap { contentRoot ->
@@ -321,7 +321,7 @@ class PklProjectService(private val project: Project) :
             if (
               file.fileType == PklFileType &&
                 file.name == PKL_PROJECT_FILENAME &&
-                !excludedRoots.any { it.isAncestor(file.toNioPath()) }
+                !excludedRoots.any { VfsUtilCore.isAncestor(it, file, true) }
             ) {
               add(file)
             }
