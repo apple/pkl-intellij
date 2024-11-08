@@ -25,6 +25,7 @@ import com.intellij.openapi.roots.ModuleRootManager
 import com.intellij.openapi.util.ModificationTracker
 import com.intellij.openapi.vfs.LocalFileSystem
 import com.intellij.openapi.vfs.VfsUtil
+import com.intellij.openapi.vfs.VfsUtilCore
 import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.util.messages.Topic
 import com.jetbrains.rd.util.concurrentMapOf
@@ -304,15 +305,24 @@ class PklProjectService(private val project: Project) :
   }
 
   private fun discoverProjectFiles(): List<VirtualFile> {
+    val excludedRoots = mutableSetOf<VirtualFile>()
     return project.modules
       .toList()
-      .flatMap { ModuleRootManager.getInstance(it).contentRoots.toList() }
+      .flatMap { mod ->
+        val rootManager = ModuleRootManager.getInstance(mod)
+        excludedRoots.addAll(rootManager.excludeRoots)
+        rootManager.contentRoots.toList()
+      }
       .flatMap { contentRoot ->
         // no need for async here because we are already inside a background task.
         contentRoot.refresh(false, true)
         buildList {
           VfsUtil.processFileRecursivelyWithoutIgnored(contentRoot) { file ->
-            if (file.fileType == PklFileType && file.name == PKL_PROJECT_FILENAME) {
+            if (
+              file.fileType == PklFileType &&
+                file.name == PKL_PROJECT_FILENAME &&
+                !excludedRoots.any { VfsUtilCore.isAncestor(it, file, true) }
+            ) {
               add(file)
             }
             true
