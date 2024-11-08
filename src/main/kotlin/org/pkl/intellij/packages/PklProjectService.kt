@@ -24,7 +24,9 @@ import com.intellij.openapi.project.modules
 import com.intellij.openapi.roots.ModuleRootManager
 import com.intellij.openapi.util.ModificationTracker
 import com.intellij.openapi.vfs.LocalFileSystem
+import com.intellij.openapi.vfs.VfsUtil
 import com.intellij.openapi.vfs.VirtualFile
+import com.intellij.util.io.isAncestor
 import com.intellij.util.messages.Topic
 import com.jetbrains.rd.util.concurrentMapOf
 import java.net.URI
@@ -303,23 +305,27 @@ class PklProjectService(private val project: Project) :
   }
 
   private fun discoverProjectFiles(): List<VirtualFile> {
+    val excludedRoots = mutableSetOf<Path>()
     return project.modules
       .toList()
-      .map { ModuleRootManager.getInstance(it).fileIndex }
-      .flatMap { fileIndex ->
+      .flatMap { mod ->
+        val rootManager = ModuleRootManager.getInstance(mod)
+        excludedRoots.addAll(rootManager.excludeRoots.map { it.toNioPath() })
+        rootManager.contentRoots.toList()
+      }
+      .flatMap { contentRoot ->
+        // no need for async here because we are already inside a background task.
+        contentRoot.refresh(false, true)
         buildList {
-          fileIndex.iterateContent { file ->
-            // The `fileIndex.isInContent(file)` is not really needed because `iterateContent`
-            // already filters out excluded and ignored files, but the index may change _during_
-            // iteration, so better be safe
+          VfsUtil.processFileRecursivelyWithoutIgnored(contentRoot) { file ->
             if (
               file.fileType == PklFileType &&
                 file.name == PKL_PROJECT_FILENAME &&
-                fileIndex.isInContent(file)
+                !excludedRoots.any { it.isAncestor(file.toNioPath()) }
             ) {
               add(file)
             }
-            return@iterateContent true
+            true
           }
         }
       }
