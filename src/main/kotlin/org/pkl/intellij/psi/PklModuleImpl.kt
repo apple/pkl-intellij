@@ -18,12 +18,12 @@ package org.pkl.intellij.psi
 import com.intellij.extapi.psi.PsiFileBase
 import com.intellij.navigation.ItemPresentation
 import com.intellij.openapi.fileTypes.FileType
+import com.intellij.openapi.project.Project
+import com.intellij.openapi.project.modules
+import com.intellij.openapi.roots.ModuleRootManager
 import com.intellij.openapi.util.Key
 import com.intellij.openapi.util.ModificationTracker
-import com.intellij.openapi.vfs.JarFileSystem
-import com.intellij.openapi.vfs.VirtualFile
-import com.intellij.openapi.vfs.VirtualFileManager
-import com.intellij.openapi.vfs.findFile
+import com.intellij.openapi.vfs.*
 import com.intellij.psi.FileViewProvider
 import com.intellij.psi.PsiElement
 import com.intellij.psi.util.*
@@ -254,7 +254,13 @@ class PklModuleImpl(viewProvider: FileViewProvider) :
     }
 
   override val isInPklProject: Boolean
-    get() = pklProjectDir != null
+    get() = pklProjectDir != null && !isExcluded(project, virtualFile)
+
+  private fun isExcluded(project: Project, file: VirtualFile): Boolean {
+    val excludes =
+      project.modules.flatMap { ModuleRootManager.getInstance(it).excludeRoots.toList() }
+    return excludes.any { VfsUtilCore.isAncestor(it, file, true) }
+  }
 
   private val pklProjectDir
     get(): VirtualFile? =
