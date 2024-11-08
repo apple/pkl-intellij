@@ -18,6 +18,9 @@ package org.pkl.intellij.notification
 import com.intellij.ide.scratch.ScratchUtil
 import com.intellij.openapi.fileEditor.FileEditor
 import com.intellij.openapi.project.Project
+import com.intellij.openapi.project.modules
+import com.intellij.openapi.roots.ModuleRootManager
+import com.intellij.openapi.vfs.VfsUtilCore
 import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.psi.PsiManager
 import com.intellij.ui.EditorNotificationProvider
@@ -63,6 +66,7 @@ class PklSyncProjectNotificationProvider(project: Project) : EditorNotificationP
       val psiFile = PsiManager.getInstance(project).findFile(file)
       if (psiFile !is PklModule) return@Function null
       if (!psiFile.isInPklProject) return@Function null
+      if (isExcluded(project, file)) return@Function null
       if (psiFile.pklProject == null) {
         return@Function PklEditorNotificationPanel().apply {
           val error = project.pklProjectService.getError(file)
@@ -87,5 +91,11 @@ class PklSyncProjectNotificationProvider(project: Project) : EditorNotificationP
       }
       null
     }
+  }
+
+  private fun isExcluded(project: Project, file: VirtualFile): Boolean {
+    val excludes =
+      project.modules.flatMap { ModuleRootManager.getInstance(it).excludeRoots.toList() }
+    return excludes.any { VfsUtilCore.isAncestor(it, file, true) }
   }
 }
