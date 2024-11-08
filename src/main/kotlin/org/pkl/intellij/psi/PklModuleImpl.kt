@@ -20,7 +20,7 @@ import com.intellij.navigation.ItemPresentation
 import com.intellij.openapi.fileTypes.FileType
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.project.modules
-import com.intellij.openapi.roots.ModuleRootManager
+import com.intellij.openapi.project.rootManager
 import com.intellij.openapi.util.Key
 import com.intellij.openapi.util.ModificationTracker
 import com.intellij.openapi.vfs.*
@@ -257,9 +257,12 @@ class PklModuleImpl(viewProvider: FileViewProvider) :
     get() = pklProjectDir != null && !isExcluded(project, virtualFile)
 
   private fun isExcluded(project: Project, file: VirtualFile): Boolean {
-    val excludes =
-      project.modules.flatMap { ModuleRootManager.getInstance(it).excludeRoots.toList() }
-    return excludes.any { VfsUtilCore.isAncestor(it, file, true) }
+    for (module in project.modules) {
+      for (root in module.rootManager.excludeRoots) {
+        if (VfsUtilCore.isAncestor(root, file, true)) return true
+      }
+    }
+    return false
   }
 
   private val pklProjectDir
