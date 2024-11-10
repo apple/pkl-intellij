@@ -30,8 +30,10 @@ import com.intellij.psi.util.CachedValueProvider
 import com.intellij.psi.util.CachedValuesManager
 import com.intellij.psi.util.ParameterizedCachedValueProvider
 import com.intellij.psi.util.PsiModificationTracker
+import com.intellij.util.withPath
 import java.net.URI
 import java.net.URISyntaxException
+import java.nio.file.Path
 import org.pkl.intellij.PklLanguage
 import org.pkl.intellij.cacheKeyService
 import org.pkl.intellij.packages.dto.PackageUri
@@ -119,6 +121,31 @@ class PklModuleUriReference(uri: PklModuleUri, rangeInElement: TextRange) :
       )
     val newContent = PklPsiFactory.createStringContent(newText, stringStart.text, element.project)
     stringContent.node.replaceAllChildrenToChildrenOf(newContent.node)
+    return element
+  }
+
+  override fun bindToElement(newElement: PsiElement): PsiElement {
+    val newOtherModule = newElement as? PklModule ?: return element
+    val newOtherModuleAbsolutePath =
+      newOtherModule.containingFile?.originalFile?.virtualFile?.toNioPath()?.toAbsolutePath()
+        ?: return this.element
+    val existingOtherModuleUri = URI.create(moduleUri)
+    val existingOtherModulePath = Path.of(existingOtherModuleUri.path)
+    val newOtherModulePath =
+      if (existingOtherModulePath.isAbsolute) newOtherModuleAbsolutePath
+      else
+        element.containingFile
+          ?.originalFile
+          ?.virtualFile
+          ?.toNioPath()
+          ?.toAbsolutePath()
+          ?.parent
+          ?.relativize(newOtherModuleAbsolutePath)
+          ?: return this.element
+    val newOtherModelUri = existingOtherModuleUri.withPath(newOtherModulePath.toString())
+    val newConstant =
+      PklPsiFactory.createStringConstant(newOtherModelUri.toString(), newElement.project)
+    element.stringConstant.replace(newConstant)
     return element
   }
 

@@ -44,4 +44,8 @@ class PklUnqualifiedAccessReference(private val accessName: PklUnqualifiedAccess
   override fun resolve(): PsiElement? {
     return resolveContextual(accessName.enclosingModule?.pklProject)
   }
+
+  override fun bindToElement(element: PsiElement): PsiElement {
+    return this.element
+  }
 }

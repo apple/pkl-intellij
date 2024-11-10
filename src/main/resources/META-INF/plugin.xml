@@ -119,6 +119,7 @@
     <lang.namesValidator language="Pkl" implementationClass="org.pkl.intellij.PklNamesValidator"/>
     <lang.importOptimizer language="Pkl" implementationClass="org.pkl.intellij.PklImportOptimizer"/>
     <lang.refactoringSupport language="Pkl" implementationClass="org.pkl.intellij.PklRefactoringSupportProvider"/>
+    <moveFileHandler implementation="org.pkl.intellij.MovePklModuleHandler" order="first"/>
 
     <regExpLanguageHost forClass="org.pkl.intellij.psi.impl.PklStringContentImpl"
                         implementationClass="org.pkl.intellij.regex.PklRegexLanguageHost"/>
