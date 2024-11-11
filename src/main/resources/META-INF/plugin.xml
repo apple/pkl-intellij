@@ -21,6 +21,19 @@
     ]]></description>
   <!-- language=html -->
   <change-notes><![CDATA[
+    <b>0.31.0</b>
+    <ul>
+      <li>Fix an exception during file refactor rename.</li>
+      <li>Fix an issue where excluded directories are included in project sync.</li>
+      <li>Add support for Pkl 0.27.0 standard library.</li>
+      <li>Add support for const object members.</li>
+      <li>Bump maximum InteliiJ version to 243.</li>
+    </ul>
+    <b>0.30.1</b>
+    <ul>
+      <li>Fix a bug that causes a `ClassCastException` to be thrown.</li>
+      <li>Improve type inference when expressions contain interpolated strings.</li>
+    </ul>
     <b>0.30.0</b>
     <ul>
       <li>Fixes a performance bug that causes spikes in CPU and memory when browsing or editing Pkl files.</li>
