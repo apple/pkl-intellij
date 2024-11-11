@@ -1,5 +1,26 @@
 = Changelog
 
+[[release-0.31.0]]
+== 0.31.0 (2024-11-11)
+
+== Fixes
+
+* Fix an exception during file refactor rename (https://github.com/apple/pkl-intellij/pull/59[#59]).
+* Fix an issue where excluded directories are included in project sync (https://github.com/apple/pkl-intellij/pull/73[#73]).
+
+== Changes
+
+* Add support for Pkl 0.27.0 standard library (https://github.com/apple/pkl-intellij/pull/72[#72]).
+* Add support for const object members (https://github.com/apple/pkl-intellij/pull/71[#71]).
+* Bump maximum InteliiJ version to 243 (https://github.com/apple/pkl-intellij/pull/68[#68]).
+
+=== Contributors ❤️
+
+We would like to thank the contributors to this release (in alphabetical order):
+
+* https://github.com/amannm[@amannm]
+* https://github.com/barathvk[@barathvk]
+
 [[release-0.30.1]]
 == 0.30.1 (2024-10-10)
 
