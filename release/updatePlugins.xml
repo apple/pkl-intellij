@@ -4,7 +4,7 @@
       id="org.pkl-lang"
       url="https://github.com/apple/pkl-intellij/releases/download/#version#/pkl-intellij-#version#.zip" version="#version#"
   >
-    <idea-version since-build="231" until-build="242.*" />
+    <idea-version since-build="231" until-build="252.*" />
     <name>Pkl</name>
     <description><![CDATA[
 <p>
