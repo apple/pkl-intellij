@@ -1,5 +1,12 @@
 = Changelog
 
+[[release-0.31.1]]
+== 0.31.1 (2024-11-13)
+
+== Changes
+
+* Bump maximum InteliiJ version to 252 (https://github.com/apple/pkl-intellij/pull/78[#78]).
+
 [[release-0.31.0]]
 == 0.31.0 (2024-11-11)
 
