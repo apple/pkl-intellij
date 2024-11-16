@@ -137,6 +137,7 @@
     <annotator language="Pkl" implementationClass="org.pkl.intellij.annotator.PklIgnoreAnnotator"/>
     <annotator language="Pkl" implementationClass="org.pkl.intellij.annotator.PklTypeAnnotator"/>
     <annotator language="Pkl" implementationClass="org.pkl.intellij.annotator.PklProjectAnnotator"/>
+    <annotator language="Pkl" implementationClass="org.pkl.intellij.annotator.PklMissingPropertiesAnnotator"/>
     <completion.contributor language="Pkl"
                             implementationClass="org.pkl.intellij.completion.PklCompletionContributor"/>
     <completion.confidence language="Pkl"
