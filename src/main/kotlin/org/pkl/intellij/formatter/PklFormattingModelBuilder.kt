@@ -50,6 +50,13 @@ class PklFormattingModelBuilder : FormattingModelBuilder {
         POW
       )
 
+    val PROPERTY =
+      TokenSet.create(
+        MODULE_MEMBER,
+        CLASS_PROPERTY,
+        OBJECT_PROPERTY,
+      )
+
     val TIGHT_OPERATORS = TokenSet.create(DOT, QDOT, UNION)
 
     val METHOD_STYLE_KEYWORDS = TokenSet.create(IMPORT_KEYWORD, READ, READ_OR_NULL, THROW, TRACE)
@@ -103,6 +110,8 @@ class PklFormattingModelBuilder : FormattingModelBuilder {
         .spacing(1, 1, 0, false, 0) // class Foo {
         .before(OBJECT_BODY)
         .spacing(1, 1, 0, false, 0) // foo {
+        .before(PROPERTY)
+        .spacing(1, 1, 0, true, 1) // foo =
 
     return FormattingModelProvider.createFormattingModelForPsiFile(
       context.psiElement.containingFile,
