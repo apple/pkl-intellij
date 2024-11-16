@@ -23,11 +23,41 @@ class PklFormatterTest : FormatterTestCase() {
       """
       foo = (x) -> x {
         }
+      bar {
+      asdf = "hey"whoa="no"
+       cccc = "lol" 
+         aaaa ="cool" 
+         bbb =   "neato"    ddd = "burrito"
+      } class Hey {
+      asdf = "hey"whoa="no"
+       cccc = "lol" 
+         aaaa ="cool" 
+         bbb =   "neato"    ddd = "burrito"
+      }
+      masdf = "hey"mwhoa="no"
+       mcccc = "lol" 
+         maaaa ="cool" 
+         mbbb =   "neato"    mddd = "burrito"
       """
         .trimIndent(),
       """
       foo = (x) -> x {
       }
+      bar {
+        asdf = "hey" whoa = "no"
+        cccc = "lol"
+        aaaa = "cool"
+        bbb = "neato" ddd = "burrito"
+      } class Hey {
+        asdf = "hey" whoa = "no"
+        cccc = "lol"
+        aaaa = "cool"
+        bbb = "neato" ddd = "burrito"
+      }
+      masdf = "hey" mwhoa = "no"
+      mcccc = "lol"
+      maaaa = "cool"
+      mbbb = "neato" mddd = "burrito"
       """
         .trimIndent()
     )
