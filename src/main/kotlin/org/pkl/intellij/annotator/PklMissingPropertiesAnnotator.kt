@@ -107,12 +107,12 @@ private fun insertRequiredProperties(
   base: PklBaseModule,
   context: PklProject?
 ) {
-  props.forEach {
-    val propertyType = it.getLookupElementType(base, mapOf(), context)
-    val nullable = propertyType.isNullable(base)
-    val hasDefault = it.expr != null
-    if (!nullable && !hasDefault) {
-      results[it.propertyName.identifier.text] = propertyType.render()
+  props
+    .filter { it.expr == null }
+    .forEach {
+      val propertyType = it.getLookupElementType(base, mapOf(), context)
+      if (!propertyType.isNullable(base)) {
+        results[it.propertyName.identifier.text] = propertyType.render()
+      }
     }
-  }
 }
