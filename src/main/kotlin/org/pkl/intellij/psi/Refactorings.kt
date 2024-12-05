@@ -83,7 +83,12 @@ fun PklTypeName.replaceDeprecated(
   replacementType.acceptChildren(
     ReplacementVisitor(declImportList, usageImportList, null, null, project)
   )
-  replace(replacementType.typeName)
+  // if this type is qualified but the replacement isn't, replace just the last part
+  if (replacementType.typeName.moduleName != null) {
+    replace(replacementType.typeName)
+  } else {
+    simpleName.replace(replacementType.typeName.simpleName)
+  }
 
   return true
 }
