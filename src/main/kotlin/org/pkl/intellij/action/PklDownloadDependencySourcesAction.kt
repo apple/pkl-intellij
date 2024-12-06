@@ -16,7 +16,6 @@
 package org.pkl.intellij.action
 
 import com.intellij.codeInsight.intention.IntentionAction
-import com.intellij.collaboration.async.CompletableFutureUtil.handleOnEdt
 import com.intellij.openapi.editor.Editor
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.ui.Messages
@@ -25,6 +24,7 @@ import org.pkl.intellij.packages.PackageDependency
 import org.pkl.intellij.packages.pklPackageService
 import org.pkl.intellij.psi.enclosingModule
 import org.pkl.intellij.toolchain.pklCli
+import org.pkl.intellij.util.CompletableFutureUtil.handleOnEdt
 
 class PklDownloadDependencySourcesAction : IntentionAction {
   override fun startInWriteAction(): Boolean = false
