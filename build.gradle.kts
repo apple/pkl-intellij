@@ -262,6 +262,7 @@ private val licenseHeader = """
 spotless {
   kotlin {
     ktfmt("0.44").googleStyle()
+    targetExclude("**/CompletableFutureUtil.kt")
     licenseHeader(licenseHeader)
   }
 }
