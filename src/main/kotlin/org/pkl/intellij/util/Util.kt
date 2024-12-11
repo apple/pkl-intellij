@@ -17,6 +17,7 @@ package org.pkl.intellij.util
 
 import com.intellij.codeInsight.intention.impl.BaseIntentionAction
 import com.intellij.lang.annotation.AnnotationHolder
+import com.intellij.openapi.application.runInEdt
 import com.intellij.openapi.module.ModuleUtil
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.roots.OrderEnumerator
@@ -31,6 +32,9 @@ import java.math.BigInteger
 import java.net.URI
 import java.net.URISyntaxException
 import java.util.*
+import java.util.concurrent.CompletableFuture
+import java.util.concurrent.CompletionException
+import java.util.concurrent.ExecutionException
 import java.util.regex.Pattern
 import kotlin.math.max
 import org.pkl.intellij.psi.PklModule
@@ -340,3 +344,17 @@ fun decodePath(path: String): String {
 
 fun <T> noCacheResult(): CachedValueProvider.Result<T> =
   CachedValueProvider.Result.create(null, ModificationTracker.EVER_CHANGED)
+
+fun <T, R> CompletableFuture<T>.handleOnEdt(handler: (T?, Throwable?) -> R): CompletableFuture<R> {
+  fun extractError(error: Throwable): Throwable {
+    return when (error) {
+      is CompletionException -> extractError(error.cause!!)
+      is ExecutionException -> extractError(error.cause!!)
+      else -> error
+    }
+  }
+  return handleAsync(
+    { result: T?, error: Throwable? -> handler(result, error?.let { extractError(it) }) },
+    { runnable -> runInEdt(null) { runnable.run() } }
+  )
+}
