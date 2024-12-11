@@ -345,16 +345,17 @@ fun decodePath(path: String): String {
 fun <T> noCacheResult(): CachedValueProvider.Result<T> =
   CachedValueProvider.Result.create(null, ModificationTracker.EVER_CHANGED)
 
-fun <T, R> CompletableFuture<T>.handleOnEdt(handler: (T?, Throwable?) -> R): CompletableFuture<R> {
-  fun extractError(error: Throwable): Throwable {
-    return when (error) {
-      is CompletionException -> extractError(error.cause!!)
-      is ExecutionException -> extractError(error.cause!!)
-      else -> error
-    }
+private fun extractError(error: Throwable): Throwable {
+  return when (error) {
+    is CompletionException -> extractError(error.cause!!)
+    is ExecutionException -> extractError(error.cause!!)
+    else -> error
   }
+}
+
+fun <T, R> CompletableFuture<T>.handleOnEdt(handler: (T?, Throwable?) -> R): CompletableFuture<R> {
   return handleAsync(
-    { result: T?, error: Throwable? -> handler(result, error?.let { extractError(it) }) },
+    { result: T?, error: Throwable? -> handler(result, error?.let(::extractError)) },
     { runnable -> runInEdt(null) { runnable.run() } }
   )
 }
