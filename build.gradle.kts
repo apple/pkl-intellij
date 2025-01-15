@@ -243,7 +243,7 @@ val printVersion by tasks.registering {
 
 private val licenseHeader = """
   /**
-   * Copyright © 2024 Apple Inc. and the Pkl project authors. All rights reserved.
+   * Copyright © ${'$'}YEAR Apple Inc. and the Pkl project authors. All rights reserved.
    *
    * Licensed under the Apache License, Version 2.0 (the "License");
    * you may not use this file except in compliance with the License.
@@ -259,7 +259,10 @@ private val licenseHeader = """
    */
 """.trimIndent()
 
+val originalRemoteName = System.getenv("PKL_ORIGINAL_REMOTE_NAME") ?: "origin"
+
 spotless {
+  ratchetFrom = "$originalRemoteName/main"
   kotlin {
     ktfmt("0.44").googleStyle()
     licenseHeader(licenseHeader)
