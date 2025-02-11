@@ -1,5 +1,5 @@
 /**
- * Copyright © 2024 Apple Inc. and the Pkl project authors. All rights reserved.
+ * Copyright © 2024-2025 Apple Inc. and the Pkl project authors. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -604,7 +604,13 @@ fun PklTypeAlias.isRecursive(context: PklProject?): Boolean {
 private fun PklTypeAlias.isRecursive(
   seen: MutableSet<PklTypeAlias>,
   context: PklProject?
-): Boolean = !seen.add(this) || body.isRecursive(seen, context)
+): Boolean {
+  if (seen.contains(this)) {
+    return true
+  }
+  seen.add(this)
+  return body.isRecursive(seen, context).also { seen.remove(this) }
+}
 
 private fun PklType?.isRecursive(seen: MutableSet<PklTypeAlias>, context: PklProject?): Boolean =
   when (this) {
