@@ -601,18 +601,10 @@ fun PklTypeAlias.isRecursive(context: PklProject?): Boolean {
   )
 }
 
-private fun PklTypeAlias.isRecursive(
-  seen: MutableSet<PklTypeAlias>,
-  context: PklProject?
-): Boolean {
-  if (seen.contains(this)) {
-    return true
-  }
-  seen.add(this)
-  return body.isRecursive(seen, context).also { seen.remove(this) }
-}
+private fun PklTypeAlias.isRecursive(seen: Set<PklTypeAlias>, context: PklProject?): Boolean =
+  seen.contains(this) || body.isRecursive(seen + this, context)
 
-private fun PklType?.isRecursive(seen: MutableSet<PklTypeAlias>, context: PklProject?): Boolean =
+private fun PklType?.isRecursive(seen: Set<PklTypeAlias>, context: PklProject?): Boolean =
   when (this) {
     is PklDeclaredType -> {
       val resolved = typeName.simpleName.resolve(context)
