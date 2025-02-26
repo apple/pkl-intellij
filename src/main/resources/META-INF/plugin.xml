@@ -21,6 +21,11 @@
     ]]></description>
   <!-- language=html -->
   <change-notes><![CDATA[
+    <b>0.32.0</b>
+    <ul>
+      <li>Fix an incorrect "recursive typealias" error</li>
+      <li>Add support for Pkl 0.28.0 standard library</li>
+    </ul>
     <b>0.31.1</b>
     <ul>
       <li>Bump maximum IntelliJ version to 252.</li>
