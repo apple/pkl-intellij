@@ -1,21 +1,32 @@
 = Changelog
 
+[[release-0.32.0]]
+== 0.32.0 (2025-02-27)
+
+=== Fixes
+
+* Fix an incorrect "recursive typealias" error (https://github.com/apple/pkl-intellij/pull/87[#87]).
+
+=== Changes
+
+* Add support for Pkl 0.28.0 standard library (https://github.com/apple/pkl-intellij/pull/88[#88]).
+
 [[release-0.31.1]]
 == 0.31.1 (2024-11-13)
 
-== Changes
+=== Changes
 
 * Bump maximum InteliiJ version to 252 (https://github.com/apple/pkl-intellij/pull/78[#78]).
 
 [[release-0.31.0]]
 == 0.31.0 (2024-11-11)
 
-== Fixes
+=== Fixes
 
 * Fix an exception during file refactor rename (https://github.com/apple/pkl-intellij/pull/59[#59]).
 * Fix an issue where excluded directories are included in project sync (https://github.com/apple/pkl-intellij/pull/73[#73]).
 
-== Changes
+=== Changes
 
 * Add support for Pkl 0.27.0 standard library (https://github.com/apple/pkl-intellij/pull/72[#72]).
 * Add support for const object members (https://github.com/apple/pkl-intellij/pull/71[#71]).
