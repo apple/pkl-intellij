@@ -1,5 +1,5 @@
 /**
- * Copyright © 2024 Apple Inc. and the Pkl project authors. All rights reserved.
+ * Copyright © 2024-2025 Apple Inc. and the Pkl project authors. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -360,7 +360,7 @@ private fun PsiElement.doComputeExprType(
             }
             else -> Type.union(base.stringType, base.resourceType, base, context)
           }
-        if (isNullable) result.nullable(base)
+        if (isNullable) result.nullable(base, context)
         else if (isGlob) base.mappingType.withTypeArguments(base.stringType, result) else result
       }
       is PklIfExpr ->

@@ -1,5 +1,5 @@
 /**
- * Copyright © 2024 Apple Inc. and the Pkl project authors. All rights reserved.
+ * Copyright © 2024-2025 Apple Inc. and the Pkl project authors. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -48,16 +48,16 @@ class TypeTest : BasePlatformTestCase() {
   fun testNullableType() {
     val base = project.pklBaseModule
 
-    val nullableString = base.stringType.nullable(base)
-    val nullableString2 = base.stringType.nullable(base)
+    val nullableString = base.stringType.nullable(base, null)
+    val nullableString2 = base.stringType.nullable(base, null)
 
     assertTrue(nullableString.isSubtypeOf(nullableString, base, null))
     assertTrue(nullableString.isSubtypeOf(nullableString2, base, null))
     assertTrue(nullableString2.isSubtypeOf(nullableString, base, null))
 
     val person = PklPsiFactory.createClass("Person", project)
-    val nullablePerson = Type.Class(person).nullable(base)
-    val nullablePerson2 = Type.Class(person).nullable(base)
+    val nullablePerson = Type.Class(person).nullable(base, null)
+    val nullablePerson2 = Type.Class(person).nullable(base, null)
 
     assertTrue(nullablePerson.isSubtypeOf(nullablePerson, base, null))
     assertTrue(nullablePerson.isSubtypeOf(nullablePerson2, base, null))

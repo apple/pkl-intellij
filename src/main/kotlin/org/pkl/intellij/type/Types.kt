@@ -1,5 +1,5 @@
 /**
- * Copyright © 2024 Apple Inc. and the Pkl project authors. All rights reserved.
+ * Copyright © 2024-2025 Apple Inc. and the Pkl project authors. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -222,9 +222,8 @@ sealed class Type(val constraints: List<ConstraintExpr> = listOf()) {
   open fun nonNull(base: PklBaseModule, context: PklProject?): Type =
     if (this == base.nullType) Nothing else this
 
-  fun nullable(base: PklBaseModule): Type =
-    // Foo? is syntactic sugar for Null|Foo
-    union(base.nullType, this, base, null)
+  fun nullable(base: PklBaseModule, context: PklProject?): Type =
+    union(base.nullType, this, base, context)
 
   open val bindings: TypeParameterBindings = mapOf()
 
@@ -1224,7 +1223,7 @@ fun PklType?.toType(
       type.toType(base, bindings, context, preserveUnboundTypeVars).withConstraints(constraintExprs)
     }
     is PklNullableType ->
-      type.toType(base, bindings, context, preserveUnboundTypeVars).nullable(base)
+      type.toType(base, bindings, context, preserveUnboundTypeVars).nullable(base, context)
     is PklUnknownType -> Unknown
     is PklNothingType -> Nothing
     is PklModuleType -> {
