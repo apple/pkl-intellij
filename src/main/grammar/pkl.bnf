@@ -625,9 +625,7 @@ importExpr ::= ('import' | 'import*') ('(' moduleUri ')' | moduleUri) {
   ]
 }
 
-readExpr ::= ('read' | 'read*' | 'read?') '(' expr ')' {
-  implements = "org.pkl.intellij.psi.PklSuppressWarningsTarget"
-}
+readExpr ::= ('read' | 'read*' | 'read?') '(' expr ')'
 
 functionLiteral ::= functionParameterList '->' expr {
   implements = "org.pkl.intellij.psi.PklParameterListOwner"
