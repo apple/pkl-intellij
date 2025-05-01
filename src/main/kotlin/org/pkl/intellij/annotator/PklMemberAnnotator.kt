@@ -1,5 +1,5 @@
 /**
- * Copyright © 2024 Apple Inc. and the Pkl project authors. All rights reserved.
+ * Copyright © 2024-2025 Apple Inc. and the Pkl project authors. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -396,6 +396,12 @@ class PklMemberAnnotator : PklAnnotator() {
         is PklObjectMethod -> {
           missingLocalModifier(owner, owner.name, owner.anchor)
           return
+        }
+        is PklObjectProperty -> {
+          if (owner.type != null) {
+            missingLocalModifier(owner, owner.name, owner.anchor)
+            return
+          }
         }
         is PklClassProperty -> {
           if (
