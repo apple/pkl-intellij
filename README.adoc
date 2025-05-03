@@ -1,4 +1,4 @@
-= Pkl IntelliJ Plugin
+= Pkl IntelliJ Plugin test
 
 :experimental:
 :uri-docs: https://pkl-lang.org/intellij/current
