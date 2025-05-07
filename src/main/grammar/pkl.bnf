@@ -618,7 +618,7 @@ letExpr ::= let '('? typedIdentifier '=' expr (')' | in) expr {
 
 throwExpr ::= throw '(' expr ')'
 traceExpr ::= trace '(' expr ')'
-importExpr ::= ('import' | 'import*') ('(' moduleUri ')' | moduleUri) {
+importExpr ::= ('import' | 'import*') '(' moduleUri ')' {
   implements = "org.pkl.intellij.psi.PklImportBase"
   methods = [
     moduleUri = "moduleUri"
