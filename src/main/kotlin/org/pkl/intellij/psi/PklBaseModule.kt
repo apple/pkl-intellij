@@ -125,6 +125,7 @@ class PklBaseModule(private val stdLib: PklStdLib) {
   val regexType: Type.Class = classType("Regex")
   val valueRenderer: Type.Class = classType("ValueRenderer")
   val bytesType: Type.Class = classType("Bytes")
+  val uint8Type: Type.Alias = aliasType("UInt8")
 
   val comparableType: Type = aliasType("Comparable")
 
@@ -140,7 +141,17 @@ class PklBaseModule(private val stdLib: PklStdLib) {
     return when {
       enclosingObjectClassType.classEquals(listingType) -> {
         val elemType = enclosingObjectClassType.typeArguments[0]
-        if (elemType.isSubtypeOf(intType, this, null))
+        if (elemType == uint8Type) {
+          Type.union(
+            collectionType.withTypeArguments(uint8Type),
+            listingType.withTypeArguments(uint8Type),
+            dynamicType,
+            intSeqType,
+            bytesType,
+            this,
+            null
+          )
+        } else if (elemType.isSubtypeOf(intType, this, null))
           Type.union(
             collectionType.withTypeArguments(elemType),
             listingType.withTypeArguments(elemType),
@@ -177,12 +188,15 @@ class PklBaseModule(private val stdLib: PklStdLib) {
 
   val additiveOperandType: Type by lazy {
     Type.union(
-      stringType,
-      numberType,
-      durationType,
-      dataSizeType,
-      collectionType,
-      mapType,
+      listOf(
+        stringType,
+        numberType,
+        durationType,
+        dataSizeType,
+        collectionType,
+        mapType,
+        bytesType
+      ),
       this,
       null
     )
@@ -194,12 +208,7 @@ class PklBaseModule(private val stdLib: PklStdLib) {
 
   val subscriptableType: Type by lazy {
     Type.union(
-      stringType,
-      collectionType,
-      mapType,
-      listingType,
-      mappingType,
-      dynamicType,
+      listOf(stringType, collectionType, mapType, listingType, mappingType, dynamicType, bytesType),
       this,
       null
     )

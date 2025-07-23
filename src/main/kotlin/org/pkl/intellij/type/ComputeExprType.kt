@@ -180,6 +180,10 @@ private fun PsiElement.doComputeExprType(
                 else -> Type.Unknown
               }
             } else Type.Unknown
+          base.bytesType ->
+            if (op == PklElementTypes.PLUS && rightType == base.bytesType) {
+              base.bytesType
+            } else Type.Unknown
           is Type.StringLiteral ->
             if (op == PklElementTypes.PLUS) {
               when (rightType) {
@@ -494,6 +498,7 @@ private fun doComputeSubscriptExprType(
         receiverClassType.classEquals(base.listingType) -> receiverClassType.typeArguments[0]
         receiverClassType.classEquals(base.mapType) -> receiverClassType.typeArguments[1]
         receiverClassType.classEquals(base.mappingType) -> receiverClassType.typeArguments[1]
+        receiverClassType.classEquals(base.bytesType) -> base.uint8Type
         else -> Type.Unknown
       }
     }
