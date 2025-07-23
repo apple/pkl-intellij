@@ -141,22 +141,13 @@ class PklBaseModule(private val stdLib: PklStdLib) {
     return when {
       enclosingObjectClassType.classEquals(listingType) -> {
         val elemType = enclosingObjectClassType.typeArguments[0]
-        if (elemType == uint8Type) {
-          Type.union(
-            collectionType.withTypeArguments(uint8Type),
-            listingType.withTypeArguments(uint8Type),
-            dynamicType,
-            intSeqType,
-            bytesType,
-            this,
-            null
-          )
-        } else if (elemType.isSubtypeOf(intType, this, null))
+        if (elemType.isSubtypeOf(intType, this, null))
           Type.union(
             collectionType.withTypeArguments(elemType),
             listingType.withTypeArguments(elemType),
             dynamicType,
             intSeqType,
+            bytesType,
             this,
             null
           )
