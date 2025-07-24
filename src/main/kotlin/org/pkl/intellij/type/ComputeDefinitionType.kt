@@ -1,5 +1,5 @@
 /**
- * Copyright © 2024 Apple Inc. and the Pkl project authors. All rights reserved.
+ * Copyright © 2024-2025 Apple Inc. and the Pkl project authors. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -131,6 +131,8 @@ fun PsiElement?.computeResolvedImportType(
                         iterableClassType.typeArguments[0]
                       iterableClassType.isSubtypeOf(base.typedType, base, context) ->
                         base.stringType
+                      base.bytesType != null && iterableClassType.classEquals(base.bytesType) ->
+                        base.uint8Type
                       else -> Type.Unknown
                     }
                   }
@@ -144,6 +146,8 @@ fun PsiElement?.computeResolvedImportType(
                       iterableClassType.classEquals(base.mapType) ||
                         iterableClassType.classEquals(base.mappingType) ->
                         iterableClassType.typeArguments[1]
+                      base.bytesType != null && iterableClassType.classEquals(base.bytesType) ->
+                        base.uint8Type
                       iterableClassType.isSubtypeOf(base.typedType, base, context) ->
                         Type.Unknown // could strengthen value type to union of property types
                       else -> Type.Unknown
