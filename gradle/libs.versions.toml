@@ -26,11 +26,12 @@ kotlinSerialization = "1.9.0"
 kotlinx = "1.5.1"
 # fallback if stdlib isn't found in IntelliJ project dependencies
 pkl = "0.29.0"
+pkl-cli = "0.28.2"
 spotless = "6.21.0"
 
 [libraries] # ordered alphabetically
 assertj = { group = "org.assertj", name = "assertj-core", version.ref = "assertj" }
-pklCli = { group = "org.pkl-lang", name = "pkl-cli-java", version.ref = "pkl" }
+pklCli = { group = "org.pkl-lang", name = "pkl-cli-java", version.ref = "pkl-cli" }
 pklStdLib = { group = "org.pkl-lang", name = "pkl-stdlib", version.ref = "pkl" }
 kotlinxJson = { group = "org.jetbrains.kotlinx", name = "kotlinx-serialization-json", version.ref = "kotlinx" }
 kotlinReflect = { group = "org.jetbrains.kotlin", name = "kotlin-reflect", version.ref = "kotlin" }
