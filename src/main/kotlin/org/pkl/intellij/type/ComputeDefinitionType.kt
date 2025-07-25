@@ -132,7 +132,7 @@ fun PsiElement?.computeResolvedImportType(
                       iterableClassType.isSubtypeOf(base.typedType, base, context) ->
                         base.stringType
                       base.bytesType != null && iterableClassType.classEquals(base.bytesType) ->
-                        base.uint8Type
+                        base.intType
                       else -> Type.Unknown
                     }
                   }
