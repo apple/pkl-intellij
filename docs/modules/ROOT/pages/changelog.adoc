@@ -1,5 +1,27 @@
 = Changelog
 
+[[release-0.33.0]]
+== 0.33.0 (2025-07-28)
+
+=== Fixes
+
+* Fix parsing of import expressions (https://github.com/apple/pkl-intellij/pull/98[#98]).
+* Fix runtime assertion error (https://github.com/apple/pkl-intellij/pull/95[#95]).
+* Fix false positive warning diagnostics for nullable spreads (https://github.com/apple/pkl-intellij/pull/93[#93]).
+
+=== Changes
+
+* Add support for Pkl 0.29 (https://github.com/apple/pkl-intellij/pull/101[#101]).
+* Add an error diagnostic for non-local object properties with types (https://github.com/apple/pkl-intellij/pull/96[#96]).
+
+=== Contributors ❤️
+
+We would like to thank the contributors to this release (in alphabetical order):
+
+* https://github.com/bioball[@bioball]
+* https://github.com/KushalP[@KushalP]
+* https://github.com/stackoverflow[@stackoverflow]
+
 [[release-0.32.0]]
 == 0.32.0 (2025-02-27)
 
