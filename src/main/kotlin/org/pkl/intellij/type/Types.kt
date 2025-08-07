@@ -572,26 +572,32 @@ sealed class Type(val constraints: List<ConstraintExpr> = listOf()) {
 
       if (typeArguments.isEmpty()) {
         assert(classType.typeArguments.isEmpty()) // holds for stdlib
-        return true
+      } else {
+        val size = typeArguments.size
+        val otherSize = classType.typeArguments.size
+        assert(size >= otherSize) // holds for stdlib
+
+        for (i in 1..otherSize) {
+          // assume [typeArg] maps directly to [otherTypeArg] in extends clause(s) (holds for
+          // stdlib)
+          val typeArg = typeArguments[size - i]
+          val typeParam = typeParameters[size - i]
+          val otherTypeArg = classType.typeArguments[otherSize - i]
+          val isMatch =
+            when (typeParam.firstChildTokenType()) {
+              PklElementTypes.OUT -> typeArg.isSubtypeOf(otherTypeArg, base, context) // covariance
+              PklElementTypes.IN ->
+                otherTypeArg.isSubtypeOf(typeArg, base, context) // contravariance
+              else -> typeArg.isEquivalentTo(otherTypeArg, base, context) // invariance
+            }
+          if (!isMatch) return false
+        }
       }
 
-      val size = typeArguments.size
-      val otherSize = classType.typeArguments.size
-      assert(size >= otherSize) // holds for stdlib
+      // this class is a subtype of classType iff classType's constraints are a subset of this
+      // class's constraints.
+      if (!constraints.containsAll(classType.constraints)) return false
 
-      for (i in 1..otherSize) {
-        // assume [typeArg] maps directly to [otherTypeArg] in extends clause(s) (holds for stdlib)
-        val typeArg = typeArguments[size - i]
-        val typeParam = typeParameters[size - i]
-        val otherTypeArg = classType.typeArguments[otherSize - i]
-        val isMatch =
-          when (typeParam.firstChildTokenType()) {
-            PklElementTypes.OUT -> typeArg.isSubtypeOf(otherTypeArg, base, context) // covariance
-            PklElementTypes.IN -> otherTypeArg.isSubtypeOf(typeArg, base, context) // contravariance
-            else -> typeArg.isEquivalentTo(otherTypeArg, base, context) // invariance
-          }
-        if (!isMatch) return false
-      }
       return true
     }
 
