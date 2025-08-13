@@ -334,7 +334,7 @@ classMethod ::= docComment? annotationList methodHeader ('=' expr)? {
 // even though `read` is now a keyword
 private methodHeader ::= modifierList function (IDENTIFIER | read) typeParameterList? functionParameterList typeAnnotation? { pin = 2 }
 
-functionParameterList ::= SEP? '(' (typedIdentifier (',' typedIdentifier)*)? ')' {
+functionParameterList ::= SEP? '(' (typedIdentifier (',' typedIdentifier)* )?  ','? ')' {
   pin('.*') = 2
   implements = "org.pkl.intellij.psi.PklParameterList"
   methods = [
@@ -344,7 +344,7 @@ functionParameterList ::= SEP? '(' (typedIdentifier (',' typedIdentifier)*)? ')'
 
 // Couldn't find a good way to handle errors here. Example:
 // a { b, <caret>
-objectBodyParameterList ::= typedIdentifier (',' typedIdentifier)* '->' {
+objectBodyParameterList ::= typedIdentifier (',' typedIdentifier)* ','? '->' {
   implements = "org.pkl.intellij.psi.PklParameterList"
   methods = [
     elements = "typedIdentifier"
@@ -357,7 +357,7 @@ typedIdentifier ::= IDENTIFIER typeAnnotation? {
 }
 
 // No SEP allowed before '(' to avoid ambiguity between `foo(1)` and `foo;(1)` in object literal.
-argumentList ::= '(' (expr (',' expr)*)? ')' {
+argumentList ::= '(' (expr (',' expr)* ','?)? ')' {
   pin(".*") = 1
   methods = [
     elements = "expr"
@@ -375,7 +375,7 @@ qualifiedIdentifier ::= IDENTIFIER ('.' IDENTIFIER)*
 
 private typeAnnotation ::= ':' type { pin = 1 }
 
-typeParameterList ::= '<' typeParameter (',' typeParameter)* '>' {
+typeParameterList ::= '<' typeParameter (',' typeParameter)* ','? '>' {
   pin(".*") = 1
   methods = [
     elements = "typeParameter"
@@ -396,7 +396,7 @@ typeParameter ::= (in | out)? IDENTIFIER {
 // Suggestions include:
 // '='
 // (If we don't pin at all, the above example gives a much worse error.)
-typeArgumentList ::= '<' type (',' type)* '>' {
+typeArgumentList ::= '<' type (',' type)* ','? '>' {
   pin(".*") = 1
   methods = [
     elements = "type"
@@ -452,7 +452,7 @@ nullableType ::= type '?'
 
 constrainedType ::= type typeConstraintList
 
-typeConstraintList ::= '(' expr (',' expr)* ')' {
+typeConstraintList ::= '(' expr (',' expr)* ','? ')' {
   pin(".*") = 2
   methods = [
     elements = "expr"
@@ -472,7 +472,7 @@ defaultType ::= '*' type
 // BNF_RULE:functionType: binary or n-ary expression cannot have prefix, treating as ATOM
 functionType ::= functionTypeParameterList '->' type
 
-functionTypeParameterList ::= SEP? '(' (type (',' type)*)? ')' {
+functionTypeParameterList ::= SEP? '(' (type (',' type)* ','? )? ')' {
   pin(".*") = 2
   methods = [
     elements = "type"
