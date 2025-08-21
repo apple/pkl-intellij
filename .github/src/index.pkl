@@ -1,0 +1,9 @@
+import* "workflows/*.pkl" as allWorkflows
+
+output {
+  files {
+    for (name, workflow in allWorkflows) {
+      [name.replaceLast("pkl", "yml")] = workflow.output
+    }
+  }
+}

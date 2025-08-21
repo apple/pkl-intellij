@@ -1,0 +1,5 @@
+amends "pkl:Project"
+
+dependencies {
+  ["gha"] = import("../.temp-pkl-deps/pkl-gha/PklProject")
+}
