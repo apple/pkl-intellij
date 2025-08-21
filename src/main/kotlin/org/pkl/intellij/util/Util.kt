@@ -1,5 +1,5 @@
 /**
- * Copyright © 2024 Apple Inc. and the Pkl project authors. All rights reserved.
+ * Copyright © 2024-2025 Apple Inc. and the Pkl project authors. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,6 +19,7 @@ import com.intellij.codeInsight.intention.impl.BaseIntentionAction
 import com.intellij.lang.annotation.AnnotationHolder
 import com.intellij.openapi.application.runInEdt
 import com.intellij.openapi.module.ModuleUtil
+import com.intellij.openapi.progress.ProgressIndicator
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.roots.OrderEnumerator
 import com.intellij.openapi.util.ModificationTracker
@@ -28,6 +29,8 @@ import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.psi.PsiElement
 import com.intellij.psi.PsiFile
 import com.intellij.psi.util.CachedValueProvider
+import java.io.InputStream
+import java.io.OutputStream
 import java.math.BigInteger
 import java.net.URI
 import java.net.URISyntaxException
@@ -358,4 +361,23 @@ fun <T, R> CompletableFuture<T>.handleOnEdt(handler: (T?, Throwable?) -> R): Com
     { result: T?, error: Throwable? -> handler(result, error?.let(::extractError)) },
     { runnable -> runInEdt(null) { runnable.run() } }
   )
+}
+
+/** Like [InputStream.copyTo], but also updates a progress indicator as its goes. */
+fun InputStream.copyToWithIndicator(
+  out: OutputStream,
+  progressIndicator: ProgressIndicator,
+  totalLength: Long,
+  bufferSize: Int = 8 * 1024
+) {
+  var bytesCopied: Long = 0
+  val buffer = ByteArray(bufferSize)
+  var bytes = read(buffer)
+  while (bytes >= 0) {
+    progressIndicator.checkCanceled()
+    out.write(buffer, 0, bytes)
+    progressIndicator.fraction = bytesCopied.toDouble() / totalLength
+    bytesCopied += bytes
+    bytes = read(buffer)
+  }
 }

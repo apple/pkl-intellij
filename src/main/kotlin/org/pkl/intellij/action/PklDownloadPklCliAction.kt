@@ -26,16 +26,26 @@ import com.intellij.ui.components.JBTextField
 import com.intellij.ui.dsl.builder.Cell
 import com.intellij.ui.dsl.builder.bindText
 import com.intellij.ui.dsl.builder.panel
+import com.intellij.util.io.createDirectories
+import com.intellij.util.text.SemVer
+import io.ktor.client.HttpClient
+import io.ktor.client.call.body
+import io.ktor.client.request.get
 import java.net.URL
 import java.nio.file.Files
 import java.nio.file.Path
 import java.nio.file.Paths
-import java.nio.file.StandardCopyOption
 import java.nio.file.attribute.PosixFilePermission
 import java.util.concurrent.CompletableFuture
 import javax.swing.DefaultComboBoxModel
 import javax.swing.JComponent
-import org.jsoup.Jsoup
+import kotlin.io.copyTo
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.runBlocking
+import kotlinx.serialization.Serializable
+import kotlinx.serialization.decodeFromString
+import kotlinx.serialization.json.Json
+import org.pkl.intellij.util.copyToWithIndicator
 import org.pkl.intellij.util.handleOnEdt
 
 class PklDownloadPklCliAction(
@@ -47,6 +57,12 @@ class PklDownloadPklCliAction(
     "Downloads Pkl executable",
     AllIcons.Actions.Download
   ) {
+  companion object {
+    @Serializable private data class GithubRelease(val name: String)
+
+    private val json: Json = Json { ignoreUnknownKeys = true }
+    private val httpClient: HttpClient = HttpClient {}
+  }
 
   override fun actionPerformed(e: AnActionEvent) {
     if (e.project == null) return
@@ -66,11 +82,21 @@ class PklDownloadPklCliAction(
     onStart()
     future.handleOnEdt { result, error -> onEnd(result, error) }
 
-    runBackgroundableTask("Downloading Pkl executable") {
+    runBackgroundableTask("Downloading Pkl executable") { progressIndicator ->
       try {
-        Files.createDirectories(targetPath.parent)
-        URL(url).openStream().use { input ->
-          Files.copy(input, targetPath, StandardCopyOption.REPLACE_EXISTING)
+        targetPath.parent.createDirectories()
+        val conn = URL(url).openConnection()
+        val totalLength = conn.contentLengthLong
+        val fileOutputStream = Files.newOutputStream(targetPath)
+        conn.inputStream.use { input ->
+          fileOutputStream.use { out ->
+            // -1 means we don't know what the content length is; skip showing progress.
+            if (totalLength == -1L) {
+              input.copyTo(out)
+            } else {
+              input.copyToWithIndicator(out, progressIndicator, totalLength)
+            }
+          }
         }
         makeExecutableIfNeeded(targetPath)
         future.complete(targetPath.toString())
@@ -128,7 +154,6 @@ class PklDownloadPklCliAction(
     override fun createCenterPanel(): JComponent = panel {
       val initialDestination = suggestedDownloadPath()
       destinationPath = initialDestination
-      var versions: List<String>
 
       lateinit var combo: Cell<ComboBox<String>>
       lateinit var textField: Cell<JBTextField>
@@ -137,46 +162,54 @@ class PklDownloadPklCliAction(
         combo =
           comboBox(emptyList<String>()).onChanged {
             version = it.selectedItem as String
-            destinationPath = initialDestination + version
+            destinationPath = "$initialDestination-$version"
             textField.component.text = destinationPath
           }
       }
 
       row("Destination path:".wrapInCode()) { textField = textField().bindText(::destinationPath) }
 
-      fetchAvailableVersions { result ->
-        versions = result
+      try {
+        val versions: List<String> = fetchAvailableVersions()
         if (versions.isNotEmpty()) {
           combo.component.model = DefaultComboBoxModel(versions.toTypedArray())
           combo.component.selectedIndex = 0
           version = versions[0]
-          destinationPath = initialDestination + version
+          destinationPath = "$initialDestination-$version"
           textField.component.text = destinationPath
         }
+      } catch (e: Throwable) {
+        setErrorText("Failed to fetch Pkl versions information: $e")
       }
     }
 
-    fun fetchAvailableVersions(onEnd: (List<String>) -> Unit) {
-      val url = "https://pkl-lang.org/main/current/release-notes/index.html"
-      val document = Jsoup.connect(url).get()
-      val versionElements =
-        document
-          .select("li[class='nav-item']")
-          .mapNotNull {
-            Regex("""(\d+(\.\d+)*?) Release Notes""").find(it.text())?.groups?.get(1)?.value
+    private fun fetchAvailableVersions(): List<String> =
+      runBlocking(Dispatchers.IO) {
+        val url = "https://api.github.com/repos/apple/pkl/releases"
+        val releasesStr = httpClient.get(url).body<String>()
+        val releases: List<GithubRelease> = json.decodeFromString(releasesStr)
+        val minorVersions = releases.map { SemVer.parseFromText(it.name)!! }.groupBy { it.minor }
+        // Just present the latest patch version for each release
+        buildList {
+          for ((_, patchVersions) in minorVersions) {
+            add(patchVersions.max().toString())
           }
-          .distinct()
-          .sortedDescending()
-          .map { "$it.0" }
-      onEnd(versionElements)
-    }
+        }
+      }
 
     private fun defaultExecutableName(): String =
       if (System.getProperty("os.name").lowercase().contains("win")) "pkl.exe" else "pkl"
 
     private fun suggestedDownloadPath(): String =
-      Paths.get(System.getProperty("user.home"), "pkl", "bin", defaultExecutableName()).toString()
+      Paths.get(
+          System.getProperty("user.home"),
+          ".pkl",
+          "editor-support",
+          "bin",
+          defaultExecutableName()
+        )
+        .toString()
   }
 }
 
-fun String.wrapInCode(): String = "<html><code>$this</code></html>"
+private fun String.wrapInCode(): String = "<html><code>$this</code></html>"
