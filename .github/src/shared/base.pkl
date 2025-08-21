@@ -1,0 +1,51 @@
+import "@gha/Workflow.pkl"
+
+import "@gha/actions/Common.pkl"
+import "@gha/actions/Setup.pkl"
+import "@gha/actions/Artifact.pkl"
+
+baseJob: Workflow.Job = new {
+  permissions {
+    checks = "write"
+  }
+  name = "Build and test"
+  `runs-on` = "ubuntu-latest"
+  steps {
+    new Common.Checkout {}
+    new Setup.Java {
+      javaVersion = "17"
+      distribution = "temurin"
+      cache = "gradle"
+    }
+    new {
+      name = "Git fetch origin"
+      // required for spotless job, prevent error: `No such reference 'origin/main'`
+      run = "git fetch origin"
+    }
+    new {
+      name = "Run tests"
+      // TODO: figure out why this needs to be run twice.
+      // Without this, completion tests fail (for example, see https://app.circleci.com/pipelines/github/apple/pkl-intellij/126/workflows/7de1355e-6b5a-4502-b71f-30d6ae42900e/jobs/245/tests)
+      // language=bash
+      run = """
+        # revert GHA's default `set -e` to prevent process exit from the first failure
+        set +e
+        ./gradlew check || ./gradlew check
+        """
+    }
+    new Artifact.Upload {
+      name = "Upload test reports as an artifact"
+      artifactName = "test-results"
+      path = "build/reports/tests/**/*"
+      `if` = "(!cancelled())"
+    }
+    new {
+      name = "Publish test results"
+      uses = "EnricoMi/publish-unit-test-result-action@v2"
+      `if` = "(!cancelled())"
+      with {
+        ["files"] = "build/test-results/**/*.xml"
+      }
+    }
+  }
+}
