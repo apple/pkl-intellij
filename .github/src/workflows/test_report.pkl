@@ -1,5 +1,7 @@
 amends "@gha/Workflow.pkl"
 
+name = "Test Reports"
+
 on {
   workflow_run {
     workflows {
