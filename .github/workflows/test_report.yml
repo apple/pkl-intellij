@@ -1,14 +1,13 @@
 # Do not modify!
 # This file was generated from a template using https://github.com/StefMa/pkl-gha
 
-name: Test Reports
+name: PR Test Reports
 'on':
   workflow_run:
     types:
     - completed
     workflows:
-    - Build and test
-    - Release
+    - Pull Request
 jobs:
   test-results:
     name: Test Results
@@ -18,9 +17,12 @@ jobs:
       checks: write
     runs-on: ubuntu-latest
     steps:
-    - uses: dorny/test-reporter@v2
+    - name: Download artifacts
+      uses: actions/download-artifact@v4
       with:
-        artifact: test-results
-        name: Test Results
-        path: '**/*.xml'
-        reporter: java-junit
+        path: test-results
+    - name: Publish test results
+      uses: EnricoMi/publish-unit-test-result-action@v2
+      with:
+        files: '**/*.xml'
+        comment: 'off'

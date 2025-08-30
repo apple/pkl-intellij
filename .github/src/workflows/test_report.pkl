@@ -1,12 +1,13 @@
 amends "@gha/Workflow.pkl"
 
-name = "Test Reports"
+import "@gha/actions/Artifact.pkl"
+
+name = "PR Test Reports"
 
 on {
   workflow_run {
     workflows {
-      import("build.pkl").name
-      import("release.pkl").name
+      import("prb.pkl").name
     }
     types {
       "completed"
@@ -24,13 +25,16 @@ jobs {
       actions = "read"
     }
     steps {
+      new Artifact.Download {
+        name = "Download artifacts"
+        path = "test-results"
+      }
       new {
-        uses = "dorny/test-reporter@v2"
+        name = "Publish test results"
+        uses = "EnricoMi/publish-unit-test-result-action@v2"
         with {
-          ["artifact"] = "test-results"
-          ["name"] = "Test Results"
-          ["path"] = "**/*.xml"
-          ["reporter"] = "java-junit"
+          ["files"] = "**/*.xml"
+          ["comment"] = "off"
         }
       }
     }

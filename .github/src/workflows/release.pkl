@@ -23,6 +23,14 @@ jobs {
     }
     steps {
       new {
+        name = "Publish test results"
+        uses = "EnricoMi/publish-unit-test-result-action@v2"
+        with {
+          ["files"] = "build/test-results/**/*.xml"
+          ["comment"] = "off"
+        }
+      }
+      new {
         name = "Run gradle publish"
         run = "./gradlew -DreleaseBuild=true publish"
       }

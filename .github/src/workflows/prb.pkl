@@ -1,0 +1,15 @@
+amends "@gha/Workflow.pkl"
+
+import "../shared/base.pkl"
+
+name = "Pull Request"
+
+on {
+  pull_request {}
+}
+
+jobs {
+  ["test"] = (base.baseJob){
+    name = "Build and test"
+  }
+}

@@ -42,6 +42,11 @@ jobs:
       with:
         name: test-results
         path: build/test-results/**/*.xml
+    - name: Publish test results
+      uses: EnricoMi/publish-unit-test-result-action@v2
+      with:
+        files: build/test-results/**/*.xml
+        comment: 'off'
     - name: Run gradle publish
       run: ./gradlew -DreleaseBuild=true publish
     - name: Create GitHub release
