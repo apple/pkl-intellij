@@ -34,17 +34,18 @@ baseJob: Workflow.Job = new {
         """
     }
     new Artifact.Upload {
-      name = "Upload test reports as an artifact"
-      artifactName = "test-results"
+      name = "Upload test report HTML"
+      artifactName = "test-reports-html"
       path = "build/reports/tests/**/*"
-      `if` = "(!cancelled())"
+      `if` = "!cancelled()"
     }
-    new {
-      name = "Publish test results"
-      uses = "EnricoMi/publish-unit-test-result-action@v2"
-      `if` = "(!cancelled())"
+    new Artifact.Upload {
+      name = "Upload test result XML"
+      artifactName = "test-results-xml"
+      `if` = "!cancelled()"
       with {
-        ["files"] = "build/test-results/**/*.xml"
+        ["name"] = "test-results"
+        ["path"] = "build/test-results/**/*.xml"
       }
     }
   }

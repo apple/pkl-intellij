@@ -30,17 +30,18 @@ jobs:
         # revert GHA's default `set -e` to prevent process exit from the first failure
         set +e
         ./gradlew check || ./gradlew check
-    - name: Upload test reports as an artifact
-      if: (!cancelled())
+    - name: Upload test report HTML
+      if: '!cancelled()'
+      uses: actions/upload-artifact@v4
+      with:
+        name: test-reports-html
+        path: build/reports/tests/**/*
+    - name: Upload test result XML
+      if: '!cancelled()'
       uses: actions/upload-artifact@v4
       with:
         name: test-results
-        path: build/reports/tests/**/*
-    - name: Publish test results
-      if: (!cancelled())
-      uses: EnricoMi/publish-unit-test-result-action@v2
-      with:
-        files: build/test-results/**/*.xml
+        path: build/test-results/**/*.xml
     - name: Run gradle publish
       run: ./gradlew -DreleaseBuild=true publish
     - name: Create GitHub release
