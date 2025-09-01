@@ -2,20 +2,25 @@ module org.pkl.commons.gha.PklCI
 
 import "@gha/Workflow.pkl"
 import "@gha/actions/Artifact.pkl"
-
-/// The workflow that runs during pushes to branches.
-///
-/// The following fields are overwritten and therefore don't need to be set:
-///   * [Workflow.on]
-///   * [Workflow.name]
-build: Workflow
+import "@gha/Context.pkl"
 
 /// The workflow that runs during pull requests.
 ///
 /// The following fields are overwritten and therefore don't need to be set:
 ///   * [Workflow.on]
 ///   * [Workflow.name]
+///
+/// This turns into a workflow called "Pull Request".
 prb: Workflow
+
+/// The workflow to run for commits that land on branches.
+///
+/// The following fields are overwritten and therefore don't need to be set:
+///   * [Workflow.on]
+///   * [Workflow.name]
+///
+/// This turns into a workflow called "Build".
+build: Workflow
 
 /// The workflow that runs when tags are pushed.
 ///
@@ -110,17 +115,23 @@ local testReportWorkflow: Workflow = new {
         actions = "read"
       }
       steps {
-        new Artifact.Download {
+        new {
           name = "Download artifacts"
-          artifactName = TEST_RESULT_XML_ARTIFACT_NAME
-          path = "test-results"
+          uses = "dawidd6/action-download-artifact@e7466d1a7587ed14867642c2ca74b5bcc1e19a2d"
+          with {
+            ["path"] = "artifacts"
+            ["run_id"] = "${{ github.event.workflow_run.id }}"
+          }
         }
         new {
           name = "Publish test results"
           uses = "EnricoMi/publish-unit-test-result-action@v2"
           with {
-            ["files"] = "**/*.xml"
-            ["comment"] = "off"
+            ["commit"] = "${{ github.event.workflow_run.head_sha }}"
+            ["event_name"] = "${{ github.event.workflow_run.event }}"
+            ["event_file"] = "artifacts/Event File/event.json"
+            ["files"] = "artifacts/**/*.xml"
+            ["comment_mode"] = "off"
           }
         }
       }
@@ -141,6 +152,12 @@ local withUploadTestResultXml: Mixin<Workflow.Jobs> = new {
           path = testReports.junit.join("\n")
           `if` = "!cancelled()"
           artifactName = TEST_RESULT_XML_ARTIFACT_NAME
+        }
+        new Artifact.Upload {
+          name = "Upload event file"
+          artifactName = "Event File"
+          `if` = "!cancelled()"
+          path = "${{ \(Context.github.eventPath) }}"
         }
       }
     }

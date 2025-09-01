@@ -18,12 +18,15 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - name: Download artifacts
-      uses: actions/download-artifact@v4
+      uses: dawidd6/action-download-artifact@e7466d1a7587ed14867642c2ca74b5bcc1e19a2d
       with:
-        name: test-results-xml
-        path: test-results
+        path: artifacts
+        run_id: ${{ github.event.workflow_run.id }}
     - name: Publish test results
       uses: EnricoMi/publish-unit-test-result-action@v2
       with:
-        files: '**/*.xml'
-        comment: 'off'
+        commit: ${{ github.event.workflow_run.head_sha }}
+        event_name: ${{ github.event.workflow_run.event }}
+        event_file: artifacts/Event File/event.json
+        files: artifacts/**/*.xml
+        comment_mode: 'off'
