@@ -1,0 +1,170 @@
+module org.pkl.commons.gha.PklCI
+
+import "@gha/Workflow.pkl"
+import "@gha/actions/Artifact.pkl"
+
+/// The workflow that runs during pushes to branches, or pull requests.
+///
+/// The following fields are overwritten and therefore don't need to be set:
+///   * [Workflow.on]
+///   * [Workflow.name]
+///
+/// This turns into two eventual workflows; `"Pull Request"` and `"Build"`.
+build: Workflow
+
+/// The workflow that runs when tags are pushed.
+///
+/// The following fields are overwritten and therefore don't need to be set:
+///   * [Workflow.on]
+///   * [Workflow.name]
+///
+/// This turns into a workflow called "Release".
+release: Workflow
+
+/// Test reports produced by [build] and [release].
+///
+/// Turns into steps that upload and processes test results.
+testReports: TestReports
+
+class TestReports {
+  /// Paths, directories, and globs to junit test reports, to be processed by a GitHub Actions test reporter.
+  junit: Listing<String>
+
+  /// Paths, directories, and globs to HTML test reports, to be uploaded as an artifact.
+  html: Listing<String>
+}
+
+local effectivePrbWorkflow = (build) {
+  name = "Pull Request"
+  on {
+    pull_request {}
+  }
+  jobs = super.jobs |> withUploadTestResultXml |> withUploadTestResultHtml
+}
+
+local effectiveBuildWorkflow = (build) {
+  name = "Build"
+  on {
+    push {
+      `tags-ignore` {
+        "*"
+      }
+    }
+  }
+  jobs = super.jobs |> withPublishTestResults |> withUploadTestResultHtml
+}
+
+local effectiveReleaseWorkflow = (build) {
+  name = "Release"
+  on {
+    push {
+      tags {
+        "*"
+      }
+      `branches-ignore` {
+        "*"
+      }
+    }
+  }
+  jobs = super.jobs |> withUploadTestResultXml |> withUploadTestResultHtml
+}
+
+local testReportWorkflow: Workflow = new {
+  name = "PR Test Reports"
+
+  on {
+    workflow_run {
+      workflows {
+        effectivePrbWorkflow.name
+      }
+      types {
+        "completed"
+      }
+    }
+  }
+
+  jobs {
+    ["test-results"] {
+      name = "Test Results"
+      `runs-on` = "ubuntu-latest"
+      `if` = "github.event.workflow_run.conclusion == 'success' || github.event.workflow_run.conclusion == 'failure'"
+      permissions {
+        checks = "write"
+        actions = "read"
+      }
+      steps {
+        new Artifact.Download {
+          name = "Download artifacts"
+          artifactName = TEST_RESULT_XML_ARTIFACT_NAME
+          path = "test-results"
+        }
+        new {
+          name = "Publish test results"
+          uses = "EnricoMi/publish-unit-test-result-action@v2"
+          with {
+            ["files"] = "**/*.xml"
+            ["comment"] = "off"
+          }
+        }
+      }
+    }
+  }
+}
+
+local const TEST_RESULT_HTML_ARTIFACT_NAME = "test-results-html"
+
+local const TEST_RESULT_XML_ARTIFACT_NAME = "test-results-xml"
+
+local withUploadTestResultXml: Mixin<Workflow.Jobs> = new {
+  when (!testReports.junit.isEmpty) {
+    [[true]] {
+      steps {
+        new Artifact.Upload {
+          name = "Upload Test Result XML"
+          path = testReports.junit.join("\n")
+          `if` = "!cancelled()"
+          artifactName = TEST_RESULT_XML_ARTIFACT_NAME
+        }
+      }
+    }
+  }
+}
+
+local withUploadTestResultHtml: Mixin<Workflow.Jobs> = new {
+  when (!testReports.html.isEmpty) {
+    [[true]] {
+      steps {
+        new Artifact.Upload {
+          name = "Upload Test Result HTML"
+          path = testReports.html.join("\n")
+          `if` = "!cancelled()"
+          artifactName = TEST_RESULT_HTML_ARTIFACT_NAME
+        }
+      }
+    }
+  }
+}
+
+local withPublishTestResults: Mixin<Workflow.Jobs> = new {
+  [[true]] {
+    steps {
+      new {
+        name = "Publish test results"
+        uses = "EnricoMi/publish-unit-test-result-action@v2"
+        with {
+          ["files"] = testReports.junit.join("\n")
+          ["comment"] = "off"
+        }
+      }
+    }
+  }
+}
+
+output {
+  files {
+    ["workflows/prb.yml"] = effectivePrbWorkflow.output
+    ["workflows/build.yml"] = effectiveBuildWorkflow.output
+    ["workflows/release.yml"] = effectiveReleaseWorkflow.output
+    ["workflows/test_report.yml"] = testReportWorkflow.output
+  }
+}

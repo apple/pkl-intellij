@@ -5,13 +5,13 @@ name: Pull Request
 'on':
   pull_request: {}
 jobs:
-  test:
+  build-and-test:
     name: Build and test
     permissions:
       checks: write
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v5
     - uses: actions/setup-java@v4
       with:
         java-version: '17'
@@ -30,9 +30,9 @@ jobs:
       with:
         name: test-reports-html
         path: build/reports/tests/**/*
-    - name: Upload test result XML
+    - name: Upload Test Result XML
       if: '!cancelled()'
       uses: actions/upload-artifact@v4
       with:
-        name: test-results
+        name: test-results-xml
         path: build/test-results/**/*.xml

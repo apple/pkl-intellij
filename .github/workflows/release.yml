@@ -1,23 +1,21 @@
 # Do not modify!
 # This file was generated from a template using https://github.com/StefMa/pkl-gha
 
-name: Release
+name: Publish
 'on':
   push:
-    types: []
     branches-ignore:
     - '*'
     tags:
     - '*'
 jobs:
-  publish:
-    name: Release
+  build-and-test:
+    name: Build and test
     permissions:
       checks: write
-      contents: write
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v5
     - uses: actions/setup-java@v4
       with:
         java-version: '17'
@@ -36,32 +34,9 @@ jobs:
       with:
         name: test-reports-html
         path: build/reports/tests/**/*
-    - name: Upload test result XML
+    - name: Upload Test Result XML
       if: '!cancelled()'
       uses: actions/upload-artifact@v4
       with:
-        name: test-results
+        name: test-results-xml
         path: build/test-results/**/*.xml
-    - name: Publish test results
-      uses: EnricoMi/publish-unit-test-result-action@v2
-      with:
-        files: build/test-results/**/*.xml
-        comment: 'off'
-    - name: Run gradle publish
-      run: ./gradlew -DreleaseBuild=true publish
-    - name: Create GitHub release
-      env:
-        GH_TOKEN: ${{ github.token }}
-      run: |-
-        echo "Preparing updatePlugins.xml"
-        TAG_NAME=${{ github.ref_name }}
-        sed -i -e 's/#version#/'${TAG_NAME}'/g' release/updatePlugins.xml
-
-        echo "Creating release"
-        gh release create ${TAG_NAME} \
-          --title "${TAG_NAME}" \
-          --target "${{ github.sha }}" \
-          --verify-tag \
-          --notes "Release notes: https://pkl-lang.org/intellij/current/changelog.html#release-${TAG_NAME}" \
-          --repo "${{ github.repository }}" \
-          release/*.*

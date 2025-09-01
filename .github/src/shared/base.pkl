@@ -4,11 +4,10 @@ import "@gha/actions/Common.pkl"
 import "@gha/actions/Setup.pkl"
 import "@gha/actions/Artifact.pkl"
 
-baseJob: Workflow.Job = new {
+buildAndTest: Workflow.Job = new {
   permissions {
     checks = "write"
   }
-  name = "Build and test"
   `runs-on` = "ubuntu-latest"
   steps {
     new Common.Checkout {}
@@ -38,15 +37,6 @@ baseJob: Workflow.Job = new {
       artifactName = "test-reports-html"
       path = "build/reports/tests/**/*"
       `if` = "!cancelled()"
-    }
-    new Artifact.Upload {
-      name = "Upload test result XML"
-      artifactName = "test-results-xml"
-      `if` = "!cancelled()"
-      with {
-        ["name"] = "test-results"
-        ["path"] = "build/test-results/**/*.xml"
-      }
     }
   }
 }
