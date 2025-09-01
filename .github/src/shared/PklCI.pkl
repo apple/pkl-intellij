@@ -29,7 +29,7 @@ build: Workflow
 ///   * [Workflow.name]
 ///
 /// This turns into a workflow called "Release".
-release: Workflow
+release: Workflow?
 
 /// Test reports produced by [build] and [release].
 ///
@@ -55,28 +55,22 @@ local effectiveBuildWorkflow = (build) {
         "*"
       }
     }
-    // ensure this doesn't get run when PRs are submitted (only affects PRs submitted from non-forks)
-    pull_request {
-      `branches-ignore` {
-        "*"
-      }
-    }
   }
   jobs = super.jobs |> withPublishTestResults |> withUploadTestResultHtml
 }
 
+/// Can't use [withPublishTestResults] because PRs submitted from forks can't create check runs.
+/// Instead, testReportWorkflow gets triggered when this workflow is completed, and downloads the artifacts
+/// published here.
 local effectivePrbWorkflow = (prb) {
   name = "Pull Request"
   on = new {
     pull_request {}
   }
-  // can't use `withPublishTestResults` because PRs submitted from forks can't create check runs.
-  // Instead, testReportWorkflow gets triggered when this workflow is completed, and downloads the artifacts
-  // published here.
   jobs = super.jobs |> withUploadTestResultXml |> withUploadTestResultHtml
 }
 
-local effectiveReleaseWorkflow = (build) {
+local effectiveReleaseWorkflow = (release) {
   name = "Release"
   on = new {
     push {
@@ -198,7 +192,9 @@ output {
   files {
     ["workflows/prb.yml"] = effectivePrbWorkflow.output
     ["workflows/build.yml"] = effectiveBuildWorkflow.output
-    ["workflows/release.yml"] = effectiveReleaseWorkflow.output
+    when (release != null) {
+      ["workflows/release.yml"] = effectiveReleaseWorkflow.output
+    }
     ["workflows/test_report.yml"] = testReportWorkflow.output
   }
 }
