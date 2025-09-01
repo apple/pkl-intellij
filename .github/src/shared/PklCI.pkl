@@ -50,6 +50,12 @@ local effectiveBuildWorkflow = (build) {
         "*"
       }
     }
+    // ensure this doesn't get run when PRs are submitted (only affects PRs submitted from non-forks)
+    pull_request {
+      `branches-ignore` {
+        "*"
+      }
+    }
   }
   jobs = super.jobs |> withPublishTestResults |> withUploadTestResultHtml
 }
