@@ -16,6 +16,9 @@ build {
   }
 }
 
+// run same workflow as `build`
+prb = build
+
 release {
   jobs {
     ["publish"] = (base.buildAndTest) {

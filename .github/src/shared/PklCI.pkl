@@ -3,14 +3,19 @@ module org.pkl.commons.gha.PklCI
 import "@gha/Workflow.pkl"
 import "@gha/actions/Artifact.pkl"
 
-/// The workflow that runs during pushes to branches, or pull requests.
+/// The workflow that runs during pushes to branches.
 ///
 /// The following fields are overwritten and therefore don't need to be set:
 ///   * [Workflow.on]
 ///   * [Workflow.name]
-///
-/// This turns into two eventual workflows; `"Pull Request"` and `"Build"`.
 build: Workflow
+
+/// The workflow that runs during pull requests.
+///
+/// The following fields are overwritten and therefore don't need to be set:
+///   * [Workflow.on]
+///   * [Workflow.name]
+prb: Workflow
 
 /// The workflow that runs when tags are pushed.
 ///
@@ -34,17 +39,9 @@ class TestReports {
   html: Listing<String>
 }
 
-local effectivePrbWorkflow = (build) {
-  name = "Pull Request"
-  on {
-    pull_request {}
-  }
-  jobs = super.jobs |> withUploadTestResultXml |> withUploadTestResultHtml
-}
-
 local effectiveBuildWorkflow = (build) {
   name = "Build"
-  on {
+  on = new {
     push {
       branches {
         "*"
@@ -57,9 +54,20 @@ local effectiveBuildWorkflow = (build) {
   jobs = super.jobs |> withPublishTestResults |> withUploadTestResultHtml
 }
 
+local effectivePrbWorkflow = (prb) {
+  name = "Pull Request"
+  on = new {
+    pull_request {}
+  }
+  // can't use `withPublishTestResults` because PRs submitted from forks can't create check runs.
+  // Instead, testReportWorkflow gets triggered when this workflow is completed, and downloads the artifacts
+  // published here.
+  jobs = super.jobs |> withUploadTestResultXml |> withUploadTestResultHtml
+}
+
 local effectiveReleaseWorkflow = (build) {
   name = "Release"
-  on {
+  on = new {
     push {
       tags {
         "*"
