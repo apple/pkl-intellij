@@ -46,6 +46,9 @@ local effectiveBuildWorkflow = (build) {
   name = "Build"
   on {
     push {
+      branches {
+        "*"
+      }
       `tags-ignore` {
         "*"
       }
