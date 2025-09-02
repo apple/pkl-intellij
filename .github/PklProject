@@ -1,5 +1,6 @@
 amends "pkl:Project"
 
 dependencies {
-  ["gha"] = import("../.temp-pkl-deps/pkl-gha/PklProject")
+  ["pkl.impl.ghactions"] = import("../../pkl-project-commons/packages/pkl.impl.ghactions/PklProject")
+  ["gha"] = import("../../pkl-project-commons/packages/temp.stefma.gha/PklProject")
 }

@@ -1,6 +1,45 @@
-amends "shared/PklCI.pkl"
+amends "@pkl.impl.ghactions/PklCI.pkl"
 
-import "shared/base.pkl"
+import "@gha/actions/Common.pkl"
+import "@gha/actions/Setup.pkl"
+import "@gha/actions/Artifact.pkl"
+import "@gha/Workflow.pkl"
+
+local baseJob: Workflow.Job = new {
+  permissions {
+    checks = "write"
+  }
+  `runs-on` = "ubuntu-latest"
+  steps {
+    new Common.Checkout {
+      // full checkout (needed for spotless)
+      fetchDepth = 0
+    }
+    new Setup.Java {
+      javaVersion = "17"
+      distribution = "temurin"
+      cache = "gradle"
+    }
+    new {
+      name = "Run tests"
+      // TODO: figure out why this needs to be run twice.
+      // Without this, completion tests fail (for example, see https://app.circleci.com/pipelines/github/apple/pkl-intellij/126/workflows/7de1355e-6b5a-4502-b71f-30d6ae42900e/jobs/245/tests)
+      // language=bash
+      run = """
+        # revert GHA's default `set -e` to prevent process exit from the first failure
+        set +e
+        ./gradlew check || ./gradlew check
+        """
+    }
+    new Artifact.Upload {
+      name = "Upload test report HTML"
+      artifactName = "test-reports-html"
+      path = "build/reports/tests/**/*"
+      `if` = "!cancelled()"
+    }
+  }
+}
+
 
 testReports {
   junit {
@@ -10,7 +49,7 @@ testReports {
 
 build {
   jobs {
-    ["build-and-test"] = (base.buildAndTest) {
+    ["build-and-test"] = (baseJob) {
       name = "Build and test"
     }
   }
@@ -21,7 +60,7 @@ prb = build
 
 release {
   jobs {
-    ["publish"] = (base.buildAndTest) {
+    ["publish"] = (baseJob) {
       name = "Release"
       permissions {
         contents = "write"
