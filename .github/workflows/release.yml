@@ -57,5 +57,5 @@ jobs:
       if: '!cancelled()'
       uses: EnricoMi/publish-unit-test-result-action@v2
       with:
+        comment_mode: 'off'
         files: build/test-results/**/*.xml
-        comment: 'off'
