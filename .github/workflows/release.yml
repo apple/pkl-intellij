@@ -17,13 +17,13 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v5
+      with:
+        fetch-depth: 0
     - uses: actions/setup-java@v4
       with:
         java-version: '17'
         distribution: temurin
         cache: gradle
-    - name: Git fetch origin
-      run: git fetch origin
     - name: Run tests
       run: |-
         # revert GHA's default `set -e` to prevent process exit from the first failure

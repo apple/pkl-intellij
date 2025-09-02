@@ -10,16 +10,13 @@ buildAndTest: Workflow.Job = new {
   }
   `runs-on` = "ubuntu-latest"
   steps {
-    new Common.Checkout {}
+    new Common.Checkout {
+      fetchDepth = 0
+    }
     new Setup.Java {
       javaVersion = "17"
       distribution = "temurin"
       cache = "gradle"
-    }
-    new {
-      name = "Git fetch origin"
-      // required for spotless job, prevent error: `No such reference 'origin/main'`
-      run = "git fetch origin"
     }
     new {
       name = "Run tests"
