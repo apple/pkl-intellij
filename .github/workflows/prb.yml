@@ -7,8 +7,6 @@ name: Pull Request
 jobs:
   build-and-test:
     name: Build and test
-    permissions:
-      checks: write
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v5

@@ -6,9 +6,6 @@ import "@gha/actions/Artifact.pkl"
 import "@gha/Workflow.pkl"
 
 local baseJob: Workflow.Job = new {
-  permissions {
-    checks = "write"
-  }
   `runs-on` = "ubuntu-latest"
   steps {
     new Common.Checkout {
