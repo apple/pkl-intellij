@@ -13,3 +13,5 @@ ides/
 !.idea/inspectionProfiles/
 !.idea/vcs.xml
 !.idea/misc.xml
+
+.temp-pkl-deps

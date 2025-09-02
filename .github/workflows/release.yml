@@ -1,0 +1,61 @@
+# Do not modify!
+# This file was generated from a template using https://github.com/StefMa/pkl-gha
+
+name: Release
+'on':
+  push:
+    branches-ignore:
+    - '*'
+    tags:
+    - '*'
+jobs:
+  publish:
+    name: Release
+    permissions:
+      checks: write
+      contents: write
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v5
+      with:
+        fetch-depth: 0
+    - uses: actions/setup-java@v4
+      with:
+        java-version: '17'
+        distribution: temurin
+        cache: gradle
+    - name: Run tests
+      run: |-
+        # revert GHA's default `set -e` to prevent process exit from the first failure
+        set +e
+        ./gradlew check || ./gradlew check
+    - name: Upload test report HTML
+      if: '!cancelled()'
+      uses: actions/upload-artifact@v4
+      with:
+        name: test-reports-html
+        path: build/reports/tests/**/*
+    - name: Run gradle publish
+      run: ./gradlew -DreleaseBuild=true publish
+    - name: Create GitHub release
+      env:
+        GH_TOKEN: ${{ github.token }}
+        TAG_NAME: ${{ github.ref_name }}
+      run: |-
+        echo "Preparing updatePlugins.xml"
+        sed -i -e 's/#version#/'${TAG_NAME}'/g' release/updatePlugins.xml
+
+        echo "Creating release"
+        gh release create ${TAG_NAME} \
+          --title "${TAG_NAME}" \
+          --target "${{ github.sha }}" \
+          --verify-tag \
+          --notes "Release notes: https://pkl-lang.org/intellij/current/changelog.html#release-${TAG_NAME}" \
+          --repo "${{ github.repository }}" \
+          release/*.*
+    - name: Publish test results
+      if: '!cancelled()'
+      uses: EnricoMi/publish-unit-test-result-action@v2
+      with:
+        comment_mode: 'off'
+        files: build/test-results/**/*.xml
