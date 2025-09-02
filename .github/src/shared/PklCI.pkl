@@ -151,7 +151,7 @@ local withUploadTestResultXml: Mixin<Workflow.Jobs> = new {
           name = "Upload event file"
           artifactName = "Event File"
           `if` = "!cancelled()"
-          path = "${{ \(Context.github.eventPath) }}"
+          path = Context.github.eventPath
         }
       }
     }
