@@ -35,6 +35,7 @@ jobs:
         name: test-reports-html
         path: build/reports/tests/**/*
     - name: Publish test results
+      if: '!cancelled()'
       uses: EnricoMi/publish-unit-test-result-action@v2
       with:
         files: build/test-results/**/*.xml

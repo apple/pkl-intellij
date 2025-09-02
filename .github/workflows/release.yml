@@ -53,15 +53,9 @@ jobs:
           --notes "Release notes: https://pkl-lang.org/intellij/current/changelog.html#release-${TAG_NAME}" \
           --repo "${{ github.repository }}" \
           release/*.*
-    - name: Upload Test Result XML
+    - name: Publish test results
       if: '!cancelled()'
-      uses: actions/upload-artifact@v4
+      uses: EnricoMi/publish-unit-test-result-action@v2
       with:
-        name: test-results-xml
-        path: build/test-results/**/*.xml
-    - name: Upload event file
-      if: '!cancelled()'
-      uses: actions/upload-artifact@v4
-      with:
-        name: Event File
-        path: ${{ ${{ github.event_path }} }}
+        files: build/test-results/**/*.xml
+        comment: 'off'

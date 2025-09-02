@@ -82,7 +82,7 @@ local effectiveReleaseWorkflow = (release) {
       }
     }
   }
-  jobs = super.jobs |> withUploadTestResultXml |> withUploadTestResultHtml
+  jobs = super.jobs |> withPublishTestResults |> withUploadTestResultHtml
 }
 
 local testReportWorkflow: Workflow = new {
@@ -173,20 +173,57 @@ local withUploadTestResultHtml: Mixin<Workflow.Jobs> = new {
   }
 }
 
-local withPublishTestResults: Mixin<Workflow.Jobs> = new {
-  [[true]] {
-    steps {
-      new {
-        name = "Publish test results"
-        uses = "EnricoMi/publish-unit-test-result-action@v2"
-        with {
-          ["files"] = testReports.junit.join("\n")
-          ["comment"] = "off"
+local withPublishTestResults: Mixin<Workflow.Jobs> = (it) ->
+  let (hasMatrixBuild = it.any((_, job) -> job.strategy?.matrix != null))
+    // if there are matrix builds, we need to publish test results as an xml artifact, then publish as a separate job.
+    if (hasMatrixBuild)
+      (it) {
+        [[true]] {
+          local self = this
+          steps {
+            // matrix build; upload test results as an artifact
+            new Artifact.Upload {
+              name = "Upload Test Result XML"
+              path = testReports.junit.join("\n")
+              `if` = "!cancelled()"
+              artifactName = "\(TEST_RESULT_XML_ARTIFACT_NAME)-\(self.strategy.matrix.keys.join("-"))"
+            }
+          }
+        }
+        ["publish-test-results"] {
+          needs {
+            ...it.keys
+          }
+          `runs-on` = "ubuntu-latest"
+          steps {
+            new {
+              name = "Publish test results"
+              uses = "EnricoMi/publish-unit-test-result-action@v2"
+              `if` = "!cancelled()"
+              with {
+                ["files"] = testReports.junit.join("\n")
+                ["comment"] = "off"
+              }
+            }
+          }
         }
       }
-    }
-  }
-}
+    else
+      (it) {
+        [[true]] {
+          steps {
+            new {
+              name = "Publish test results"
+              uses = "EnricoMi/publish-unit-test-result-action@v2"
+              `if` = "!cancelled()"
+              with {
+                ["files"] = testReports.junit.join("\n")
+                ["comment"] = "off"
+              }
+            }
+          }
+        }
+      }
 
 output {
   files {
