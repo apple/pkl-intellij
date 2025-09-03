@@ -5,6 +5,8 @@ import "@gha/actions/Setup.pkl"
 import "@gha/actions/Artifact.pkl"
 import "@gha/Workflow.pkl"
 
+triggerDocsBuild = "release"
+
 local baseJob: Workflow.Job = new {
   `runs-on` = "ubuntu-latest"
   steps {
@@ -36,7 +38,6 @@ local baseJob: Workflow.Job = new {
     }
   }
 }
-
 
 testReports {
   junit {

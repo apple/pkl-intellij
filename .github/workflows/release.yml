@@ -59,3 +59,17 @@ jobs:
       with:
         comment_mode: 'off'
         files: build/test-results/**/*.xml
+  trigger-downstream-builds:
+    needs:
+    - publish
+    runs-on: ubuntu-latest
+    steps:
+    - name: Trigger pkl-lang.org build
+      env:
+        GH_TOKEN: ${{ secrets.PKL_TRIGGER_ACTION_GH_TOKEN }}
+      run: |-
+        gh workflow run \
+          --repo ${{ github.repository_owner }}/pkl-lang.org \
+          --ref main \
+          --field source_run="${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}" \
+          main.yml
