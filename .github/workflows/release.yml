@@ -62,13 +62,11 @@ jobs:
   trigger-downstream-builds:
     needs:
     - publish
-    permissions:
-      contents: read
     runs-on: ubuntu-latest
     steps:
     - name: Trigger pkl-lang.org build
       env:
-        GH_TOKEN: ${{ github.token }}
+        GH_TOKEN: ${{ secrets.PKL_TRIGGER_ACTION_GH_TOKEN }}
       run: |-
         gh workflow run \
           -R ${{ github.repository_owner }}/pkl-lang.org \
