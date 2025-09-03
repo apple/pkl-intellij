@@ -44,7 +44,7 @@ testReports {
   }
 }
 
-build {
+local buildAndTest: Workflow = new {
   jobs {
     ["build-and-test"] = (baseJob) {
       name = "Build and test"
@@ -52,8 +52,11 @@ build {
   }
 }
 
-// run same workflow as `build`
-prb = build
+build = buildAndTest
+
+prb = buildAndTest
+
+main = buildAndTest
 
 release {
   jobs {
