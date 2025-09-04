@@ -13,6 +13,7 @@ jobs:
         GH_TOKEN: ${{ secrets.PKL_TRIGGER_ACTION_GH_TOKEN }}
       run: |-
         gh workflow run \
-          -R ${{ github.repository_owner }}/pkl-lang.org \
+          -R "${{ github.repository_owner }}/pkl-lang.org" \
           --ref main \
+          --field source_repo="${{ github.repository }}" \
           main.yml

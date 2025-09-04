@@ -4,6 +4,7 @@ import "@gha/actions/Common.pkl"
 import "@gha/actions/Setup.pkl"
 import "@gha/actions/Artifact.pkl"
 import "@gha/Workflow.pkl"
+import "@gha/Context.pkl"
 
 triggerDocsBuild = "release"
 
@@ -114,8 +115,9 @@ local triggerBuildWorkflow: Workflow = new {
           }
           run = #"""
             gh workflow run \
-              -R ${{ github.repository_owner }}/pkl-lang.org \
+              -R "${{ github.repository_owner }}/pkl-lang.org" \
               --ref main \
+              --field source_repo="\#(Context.github.repository)" \
               main.yml
             """#
         }
