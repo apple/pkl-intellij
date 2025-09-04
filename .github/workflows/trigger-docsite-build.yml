@@ -15,5 +15,5 @@ jobs:
         gh workflow run \
           -R "${{ github.repository_owner }}/pkl-lang.org" \
           --ref main \
-          --field source_repo="${{ github.repository }}" \
+          --field source_run="${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}" \
           main.yml
