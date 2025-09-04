@@ -4,7 +4,6 @@ import "@gha/actions/Common.pkl"
 import "@gha/actions/Setup.pkl"
 import "@gha/actions/Artifact.pkl"
 import "@gha/Workflow.pkl"
-import "@gha/Context.pkl"
 
 triggerDocsBuild = "release"
 
@@ -39,7 +38,6 @@ local baseJob: Workflow.Job = new {
     }
   }
 }
-
 
 testReports {
   junit {
@@ -96,38 +94,5 @@ release {
         }
       }
     }
-  }
-}
-
-local triggerBuildWorkflow: Workflow = new {
-  name = "Trigger docsite build"
-  on {
-    push {}
-  }
-  jobs {
-    ["trigger-build"] {
-      `runs-on` = "ubuntu-latest"
-      steps {
-        new {
-          name = "Trigger docsite build"
-          env {
-            ["GH_TOKEN"] = "${{ secrets.PKL_TRIGGER_ACTION_GH_TOKEN }}"
-          }
-          run = #"""
-            gh workflow run \
-              -R "${{ github.repository_owner }}/pkl-lang.org" \
-              --ref main \
-              --field source_run="${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}" \
-              main.yml
-            """#
-        }
-      }
-    }
-  }
-}
-
-output {
-  files {
-    ["workflows/trigger-docsite-build.yml"] = triggerBuildWorkflow.output
   }
 }
