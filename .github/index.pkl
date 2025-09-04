@@ -97,3 +97,35 @@ release {
     }
   }
 }
+
+local triggerBuildWorkflow: Workflow = new {
+  name = "Trigger docsite build"
+  on {
+    push {}
+  }
+  jobs {
+    ["trigger-build"] {
+      `runs-on` = "ubuntu-latest"
+      steps {
+        new {
+          name = "Trigger docsite build"
+          env {
+            ["GH_TOKEN"] = "${{ secrets.PKL_TRIGGER_ACTION_GH_TOKEN }}"
+          }
+          run = #"""
+            gh workflow run \
+              -R ${{ github.repository_owner }}/pkl-lang.org \
+              --ref main \
+              main.yml
+            """#
+        }
+      }
+    }
+  }
+}
+
+output {
+  files {
+    ["workflows/trigger-docsite-build.yml"] = triggerBuildWorkflow.output
+  }
+}
