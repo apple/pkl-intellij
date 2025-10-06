@@ -358,7 +358,7 @@ typedIdentifier ::= IDENTIFIER typeAnnotation? {
 
 // No SEP allowed before '(' to avoid ambiguity between `foo(1)` and `foo;(1)` in object literal.
 argumentList ::= '(' (expr (',' expr)* ','?)? ')' {
-  pin(".*") = 1
+  pin = 1
   methods = [
     elements = "expr"
   ]
@@ -376,7 +376,7 @@ qualifiedIdentifier ::= IDENTIFIER ('.' IDENTIFIER)*
 private typeAnnotation ::= ':' type { pin = 1 }
 
 typeParameterList ::= '<' typeParameter (',' typeParameter)* ','? '>' {
-  pin(".*") = 1
+  pin = 1
   methods = [
     elements = "typeParameter"
   ]
@@ -397,7 +397,7 @@ typeParameter ::= (in | out)? IDENTIFIER {
 // '='
 // (If we don't pin at all, the above example gives a much worse error.)
 typeArgumentList ::= '<' type (',' type)* ','? '>' {
-  pin(".*") = 1
+  pin = 1
   methods = [
     elements = "type"
   ]
