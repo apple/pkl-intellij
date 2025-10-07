@@ -71,6 +71,7 @@ jobs:
       with:
         app-id: '2078927'
         private-key: ${{ secrets.PKL_CI }}
+        owner: ${{ github.repository_owner }}
     - name: Trigger pkl-lang.org build
       env:
         GH_TOKEN: ${{ steps.app-token.outputs.token }}
