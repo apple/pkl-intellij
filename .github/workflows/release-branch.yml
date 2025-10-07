@@ -1,7 +1,7 @@
 # Do not modify!
 # This file was generated from a template using https://github.com/StefMa/pkl-gha
 
-name: Release Branch
+name: Build (release branch)
 'on':
   push:
     branches:
