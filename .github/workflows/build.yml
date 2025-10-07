@@ -6,6 +6,7 @@ name: Build
   push:
     branches-ignore:
     - main
+    - release/*
     tags-ignore:
     - '*'
 jobs:
