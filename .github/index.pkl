@@ -59,6 +59,8 @@ prb = buildAndTest
 
 main = buildAndTest
 
+releaseBranch = buildAndTest
+
 release {
   jobs {
     ["publish"] = (baseJob) {
