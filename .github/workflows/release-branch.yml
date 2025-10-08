@@ -50,7 +50,7 @@ jobs:
       id: app-token
       uses: actions/create-github-app-token@v2
       with:
-        app-id: '2078927'
+        app-id: ${{ secrets.PKL_CI_CLIENT_ID }}
         private-key: ${{ secrets.PKL_CI }}
         owner: ${{ github.repository_owner }}
     - name: Trigger pkl-lang.org build
