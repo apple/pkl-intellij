@@ -8,6 +8,8 @@ name: PR Test Reports
     - completed
     workflows:
     - Pull Request
+permissions:
+  contents: read
 jobs:
   test-results:
     name: Test Results

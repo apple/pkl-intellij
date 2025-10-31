@@ -8,6 +8,8 @@ name: Release
     - '*'
     tags:
     - '*'
+permissions:
+  contents: read
 jobs:
   publish:
     name: Release
