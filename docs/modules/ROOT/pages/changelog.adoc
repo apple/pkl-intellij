@@ -1,5 +1,31 @@
 = Changelog
 
+[[release-0.34.0]]
+== 0.34.0 (2025-11-05)
+
+=== Additions
+
+* Add support for trailing commas in comma-separated syntax elements (https://github.com/apple/pkl-intellij/pull/100[#100], https://github.com/apple/pkl-intellij/pull/113[#113]).
+* Add an action to download the Pkl CLI (https://github.com/apple/pkl-intellij/pull/105[#105], https://github.com/apple/pkl-intellij/pull/106[#106]).
+
+=== Changes
+
+* Add support for Pkl 0.30 fallback standard library (https://github.com/apple/pkl-intellij/pull/125[#125]).
+* Switch from the ad-hoc formatter to the new Pkl formatter implementation (https://github.com/apple/pkl-intellij/pull/125[#125]).
+
+=== Fixes
+
+* Fix an edge case when type checking complex union types (https://github.com/apple/pkl-intellij/pull/119[#119], https://github.com/apple/pkl-intellij/pull/126[#126]).
+
+=== Contributors ❤️
+
+We would like to thank the contributors to this release (in alphabetical order):
+
+* https://github.com/bioball[@bioball]
+* https://github.com/MariyaFilippova[@MariyaFilippova]
+* https://github.com/HT154[@HT154]
+* https://github.com/stackoverflow[@stackoverflow]
+
 [[release-0.33.0]]
 == 0.33.0 (2025-07-28)
 
