@@ -157,10 +157,20 @@ sealed class Type(val constraints: List<ConstraintExpr> = listOf()) {
   abstract fun resolveToDefinitions(base: PklBaseModule): List<PklNavigableElement>
 
   /** Tells whether this type is a (non-strict) subtype of [classType]. */
-  abstract fun isSubtypeOf(classType: Class, base: PklBaseModule, context: PklProject?): Boolean
+  abstract fun isSubtypeOf(
+    classType: Class,
+    base: PklBaseModule,
+    context: PklProject?,
+    strictConstraints: Boolean = false
+  ): Boolean
 
   /** Tells whether this type is a (non-strict) subtype of [type]. */
-  abstract fun isSubtypeOf(type: Type, base: PklBaseModule, context: PklProject?): Boolean
+  abstract fun isSubtypeOf(
+    type: Type,
+    base: PklBaseModule,
+    context: PklProject?,
+    strictConstraints: Boolean = false
+  ): Boolean
 
   fun hasDefault(base: PklBaseModule, context: PklProject?) =
     if (isNullable(base)) true else hasDefaultImpl(base, context)
@@ -168,13 +178,19 @@ sealed class Type(val constraints: List<ConstraintExpr> = listOf()) {
   protected abstract fun hasDefaultImpl(base: PklBaseModule, context: PklProject?): Boolean
 
   /** Helper for implementing [isSubtypeOf]. */
-  protected fun doIsSubtypeOf(type: Type, base: PklBaseModule, context: PklProject?): Boolean =
+  protected fun doIsSubtypeOf(
+    type: Type,
+    base: PklBaseModule,
+    context: PklProject?,
+    strictConstraints: Boolean = false
+  ): Boolean =
     when (type) {
       Unknown -> true
-      is Class -> isSubtypeOf(type, base, context)
-      is Alias -> isSubtypeOf(type.aliasedType(base, context), base, context)
+      is Class -> isSubtypeOf(type, base, context, strictConstraints)
+      is Alias -> isSubtypeOf(type.aliasedType(base, context), base, context, strictConstraints)
       is Union ->
-        isSubtypeOf(type.leftType, base, context) || isSubtypeOf(type.rightType, base, context)
+        isSubtypeOf(type.leftType, base, context, strictConstraints) ||
+          isSubtypeOf(type.rightType, base, context, strictConstraints)
       else -> false
     }
 
@@ -288,10 +304,19 @@ sealed class Type(val constraints: List<ConstraintExpr> = listOf()) {
 
     override fun resolveToDefinitions(base: PklBaseModule): List<PklTypeDefOrModule> = listOf()
 
-    override fun isSubtypeOf(classType: Class, base: PklBaseModule, context: PklProject?): Boolean =
-      true
+    override fun isSubtypeOf(
+      classType: Class,
+      base: PklBaseModule,
+      context: PklProject?,
+      strictConstraints: Boolean
+    ): Boolean = true
 
-    override fun isSubtypeOf(type: Type, base: PklBaseModule, context: PklProject?): Boolean = true
+    override fun isSubtypeOf(
+      type: Type,
+      base: PklBaseModule,
+      context: PklProject?,
+      strictConstraints: Boolean
+    ): Boolean = true
 
     // `unknown` is not considered a valid answer
     override fun hasCommonSubtypeWith(
@@ -323,10 +348,19 @@ sealed class Type(val constraints: List<ConstraintExpr> = listOf()) {
 
     override fun resolveToDefinitions(base: PklBaseModule): List<PklTypeDefOrModule> = listOf()
 
-    override fun isSubtypeOf(classType: Class, base: PklBaseModule, context: PklProject?): Boolean =
-      true
+    override fun isSubtypeOf(
+      classType: Class,
+      base: PklBaseModule,
+      context: PklProject?,
+      strictConstraints: Boolean
+    ): Boolean = true
 
-    override fun isSubtypeOf(type: Type, base: PklBaseModule, context: PklProject?): Boolean = true
+    override fun isSubtypeOf(
+      type: Type,
+      base: PklBaseModule,
+      context: PklProject?,
+      strictConstraints: Boolean
+    ): Boolean = true
 
     // `nothing` is not considered a valid answer
     override fun hasCommonSubtypeWith(
@@ -355,11 +389,19 @@ sealed class Type(val constraints: List<ConstraintExpr> = listOf()) {
 
     override fun resolveToDefinitions(base: PklBaseModule): List<PklNavigableElement> = listOf(psi)
 
-    override fun isSubtypeOf(classType: Class, base: PklBaseModule, context: PklProject?): Boolean =
-      classType.classEquals(base.anyType)
+    override fun isSubtypeOf(
+      classType: Class,
+      base: PklBaseModule,
+      context: PklProject?,
+      strictConstraints: Boolean
+    ): Boolean = classType.classEquals(base.anyType)
 
-    override fun isSubtypeOf(type: Type, base: PklBaseModule, context: PklProject?): Boolean =
-      this == type || doIsSubtypeOf(type, base, context)
+    override fun isSubtypeOf(
+      type: Type,
+      base: PklBaseModule,
+      context: PklProject?,
+      strictConstraints: Boolean
+    ): Boolean = this == type || doIsSubtypeOf(type, base, context, strictConstraints)
 
     override fun hasCommonSubtypeWith(
       type: Type,
@@ -436,13 +478,22 @@ sealed class Type(val constraints: List<ConstraintExpr> = listOf()) {
 
     override fun resolveToDefinitions(base: PklBaseModule): List<PklTypeDefOrModule> = listOf(psi)
 
-    override fun isSubtypeOf(classType: Class, base: PklBaseModule, context: PklProject?): Boolean =
-      base.moduleType.isSubtypeOf(classType, base, context)
+    override fun isSubtypeOf(
+      classType: Class,
+      base: PklBaseModule,
+      context: PklProject?,
+      strictConstraints: Boolean
+    ): Boolean = base.moduleType.isSubtypeOf(classType, base, context, strictConstraints)
 
-    override fun isSubtypeOf(type: Type, base: PklBaseModule, context: PklProject?): Boolean =
+    override fun isSubtypeOf(
+      type: Type,
+      base: PklBaseModule,
+      context: PklProject?,
+      strictConstraints: Boolean
+    ): Boolean =
       when (type) {
-        is Module -> isSubtypeOf(type, context)
-        else -> doIsSubtypeOf(type, base, context)
+        is Module -> isSubtypeOf(type, base, context, strictConstraints)
+        else -> doIsSubtypeOf(type, base, context, strictConstraints)
       }
 
     private fun isSubtypeOf(type: Module, context: PklProject?): Boolean {
@@ -564,7 +615,12 @@ sealed class Type(val constraints: List<ConstraintExpr> = listOf()) {
       }
     }
 
-    override fun isSubtypeOf(classType: Class, base: PklBaseModule, context: PklProject?): Boolean {
+    override fun isSubtypeOf(
+      classType: Class,
+      base: PklBaseModule,
+      context: PklProject?,
+      strictConstraints: Boolean
+    ): Boolean {
       // optimization
       if (classType.psi === base.anyType.psi) return true
 
@@ -572,33 +628,40 @@ sealed class Type(val constraints: List<ConstraintExpr> = listOf()) {
 
       if (typeArguments.isEmpty()) {
         assert(classType.typeArguments.isEmpty()) // holds for stdlib
-        return true
+      } else {
+        val size = typeArguments.size
+        val otherSize = classType.typeArguments.size
+        assert(size >= otherSize) // holds for stdlib
+
+        for (i in 1..otherSize) {
+          // assume [typeArg] maps directly to [otherTypeArg] in extends clause(s) (holds for
+          // stdlib)
+          val typeArg = typeArguments[size - i]
+          val typeParam = typeParameters[size - i]
+          val otherTypeArg = classType.typeArguments[otherSize - i]
+          val isMatch =
+            when (typeParam.firstChildTokenType()) {
+              PklElementTypes.OUT -> typeArg.isSubtypeOf(otherTypeArg, base, context) // covariance
+              PklElementTypes.IN ->
+                otherTypeArg.isSubtypeOf(typeArg, base, context) // contravariance
+              else -> typeArg.isEquivalentTo(otherTypeArg, base, context) // invariance
+            }
+          if (!isMatch) return false
+        }
       }
 
-      val size = typeArguments.size
-      val otherSize = classType.typeArguments.size
-      assert(size >= otherSize) // holds for stdlib
-
-      for (i in 1..otherSize) {
-        // assume [typeArg] maps directly to [otherTypeArg] in extends clause(s) (holds for stdlib)
-        val typeArg = typeArguments[size - i]
-        val typeParam = typeParameters[size - i]
-        val otherTypeArg = classType.typeArguments[otherSize - i]
-        val isMatch =
-          when (typeParam.firstChildTokenType()) {
-            PklElementTypes.OUT -> typeArg.isSubtypeOf(otherTypeArg, base, context) // covariance
-            PklElementTypes.IN -> otherTypeArg.isSubtypeOf(typeArg, base, context) // contravariance
-            else -> typeArg.isEquivalentTo(otherTypeArg, base, context) // invariance
-          }
-        if (!isMatch) return false
-      }
-      return true
+      return !strictConstraints || constraints.containsAll(classType.constraints)
     }
 
-    override fun isSubtypeOf(type: Type, base: PklBaseModule, context: PklProject?): Boolean =
+    override fun isSubtypeOf(
+      type: Type,
+      base: PklBaseModule,
+      context: PklProject?,
+      strictConstraints: Boolean
+    ): Boolean =
       when (type) {
         is Module -> psi.isSubclassOf(type.psi, context)
-        else -> doIsSubtypeOf(type, base, context)
+        else -> doIsSubtypeOf(type, base, context, strictConstraints)
       }
 
     // assumes `!this.isSubtypeOf(type)`
@@ -800,11 +863,19 @@ sealed class Type(val constraints: List<ConstraintExpr> = listOf()) {
         .visitMembers(isProperty, allowClasses, base, visitor, context)
     }
 
-    override fun isSubtypeOf(classType: Class, base: PklBaseModule, context: PklProject?): Boolean =
-      aliasedType(base, context).isSubtypeOf(classType, base, context)
+    override fun isSubtypeOf(
+      classType: Class,
+      base: PklBaseModule,
+      context: PklProject?,
+      strictConstraints: Boolean
+    ): Boolean = aliasedType(base, context).isSubtypeOf(classType, base, context, strictConstraints)
 
-    override fun isSubtypeOf(type: Type, base: PklBaseModule, context: PklProject?): Boolean =
-      aliasedType(base, context).isSubtypeOf(type, base, context)
+    override fun isSubtypeOf(
+      type: Type,
+      base: PklBaseModule,
+      context: PklProject?,
+      strictConstraints: Boolean
+    ): Boolean = aliasedType(base, context).isSubtypeOf(type, base, context, strictConstraints)
 
     override fun hasCommonSubtypeWith(
       type: Type,
@@ -898,14 +969,24 @@ sealed class Type(val constraints: List<ConstraintExpr> = listOf()) {
       return base.stringType.visitMembers(isProperty, allowClasses, base, visitor, context)
     }
 
-    override fun isSubtypeOf(classType: Class, base: PklBaseModule, context: PklProject?): Boolean {
+    override fun isSubtypeOf(
+      classType: Class,
+      base: PklBaseModule,
+      context: PklProject?,
+      strictConstraints: Boolean
+    ): Boolean {
       return classType.classEquals(base.stringType) || classType.classEquals(base.anyType)
     }
 
-    override fun isSubtypeOf(type: Type, base: PklBaseModule, context: PklProject?): Boolean =
+    override fun isSubtypeOf(
+      type: Type,
+      base: PklBaseModule,
+      context: PklProject?,
+      strictConstraints: Boolean
+    ): Boolean =
       when (type) {
         is StringLiteral -> value == type.value
-        else -> doIsSubtypeOf(type, base, context)
+        else -> doIsSubtypeOf(type, base, context, strictConstraints)
       }
 
     // assumes `!isSubtypeOf(type)`
@@ -964,12 +1045,12 @@ sealed class Type(val constraints: List<ConstraintExpr> = listOf()) {
           // Also don't normalize `String|"stringLiteral"` because we need the string literal type
           // for code completion.
           atMostOneTypeHasConstraints &&
-            leftType.isSubtypeOf(rightType, base, context) &&
+            leftType.isSubtypeOf(rightType, base, context, true) &&
             rightType.unaliased(base, context) != base.stringType -> {
             rightType
           }
           atMostOneTypeHasConstraints &&
-            rightType.isSubtypeOf(leftType, base, context) &&
+            rightType.isSubtypeOf(leftType, base, context, true) &&
             leftType.unaliased(base, context) != base.stringType -> {
             leftType
           }
@@ -984,12 +1065,23 @@ sealed class Type(val constraints: List<ConstraintExpr> = listOf()) {
     override val hasConstraints: Boolean
       get() = constraints.isNotEmpty() || leftType.hasConstraints || rightType.hasConstraints
 
-    override fun isSubtypeOf(classType: Class, base: PklBaseModule, context: PklProject?): Boolean =
-      leftType.isSubtypeOf(classType, base, context) &&
-        rightType.isSubtypeOf(classType, base, context)
+    override fun isSubtypeOf(
+      classType: Class,
+      base: PklBaseModule,
+      context: PklProject?,
+      strictConstraints: Boolean
+    ): Boolean =
+      leftType.isSubtypeOf(classType, base, context, strictConstraints) &&
+        rightType.isSubtypeOf(classType, base, context, strictConstraints)
 
-    override fun isSubtypeOf(type: Type, base: PklBaseModule, context: PklProject?): Boolean =
-      leftType.isSubtypeOf(type, base, context) && rightType.isSubtypeOf(type, base, context)
+    override fun isSubtypeOf(
+      type: Type,
+      base: PklBaseModule,
+      context: PklProject?,
+      strictConstraints: Boolean
+    ): Boolean =
+      leftType.isSubtypeOf(type, base, context, strictConstraints) &&
+        rightType.isSubtypeOf(type, base, context, strictConstraints)
 
     // assumes `!this.isSubtypeOf(type)`
     override fun hasCommonSubtypeWith(
