@@ -9,6 +9,8 @@ name: Build
     - release/*
     tags-ignore:
     - '*'
+permissions:
+  contents: read
 jobs:
   build-and-test:
     name: Build and test
