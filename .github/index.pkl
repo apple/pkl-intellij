@@ -1,9 +1,9 @@
 amends "@pkl.impl.ghactions/PklCI.pkl"
 
+import "@gha/Workflow.pkl"
+import "@gha/actions/Artifact.pkl"
 import "@gha/actions/Common.pkl"
 import "@gha/actions/Setup.pkl"
-import "@gha/actions/Artifact.pkl"
-import "@gha/Workflow.pkl"
 
 triggerDocsBuild = "release"
 
@@ -11,13 +11,17 @@ local baseJob: Workflow.Job = new {
   `runs-on` = "ubuntu-latest"
   steps {
     new Common.Checkout {
-      // full checkout (needed for spotless)
-      fetchDepth = 0
+      with {
+        // full checkout (needed for spotless)
+        `fetch-depth` = 0
+      }
     }
     new Setup.Java {
-      javaVersion = "17"
-      distribution = "temurin"
-      cache = "gradle"
+      with {
+        `java-version` = "17"
+        distribution = "temurin"
+        cache = "gradle"
+      }
     }
     new {
       name = "Run tests"
@@ -32,9 +36,11 @@ local baseJob: Workflow.Job = new {
     }
     new Artifact.Upload {
       name = "Upload test report HTML"
-      artifactName = "test-reports-html"
-      path = "build/reports/tests/**/*"
       `if` = "!cancelled()"
+      with {
+        name = "test-reports-html"
+        path = "build/reports/tests/**/*"
+      }
     }
   }
 }

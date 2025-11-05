@@ -1,19 +1,15 @@
 {
   "schemaVersion": 1,
   "resolvedDependencies": {
-    "package://pkg.pkl-lang.org/pkl-project-commons/temp.stefma.gha@0": {
-      "type": "remote",
-      "uri": "projectpackage://pkg.pkl-lang.org/pkl-project-commons/temp.stefma.gha@0.0.0",
-      "checksums": {
-        "sha256": "c2ccc81bdaeee958220d703b51a492d4c9ba178eebc5c90087fc59b125eb1a57"
-      }
+    "package://pkg.pkl-lang.org/github.com/stefma/pkl-gha/com.github.action@0": {
+      "type": "local",
+      "uri": "projectpackage://pkg.pkl-lang.org/github.com/stefma/pkl-gha/com.github.action@0.0.7",
+      "path": "../../pkl-github"
     },
     "package://pkg.pkl-lang.org/pkl-project-commons/pkl.impl.ghactions@0": {
-      "type": "remote",
-      "uri": "projectpackage://pkg.pkl-lang.org/pkl-project-commons/pkl.impl.ghactions@0.3.3",
-      "checksums": {
-        "sha256": "f9c5e562a95a0c88182379a4e68c58947299f9de63c03de3b7e30b2d933eadfd"
-      }
+      "type": "local",
+      "uri": "projectpackage://pkg.pkl-lang.org/pkl-project-commons/pkl.impl.ghactions@0.3.2",
+      "path": "../../pkl-project-commons/packages/pkl.impl.ghactions"
     }
   }
 }

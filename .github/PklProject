@@ -1,6 +1,6 @@
 amends "pkl:Project"
 
 dependencies {
-  ["pkl.impl.ghactions"] { uri = "package://pkg.pkl-lang.org/pkl-project-commons/pkl.impl.ghactions@0.3.3" }
-  ["gha"] { uri = "package://pkg.pkl-lang.org/pkl-project-commons/temp.stefma.gha@0.0.0" }
+  ["pkl.impl.ghactions"] = import("/Users/stefan/Developer/pkl/pkl-project-commons/packages/pkl.impl.ghactions/PklProject")
+  ["gha"] = import("/Users/stefan/Developer/pkl/pkl-github/PklProject")
 }
