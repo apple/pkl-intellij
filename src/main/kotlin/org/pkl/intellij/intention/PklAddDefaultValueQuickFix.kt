@@ -1,5 +1,5 @@
 /**
- * Copyright © 2024 Apple Inc. and the Pkl project authors. All rights reserved.
+ * Copyright © 2024-2025 Apple Inc. and the Pkl project authors. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,8 +21,6 @@ import com.intellij.openapi.project.Project
 import com.intellij.psi.PsiDocumentManager
 import com.intellij.psi.PsiElement
 import com.intellij.psi.PsiFile
-import com.intellij.refactoring.suggested.endOffset
-import com.intellij.refactoring.suggested.startOffset
 import org.pkl.intellij.psi.PklClassProperty
 import org.pkl.intellij.psi.PklClassPropertyBase
 import org.pkl.intellij.psi.PklPsiFactory
@@ -45,8 +43,8 @@ class PklAddDefaultValueQuickFix(property: PklClassProperty) :
     property.setExpr(expr)
     if (editor != null) {
       PsiDocumentManager.getInstance(project).commitDocument(editor.document)
-      editor.selectionModel.setSelection(expr.startOffset, expr.endOffset)
-      editor.caretModel.moveToOffset(expr.endOffset)
+      editor.selectionModel.setSelection(expr.textRange.startOffset, expr.textRange.endOffset)
+      editor.caretModel.moveToOffset(expr.textRange.endOffset)
     }
   }
 }

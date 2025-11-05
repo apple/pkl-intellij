@@ -1,6 +1,4 @@
 import org.jetbrains.grammarkit.tasks.*
-import org.jetbrains.intellij.tasks.RunPluginVerifierTask.FailureLevel.*
-import java.util.EnumSet
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
 plugins {
@@ -17,6 +15,9 @@ plugins {
 
 repositories {
   mavenCentral()
+  intellijPlatform {
+    defaultRepositories()
+  }
 }
 
 val isCiBuild = System.getenv("CI") != null
@@ -50,13 +51,30 @@ val pklCli: Configuration by configurations.creating
 dependencies {
   // put stdlib ZIP on plugin class path instead of exploding it into plugin JAR
   // (saves work and `Class(Loader).getResource()` doesn't care)
-  runtimeOnly(libs.pklStdLib)
+  implementation(libs.pklStdLib) {
+    attributes {
+      attribute(Attribute.of("intellijPlatformCollected", Boolean::class.javaObjectType), false)
+    }
+  }
   implementation(libs.kotlinxJson)
   // needed for kotlin ui dsl: https://plugins.jetbrains.com/docs/intellij/kotlin-ui-dsl-version-2.html
   implementation(libs.kotlinReflect)
 
+  implementation(libs.pklFormatter)
+
   testImplementation(libs.assertj)
   pklCli(libs.pklCli)
+
+  testImplementation(libs.junit)
+
+  // IntelliJ Platform dependencies
+  intellijPlatform {
+    create("IC", libs.versions.intellij.get())
+    pluginVerifier()
+    bundledPlugin("org.intellij.intelliLang")
+    bundledPlugin("org.intellij.plugins.markdown")
+    testFramework(org.jetbrains.intellij.platform.gradle.TestFrameworkType.Platform)
+  }
 }
 
 idea {
@@ -66,16 +84,31 @@ idea {
   }
 }
 
-intellij {
-  pluginName.set("pkl-intellij")
-  // Determines which version of IntelliJ to build the plugin against
-  // and which version to use for the runIde task (unfortunate coupling).
-  version.set(libs.versions.intellij.get())
-  type.set("IC")
+intellijPlatform {
+  pluginConfiguration {
+    name.set("Pkl")
+    version.set(pluginVersion)
+    ideaVersion {
+      sinceBuild.set(libs.versions.intellijSinceBuild)
+      untilBuild.set(libs.versions.intellijUntilBuild)
+    }
+  }
 
   instrumentCode.set(false)
 
-  plugins.set(listOf("org.intellij.intelliLang", "org.intellij.plugins.markdown"))
+  pluginVerification {
+    ides {
+      create("IC", libs.versions.intellij.get())
+      create("IC", libs.versions.intellijRunIde.get())
+      create("GO", libs.versions.goLand.get())
+    }
+    subsystemsToCheck.set(org.jetbrains.intellij.platform.gradle.tasks.VerifyPluginTask.Subsystems.WITHOUT_ANDROID)
+    failureLevel.set(setOf(
+      org.jetbrains.intellij.platform.gradle.tasks.VerifyPluginTask.FailureLevel.COMPATIBILITY_PROBLEMS,
+      org.jetbrains.intellij.platform.gradle.tasks.VerifyPluginTask.FailureLevel.MISSING_DEPENDENCIES,
+      org.jetbrains.intellij.platform.gradle.tasks.VerifyPluginTask.FailureLevel.INVALID_PLUGIN
+    ))
+  }
 }
 
 grammarKit {
@@ -87,26 +120,6 @@ idea {
   module {
     excludeDirs = excludeDirs + setOf(file("ides"))
   }
-}
-
-tasks.patchPluginXml {
-  version.set(pluginVersion)
-  sinceBuild.set(libs.versions.intellijSinceBuild)
-  untilBuild.set(libs.versions.intellijUntilBuild)
-}
-
-tasks.runPluginVerifier {
-  // https://jetbrains.org/intellij/sdk/docs/basics/getting_started/build_number_ranges.html
-  ideVersions.set(listOf(
-      "IC-${libs.versions.intellij.get()}",
-      // need to verify against this version to make it available to `runIde` task
-      "IC-${libs.versions.intellijRunIde.get()}",
-      "GO-${libs.versions.goLand.get()}")
-  )
-  subsystemsToCheck.set("without-android")
-  downloadDir.set("$projectDir/ides")
-
-  failureLevel.set(EnumSet.of(COMPATIBILITY_PROBLEMS, MISSING_DEPENDENCIES, INVALID_PLUGIN))
 }
 
 tasks.runIde {
@@ -125,9 +138,8 @@ val generateLexer by tasks.existing(GenerateLexerTask::class) {
   inputs.file(inputFile)
   outputs.dir(outputDir)
 
-  source.set(inputFile)
-  targetDir.set(outputDir)
-  targetClass.set("PklLexer")
+  sourceFile.set(file(inputFile))
+  targetOutputDir.set(file(outputDir))
   purgeOldFiles.set(true)
 }
 
@@ -138,16 +150,15 @@ val generateParser by tasks.existing(GenerateParserTask::class) {
   inputs.file(inputFile)
   outputs.dir(outputDir)
 
-  source.set(inputFile)
-  targetRoot.set("generated")
+  sourceFile.set(file(inputFile))
+  targetRootOutputDir.set(file("generated"))
   pathToParser.set("/org/pkl/intellij/parser/PklParser.java")
   pathToPsiRoot.set("/org/pkl/intellij/psi")
   purgeOldFiles.set(true)
 }
 
 tasks.check {
-  dependsOn(tasks.verifyPlugin)
-  dependsOn(tasks.runPluginVerifier)
+  dependsOn(tasks.named("verifyPlugin"))
 }
 
 tasks.clean {
@@ -173,13 +184,12 @@ tasks.test {
 }
 
 tasks.withType<KotlinCompile>().configureEach {
-  kotlinOptions {
-    jvmTarget = "17"
-    languageVersion = "1.8"
-    // required by IJ 231
-    apiVersion = "1.8"
-    freeCompilerArgs = freeCompilerArgs +
-        listOf("-Xjsr305=strict", "-Xjvm-default=all", "-opt-in=kotlin.RequiresOptIn", "-Xjvm-default=all")
+  compilerOptions {
+    jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_17)
+    languageVersion.set(org.jetbrains.kotlin.gradle.dsl.KotlinVersion.KOTLIN_2_2)
+    apiVersion.set(org.jetbrains.kotlin.gradle.dsl.KotlinVersion.KOTLIN_2_0)
+    freeCompilerArgs.add("-Xjsr305=strict")
+    freeCompilerArgs.add("-opt-in=kotlin.RequiresOptIn")
   }
 }
 
@@ -192,7 +202,7 @@ publishing {
   repositories {
     maven {
       name = "projectLocal" // affects task names
-      url = uri("file:///$buildDir/m2")
+      url = uri("file:///${layout.buildDirectory}/m2")
     }
   }
 

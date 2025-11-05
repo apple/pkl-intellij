@@ -1,5 +1,5 @@
 /**
- * Copyright © 2024 Apple Inc. and the Pkl project authors. All rights reserved.
+ * Copyright © 2024-2025 Apple Inc. and the Pkl project authors. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,8 +19,8 @@ import com.intellij.codeInsight.intention.IntentionAction
 import com.intellij.lang.annotation.AnnotationHolder
 import com.intellij.lang.annotation.HighlightSeverity
 import com.intellij.psi.PsiElement
+import com.intellij.psi.SmartPointerManager
 import com.intellij.psi.util.parentOfTypes
-import com.intellij.refactoring.suggested.createSmartPointer
 import com.jetbrains.rd.util.first
 import org.pkl.intellij.intention.PklAddModifierQuickFix
 import org.pkl.intellij.intention.PklDefinePropertiesValuesQuickFix
@@ -218,7 +218,7 @@ class PklExtendsClauseAnnotator : PklAnnotator() {
         withFix(
           PklDefinePropertiesValuesQuickFix(
             def,
-            missingProperties.values.map { it.createSmartPointer() }
+            missingProperties.values.map { SmartPointerManager.createPointer(it) }
           )
         )
         def.modifierList?.let { modifierList ->

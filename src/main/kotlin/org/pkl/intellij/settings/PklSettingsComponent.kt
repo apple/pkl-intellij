@@ -41,11 +41,10 @@ class PklSettingsComponent(private val project: Project) {
       row("<html>Path to <code>pkl</code></html>") {
         val textField =
           textFieldWithBrowseButton(
-              "Executable Path",
-              project,
-              FileChooserDescriptorFactory.createSingleFileDescriptor().withFileFilter {
-                Files.isExecutable(it.toNioPath())
-              }
+              FileChooserDescriptorFactory.createSingleFileDescriptor()
+                .withTitle("Executable Path")
+                .withFileFilter { Files.isExecutable(it.toNioPath()) },
+              project
             )
             .bindText(project.pklSettings.state::pklPath)
             .onApply {

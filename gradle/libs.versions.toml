@@ -2,43 +2,46 @@
 assertj = "3.+"
 # GoLand version to verify against. Use latest version.
 # https://www.jetbrains.com/go/download/#section=mac
-goLand = "2023.1.4"
-grammarKit = "2021.1.2"
+goLand = "2024.3"
+grammarKit = "2023.3"
 # https://github.com/JetBrains/gradle-grammar-kit-plugin
-grammarKitPlugin = "2021.2.2"
+grammarKitPlugin = "2022.3.2.2"
 # IntelliJ version to build and verify against. Use latest patch version of `intellijSinceBuild`.
 # https://www.jetbrains.com/idea/download/other.html
-intellij = "2023.1.5"
+intellij = "2024.3"
 # IntelliJ version to run against (`runIde` task). Use latest version.
 # https://www.jetbrains.com/idea/download/#section=mac
-intellijRunIde = "2024.2"
-intellijPlugin = "1.17.4"
-intellijSinceBuild = "231"
+intellijRunIde = "2024.3"
+intellijPlugin = "2.10.4"
+intellijSinceBuild = "243"
 # set to "999.*" to disable upper bound
 intellijUntilBuild = "252.*"
 # Grammar-Kit isn't compatible with 1.7.0-2
 jflex = "1.7.0-1"
+junit = "4.13.2"
 # use same version that ships with `intellijSinceBuild`
 # https://plugins.jetbrains.com/docs/intellij/kotlin.html#kotlin-standard-library
-kotlin = "1.7.0"
-kotlinSerialization = "1.9.0"
+kotlin = "2.2.20"
+kotlinSerialization = "2.2.20"
 # bump when kotlin version bumps
-kotlinx = "1.5.1"
+kotlinx = "1.8.0"
 # fallback if stdlib isn't found in IntelliJ project dependencies
-pkl = "0.29.0"
+pkl = "0.30.0"
 pkl-cli = "0.28.2"
 spotless = "6.21.0"
 
 [libraries] # ordered alphabetically
 assertj = { group = "org.assertj", name = "assertj-core", version.ref = "assertj" }
-pklCli = { group = "org.pkl-lang", name = "pkl-cli-java", version.ref = "pkl-cli" }
-pklStdLib = { group = "org.pkl-lang", name = "pkl-stdlib", version.ref = "pkl" }
+junit = { group = "junit", name = "junit", version.ref = "junit" }
 kotlinxJson = { group = "org.jetbrains.kotlinx", name = "kotlinx-serialization-json", version.ref = "kotlinx" }
 kotlinReflect = { group = "org.jetbrains.kotlin", name = "kotlin-reflect", version.ref = "kotlin" }
+pklCli = { group = "org.pkl-lang", name = "pkl-cli-java", version.ref = "pkl-cli" }
+pklFormatter = { group = "org.pkl-lang", name = "pkl-formatter", version.ref = "pkl" }
+pklStdLib = { group = "org.pkl-lang", name = "pkl-stdlib", version.ref = "pkl" }
 
 [plugins] # ordered alphabetically
 grammarKit = { id = "org.jetbrains.grammarkit", version.ref = "grammarKitPlugin" }
-intelliJ = { id = "org.jetbrains.intellij", version.ref = "intellijPlugin" }
+intelliJ = { id = "org.jetbrains.intellij.platform", version.ref = "intellijPlugin" }
 kotlin = { id = "org.jetbrains.kotlin.jvm", version.ref = "kotlin" }
 kotlin-serialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlinSerialization" }
 spotless = { id = "com.diffplug.spotless", version.ref = "spotless" }

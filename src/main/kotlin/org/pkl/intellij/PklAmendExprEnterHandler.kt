@@ -1,5 +1,5 @@
 /**
- * Copyright © 2024 Apple Inc. and the Pkl project authors. All rights reserved.
+ * Copyright © 2024-2025 Apple Inc. and the Pkl project authors. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -26,8 +26,6 @@ import com.intellij.psi.PsiElement
 import com.intellij.psi.PsiFile
 import com.intellij.psi.TokenType.WHITE_SPACE
 import com.intellij.psi.util.parentOfType
-import com.intellij.refactoring.suggested.endOffset
-import com.intellij.refactoring.suggested.startOffset
 import com.intellij.util.text.CharArrayUtil
 import org.pkl.intellij.psi.PklAmendExpr
 import org.pkl.intellij.psi.PklElementTypes.AMEND_EXPR
@@ -86,8 +84,8 @@ class PklAmendExprEnterHandler : EnterHandlerDelegateAdapter() {
         ?: return EnterHandlerDelegate.Result.Continue
 
     document.replaceString(
-      unparenthesizedExpr.startOffset,
-      unparenthesizedExpr.endOffset,
+      unparenthesizedExpr.textRange.startOffset,
+      unparenthesizedExpr.textRange.endOffset,
       "(" + unparenthesizedExpr.text + ")"
     )
 
@@ -117,6 +115,6 @@ class PklAmendExprEnterHandler : EnterHandlerDelegateAdapter() {
   private fun PsiElement.isEolWhitespace(caretOffset: Int): Boolean {
     if (node?.elementType != WHITE_SPACE) return false
     val pos = node.text.indexOf('\n')
-    return pos == -1 || caretOffset <= pos + startOffset
+    return pos == -1 || caretOffset <= pos + textRange.startOffset
   }
 }
