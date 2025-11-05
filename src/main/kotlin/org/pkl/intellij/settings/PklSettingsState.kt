@@ -38,5 +38,5 @@ class PklSettingsService : PersistentStateComponent<PklSettingsService.State> {
     this.state = state
   }
 
-  data class State(var pklPath: String = "", var formatterCompatibilityVersion: Int = 2)
+  data class State(var pklPath: String = "", var formatterCompatibilityVersion: Int? = null)
 }

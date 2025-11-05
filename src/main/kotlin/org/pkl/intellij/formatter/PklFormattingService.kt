@@ -38,7 +38,7 @@ class PklFormattingService : AsyncDocumentFormattingService() {
     val grammarVersion =
       when (project.pklSettings.state.formatterCompatibilityVersion) {
         1 -> GrammarVersion.V1
-        else -> GrammarVersion.V2
+        else -> GrammarVersion.V2 // null (auto) or 2 defaults to V2
       }
 
     return object : FormattingTask {

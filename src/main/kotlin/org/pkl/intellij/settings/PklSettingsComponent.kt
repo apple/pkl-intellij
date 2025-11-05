@@ -74,17 +74,25 @@ class PklSettingsComponent(private val project: Project) {
         cell(spinningLabel)
       }
       row("Formatter compatibility version") {
-          val options = listOf("1: Pkl 0.25 - 0.29", "2: Pkl >=0.30")
+          val options = listOf("Auto (latest)", "1: Pkl 0.25 - 0.29", "2: Pkl >=0.30")
           comboBox(options)
             .bindItem(
               {
-                options.find {
-                  val version = it[0].digitToInt()
-                  version == project.pklSettings.state.formatterCompatibilityVersion
+                val version = project.pklSettings.state.formatterCompatibilityVersion
+                when (version) {
+                  null -> options[0] // Auto
+                  1 -> options[1]
+                  2 -> options[2]
+                  else -> options[0] // Default to Auto
                 }
               },
               { value ->
-                val version = value?.get(0)?.digitToInt() ?: 2
+                val version = when (value) {
+                  options[0] -> null // Auto
+                  options[1] -> 1
+                  options[2] -> 2
+                  else -> null // Default to Auto
+                }
                 project.pklSettings.state.formatterCompatibilityVersion = version
               }
             )
