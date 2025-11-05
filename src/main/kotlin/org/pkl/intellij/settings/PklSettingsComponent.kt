@@ -87,12 +87,13 @@ class PklSettingsComponent(private val project: Project) {
                 }
               },
               { value ->
-                val version = when (value) {
-                  options[0] -> null // Auto
-                  options[1] -> 1
-                  options[2] -> 2
-                  else -> null // Default to Auto
-                }
+                val version =
+                  when (value) {
+                    options[0] -> null // Auto
+                    options[1] -> 1
+                    options[2] -> 2
+                    else -> null // Default to Auto
+                  }
                 project.pklSettings.state.formatterCompatibilityVersion = version
               }
             )
