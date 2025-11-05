@@ -73,6 +73,26 @@ class PklSettingsComponent(private val project: Project) {
         actionButton(PklDownloadPklCliAction(onStart, onEnd))
         cell(spinningLabel)
       }
+      row("Formatter compatibility version") {
+          val options = listOf("1: Pkl 0.25 - 0.29", "2: Pkl >=0.30")
+          comboBox(options)
+            .bindItem(
+              {
+                options.find {
+                  val version = it[0].digitToInt()
+                  version == project.pklSettings.state.formatterCompatibilityVersion
+                }
+              },
+              { value ->
+                val version = value?.get(0)?.digitToInt() ?: 2
+                project.pklSettings.state.formatterCompatibilityVersion = version
+              }
+            )
+            .onApply {
+              project.messageBus.syncPublisher(PKL_SETTINGS_CHANGED_TOPIC).settingsChanged()
+            }
+        }
+        .rowComment("Select the Pkl version to use for code formatting")
     }
   }
 }
