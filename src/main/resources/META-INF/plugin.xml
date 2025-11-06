@@ -6,7 +6,7 @@
   <description><![CDATA[
     <p>
       Language support for <a href="https://github.com/apple/pkl">Pkl</a>.
-      Compatible with <strong>IntelliJ 2023.1</strong> or higher and <strong>Pkl 0.25</strong> or higher.
+      Compatible with <strong>IntelliJ 2024.3</strong> or higher and <strong>Pkl 0.25</strong> or higher.
     </p>
     <p>
       Features:
@@ -21,6 +21,15 @@
     ]]></description>
   <!-- language=html -->
   <change-notes><![CDATA[
+    <b>0.34.0</b>
+    <ul>
+      <li>Fix an edge case when type checking complex union types</li>
+      <li>Add support for Pkl 0.30.0 standard library</li>
+      <li>Migrate CI to use GitHub Actions instead of CircleCI</li>
+      <li>Add support for trailing commas in comma-separated syntax elements</li>
+      <li>Add an action to download the Pkl CLI</li>
+      <li>Bump minimum version of IntelliJ and other JetBrains editors to 2024.3</li>
+    </ul>
     <b>0.33.0</b>
     <ul>
       <li>Fix parsing of import expressions</li>
