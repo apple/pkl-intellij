@@ -81,7 +81,7 @@ class PklSettingsComponent(private val project: Project) {
               {
                 val version = project.pklSettings.state.formatterGrammarVersion
                 when (version) {
-                  null -> options[0] // Auto
+                  null -> options[0] // Unselected
                   GrammarVersion.V1 -> options[1]
                   GrammarVersion.V2 -> options[2]
                 }
@@ -89,10 +89,10 @@ class PklSettingsComponent(private val project: Project) {
               { value ->
                 val version =
                   when (value) {
-                    options[0] -> null // Auto
+                    options[0] -> null // Unselected
                     options[1] -> GrammarVersion.V1
                     options[2] -> GrammarVersion.V2
-                    else -> null // Default to Auto
+                    else -> null // Default to unselected
                   }
                 project.pklSettings.state.formatterGrammarVersion = version
               }
@@ -101,7 +101,7 @@ class PklSettingsComponent(private val project: Project) {
               project.messageBus.syncPublisher(PKL_SETTINGS_CHANGED_TOPIC).settingsChanged()
             }
         }
-        .rowComment("Select the Pkl version to use for code formatting")
+        .rowComment("The grammar version to use when formatting Pkl code.")
     }
   }
 }
