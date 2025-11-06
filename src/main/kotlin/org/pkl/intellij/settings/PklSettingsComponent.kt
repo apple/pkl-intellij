@@ -75,7 +75,7 @@ class PklSettingsComponent(private val project: Project) {
         cell(spinningLabel)
       }
       row("Formatter grammar version") {
-          val options = listOf("Auto (latest)", "1: Pkl 0.25 - 0.29", "2: Pkl >=0.30")
+          val options = listOf("<Unselected> (Latest)", "1: Pkl 0.25 - 0.29", "2: Pkl >=0.30")
           comboBox(options)
             .bindItem(
               {
