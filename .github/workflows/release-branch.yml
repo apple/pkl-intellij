@@ -7,7 +7,7 @@ name: Build (release branch)
     branches:
     - release/*
     tags-ignore:
-    - '*'
+    - '**'
 permissions:
   contents: read
 jobs:

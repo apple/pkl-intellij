@@ -7,7 +7,7 @@ name: Build (main)
     branches:
     - main
     tags-ignore:
-    - '*'
+    - '**'
 permissions:
   contents: read
 jobs:
