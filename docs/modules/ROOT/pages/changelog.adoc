@@ -19,7 +19,7 @@
 
 === Breaking Changes
 
-* The minimum version of IntelliJ and other JetBrains editors has been bumped to 2024.3
+* The minimum version of IntelliJ and other JetBrains editors has been bumped to 2024.3 (https://github.com/apple/pkl-intellij/pull/125[#125]).
 
 === Contributors ❤️
 
