@@ -17,6 +17,10 @@
 
 * Fix an edge case when type checking complex union types (https://github.com/apple/pkl-intellij/pull/119[#119], https://github.com/apple/pkl-intellij/pull/126[#126]).
 
+=== Breaking Changes
+
+* The minimum version of IntelliJ and other JetBrains editors has been bumped to 2024.3
+
 === Contributors ❤️
 
 We would like to thank the contributors to this release (in alphabetical order):

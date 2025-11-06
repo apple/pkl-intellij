@@ -28,6 +28,7 @@
       <li>Migrate CI to use GitHub Actions instead of CircleCI</li>
       <li>Add support for trailing commas in comma-separated syntax elements</li>
       <li>Add an action to download the Pkl CLI</li>
+      <li>Bump minimum version of IntelliJ and other JetBrains editors to 2024.3</li>
     </ul>
     <b>0.33.0</b>
     <ul>
