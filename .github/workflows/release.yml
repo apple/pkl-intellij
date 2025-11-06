@@ -5,9 +5,9 @@ name: Release
 'on':
   push:
     branches-ignore:
-    - '*'
+    - '**'
     tags:
-    - '*'
+    - '**'
 permissions:
   contents: read
 jobs:
@@ -46,6 +46,7 @@ jobs:
       run: |-
         echo "Preparing updatePlugins.xml"
         sed -i -e 's/#version#/'${TAG_NAME}'/g' release/updatePlugins.xml
+        cp build/m2/org/pkl/pkl-intellij/*/*.zip release
 
         echo "Creating release"
         gh release create ${TAG_NAME} \

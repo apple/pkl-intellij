@@ -13,5 +13,6 @@ ides/
 !.idea/inspectionProfiles/
 !.idea/vcs.xml
 !.idea/misc.xml
+.intellijPlatform
 
 .temp-pkl-deps
