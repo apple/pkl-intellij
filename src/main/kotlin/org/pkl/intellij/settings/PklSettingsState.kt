@@ -1,5 +1,5 @@
 /**
- * Copyright © 2024 Apple Inc. and the Pkl project authors. All rights reserved.
+ * Copyright © 2024-2025 Apple Inc. and the Pkl project authors. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,6 +17,7 @@ package org.pkl.intellij.settings
 
 import com.intellij.openapi.components.*
 import com.intellij.openapi.project.Project
+import org.pkl.formatter.GrammarVersion
 
 val Project.pklSettings: PklSettingsService
   get() = PklSettingsService.getInstance(this)
@@ -38,5 +39,5 @@ class PklSettingsService : PersistentStateComponent<PklSettingsService.State> {
     this.state = state
   }
 
-  data class State(var pklPath: String = "")
+  data class State(var pklPath: String = "", var formatterGrammarVersion: GrammarVersion? = null)
 }

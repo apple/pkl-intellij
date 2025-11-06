@@ -867,9 +867,15 @@ fun Icon.decorate(modifierListOwner: PklModifierListOwner, flags: Int): Icon {
   if (flags.and(Iconable.ICON_FLAG_VISIBILITY) != 0) {
     icon =
       if (modifierListOwner.isLocal) {
-        LayeredIcon(icon, PklIcons.PRIVATE)
+        LayeredIcon(2).apply {
+          setIcon(icon, 0)
+          setIcon(PklIcons.PRIVATE, 1)
+        }
       } else {
-        LayeredIcon(icon, PklIcons.PUBLIC)
+        LayeredIcon(2).apply {
+          setIcon(icon, 0)
+          setIcon(PklIcons.PUBLIC, 1)
+        }
       }
   }
   return icon

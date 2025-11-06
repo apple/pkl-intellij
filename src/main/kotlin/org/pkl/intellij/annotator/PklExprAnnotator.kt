@@ -1,5 +1,5 @@
 /**
- * Copyright © 2024 Apple Inc. and the Pkl project authors. All rights reserved.
+ * Copyright © 2024-2025 Apple Inc. and the Pkl project authors. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,8 +22,6 @@ import com.intellij.openapi.util.TextRange
 import com.intellij.psi.PsiElement
 import com.intellij.psi.util.parentOfType
 import com.intellij.psi.util.parentOfTypes
-import com.intellij.refactoring.suggested.endOffset
-import com.intellij.refactoring.suggested.startOffset
 import org.pkl.intellij.PklVersion
 import org.pkl.intellij.intention.*
 import org.pkl.intellij.packages.dto.PklProject
@@ -570,7 +568,7 @@ class PklExprAnnotator : PklAnnotator() {
       val annotation =
         holder
           .newAnnotation(HighlightSeverity.WARNING, "'$methodName()' conversion is redundant")
-          .range(TextRange(expr.memberName.startOffset, expr.endOffset))
+          .range(TextRange(expr.memberName.textRange.startOffset, expr.textRange.endOffset))
           .highlightType(ProblemHighlightType.LIKE_UNUSED_SYMBOL)
       if (holder.currentFile.canModify()) {
         annotation.withFix(PklRedundantConversionQuickFix(expr, methodName))

@@ -31,7 +31,7 @@ import com.intellij.util.text.SemVer
 import io.ktor.client.HttpClient
 import io.ktor.client.call.body
 import io.ktor.client.request.get
-import java.net.URL
+import java.net.URI
 import java.nio.file.Files
 import java.nio.file.Path
 import java.nio.file.Paths
@@ -43,7 +43,6 @@ import kotlin.io.copyTo
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.Serializable
-import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.json.Json
 import org.pkl.intellij.util.copyToWithIndicator
 import org.pkl.intellij.util.handleOnEdt
@@ -85,7 +84,7 @@ class PklDownloadPklCliAction(
     runBackgroundableTask("Downloading Pkl executable") { progressIndicator ->
       try {
         targetPath.parent.createDirectories()
-        val conn = URL(url).openConnection()
+        val conn = URI(url).toURL().openConnection()
         val totalLength = conn.contentLengthLong
         val fileOutputStream = Files.newOutputStream(targetPath)
         conn.inputStream.use { input ->

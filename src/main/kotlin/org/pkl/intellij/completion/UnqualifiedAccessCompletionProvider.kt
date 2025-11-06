@@ -1,5 +1,5 @@
 /**
- * Copyright © 2024 Apple Inc. and the Pkl project authors. All rights reserved.
+ * Copyright © 2024-2025 Apple Inc. and the Pkl project authors. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -31,7 +31,6 @@ import com.intellij.psi.codeStyle.CodeStyleManager
 import com.intellij.psi.impl.source.tree.LeafPsiElement
 import com.intellij.psi.util.parentOfType
 import com.intellij.psi.util.parentOfTypes
-import com.intellij.refactoring.suggested.endOffset
 import com.intellij.util.ProcessingContext
 import org.pkl.intellij.completion.UnqualifiedAccessCompletionProvider.Group.AMEND
 import org.pkl.intellij.completion.UnqualifiedAccessCompletionProvider.Group.ASSIGN
@@ -489,7 +488,8 @@ class UnqualifiedAccessCompletionProvider : PklCompletionProvider() {
               val bodyListOwner = element.nonStrictParentOfType<PklObjectBodyListOwner>()
               val bodyOwner =
                 element.nonStrictParentOfType<PklObjectBodyOwner>() ?: return bodyListOwner!!
-              return if ((bodyListOwner?.endOffset ?: 0) > bodyOwner.endOffset) bodyOwner
+              return if ((bodyListOwner?.textRange?.endOffset ?: 0) > bodyOwner.textRange.endOffset)
+                bodyOwner
               else bodyListOwner!!
             }
           }

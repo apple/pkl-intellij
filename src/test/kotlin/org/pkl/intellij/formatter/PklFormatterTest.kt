@@ -1,5 +1,5 @@
 /**
- * Copyright © 2024 Apple Inc. and the Pkl project authors. All rights reserved.
+ * Copyright © 2024-2025 Apple Inc. and the Pkl project authors. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,13 +21,80 @@ class PklFormatterTest : FormatterTestCase() {
   fun `test lambdas`() {
     doTextTest(
       """
-      foo = (x) -> x {
+      foo = (x) -> (x) {
         }
       """
         .trimIndent(),
       """
-      foo = (x) -> x {
+      foo = (x) -> (x) {}
+      
+      """
+        .trimIndent()
+    )
+  }
+
+  fun `test basic formatting`() {
+    doTextTest(
+      """
+      module
+      foo
+      .bar
+      
+      class Foo{bar=1;baz=2}
+      
+      typealias
+      Bar = Int|*String
+      """
+        .trimIndent(),
+      """
+      module foo.bar
+      
+      class Foo {
+        bar = 1
+      
+        baz = 2
       }
+      
+      typealias Bar = Int | *String
+      
+      """
+        .trimIndent()
+    )
+  }
+
+  fun `test advanced formatting`() {
+    doTextTest(
+      """
+      name=""${'"'}
+      foo
+      
+      \(bar)
+      baz
+      ""${'"'}
+      
+      foo = bar
+        .baz.qux((it) -> new {
+        1
+        it
+        }
+        )
+      """
+        .trimIndent(),
+      """
+      name =
+        ""${'"'}
+        foo
+      
+        \(bar)
+        baz
+        ""${'"'}
+      
+      foo =
+        bar.baz.qux((it) -> new {
+          1
+          it
+        })
+      
       """
         .trimIndent()
     )

@@ -1,5 +1,5 @@
 /**
- * Copyright © 2024 Apple Inc. and the Pkl project authors. All rights reserved.
+ * Copyright © 2024-2025 Apple Inc. and the Pkl project authors. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,6 +21,7 @@ import com.intellij.ide.fileTemplates.FileTemplate
 import com.intellij.ide.fileTemplates.FileTemplateManager
 import com.intellij.ide.fileTemplates.actions.AttributesDefaults
 import com.intellij.ide.fileTemplates.ui.CreateFromTemplateDialog
+import com.intellij.openapi.diagnostic.Logger
 import com.intellij.openapi.project.Project
 import com.intellij.psi.PsiDirectory
 import com.intellij.psi.PsiFile
@@ -30,6 +31,11 @@ import org.pkl.intellij.psi.pklBaseModule
 
 class PklCreateFileAction :
   CreateFileFromTemplateAction("Pkl File", "Create new Pkl file", PklFileType.icon) {
+
+  companion object {
+    private val LOG = Logger.getInstance(PklCreateFileAction::class.java)
+  }
+
   override fun buildDialog(project: Project, directory: PsiDirectory, builder: Builder) {
     builder
       .setTitle("Pkl File")

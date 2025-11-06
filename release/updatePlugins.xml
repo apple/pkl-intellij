@@ -4,12 +4,12 @@
       id="org.pkl-lang"
       url="https://github.com/apple/pkl-intellij/releases/download/#version#/pkl-intellij-#version#.zip" version="#version#"
   >
-    <idea-version since-build="231" until-build="252.*" />
+    <idea-version since-build="243" until-build="252.*" />
     <name>Pkl</name>
     <description><![CDATA[
 <p>
 Language support for <a href="https://github.com/apple/pkl">Pkl</a>.
-Compatible with <strong>IntelliJ 2023.1</strong> or higher and <strong>Pkl 0.25</strong> or higher.
+Compatible with <strong>IntelliJ 2024.3</strong> or higher and <strong>Pkl 0.25</strong> or higher.
 </p>
 <p>
 Features:

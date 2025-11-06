@@ -24,6 +24,7 @@ import com.intellij.ui.components.JBLabel
 import com.intellij.ui.dsl.builder.*
 import com.intellij.util.messages.Topic
 import java.nio.file.Files
+import org.pkl.formatter.GrammarVersion
 import org.pkl.intellij.action.PklDownloadPklCliAction
 
 fun interface PklSettingsChangedListener {
@@ -41,11 +42,10 @@ class PklSettingsComponent(private val project: Project) {
       row("<html>Path to <code>pkl</code></html>") {
         val textField =
           textFieldWithBrowseButton(
-              "Executable Path",
-              project,
-              FileChooserDescriptorFactory.createSingleFileDescriptor().withFileFilter {
-                Files.isExecutable(it.toNioPath())
-              }
+              FileChooserDescriptorFactory.createSingleFileDescriptor()
+                .withTitle("Executable Path")
+                .withFileFilter { Files.isExecutable(it.toNioPath()) },
+              project
             )
             .bindText(project.pklSettings.state::pklPath)
             .onApply {
@@ -74,6 +74,34 @@ class PklSettingsComponent(private val project: Project) {
         actionButton(PklDownloadPklCliAction(onStart, onEnd))
         cell(spinningLabel)
       }
+      row("Formatter grammar version") {
+          val options = listOf("<Unselected> (Latest)", "1: Pkl 0.25 - 0.29", "2: Pkl >=0.30")
+          comboBox(options)
+            .bindItem(
+              {
+                val version = project.pklSettings.state.formatterGrammarVersion
+                when (version) {
+                  null -> options[0] // Unselected
+                  GrammarVersion.V1 -> options[1]
+                  GrammarVersion.V2 -> options[2]
+                }
+              },
+              { value ->
+                val version =
+                  when (value) {
+                    options[0] -> null // Unselected
+                    options[1] -> GrammarVersion.V1
+                    options[2] -> GrammarVersion.V2
+                    else -> null // Default to unselected
+                  }
+                project.pklSettings.state.formatterGrammarVersion = version
+              }
+            )
+            .onApply {
+              project.messageBus.syncPublisher(PKL_SETTINGS_CHANGED_TOPIC).settingsChanged()
+            }
+        }
+        .rowComment("The grammar version to use when formatting Pkl code.")
     }
   }
 }

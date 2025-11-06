@@ -115,7 +115,7 @@
     <lang.braceMatcher language="Pkl" implementationClass="org.pkl.intellij.PklBraceMatcher"/>
     <lang.commenter language="Pkl" implementationClass="org.pkl.intellij.PklCommenter"/>
     <lang.foldingBuilder language="Pkl" implementationClass="org.pkl.intellij.PklFoldingBuilder"/>
-    <lang.formatter language="Pkl" implementationClass="org.pkl.intellij.formatter.PklFormattingModelBuilder"/>
+    <formattingService implementation="org.pkl.intellij.formatter.PklFormattingService"/>
     <lang.findUsagesProvider language="Pkl" implementationClass="org.pkl.intellij.PklFindUsagesProvider"/>
     <lang.psiStructureViewFactory language="Pkl" implementationClass="org.pkl.intellij.PklStructureViewFactory"/>
     <lang.documentationProvider language="Pkl" implementationClass="org.pkl.intellij.documentation.PklDocumentationProvider"/>
