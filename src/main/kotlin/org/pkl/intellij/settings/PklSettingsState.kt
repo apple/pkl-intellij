@@ -17,6 +17,7 @@ package org.pkl.intellij.settings
 
 import com.intellij.openapi.components.*
 import com.intellij.openapi.project.Project
+import org.pkl.formatter.GrammarVersion
 
 val Project.pklSettings: PklSettingsService
   get() = PklSettingsService.getInstance(this)
@@ -38,5 +39,5 @@ class PklSettingsService : PersistentStateComponent<PklSettingsService.State> {
     this.state = state
   }
 
-  data class State(var pklPath: String = "", var formatterCompatibilityVersion: Int? = null)
+  data class State(var pklPath: String = "", var formatterGrammarVersion: GrammarVersion? = null)
 }

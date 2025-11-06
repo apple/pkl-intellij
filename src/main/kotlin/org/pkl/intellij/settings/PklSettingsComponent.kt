@@ -24,6 +24,7 @@ import com.intellij.ui.components.JBLabel
 import com.intellij.ui.dsl.builder.*
 import com.intellij.util.messages.Topic
 import java.nio.file.Files
+import org.pkl.formatter.GrammarVersion
 import org.pkl.intellij.action.PklDownloadPklCliAction
 
 fun interface PklSettingsChangedListener {
@@ -73,28 +74,27 @@ class PklSettingsComponent(private val project: Project) {
         actionButton(PklDownloadPklCliAction(onStart, onEnd))
         cell(spinningLabel)
       }
-      row("Formatter compatibility version") {
+      row("Formatter grammar version") {
           val options = listOf("Auto (latest)", "1: Pkl 0.25 - 0.29", "2: Pkl >=0.30")
           comboBox(options)
             .bindItem(
               {
-                val version = project.pklSettings.state.formatterCompatibilityVersion
+                val version = project.pklSettings.state.formatterGrammarVersion
                 when (version) {
                   null -> options[0] // Auto
-                  1 -> options[1]
-                  2 -> options[2]
-                  else -> options[0] // Default to Auto
+                  GrammarVersion.V1 -> options[1]
+                  GrammarVersion.V2 -> options[2]
                 }
               },
               { value ->
                 val version =
                   when (value) {
                     options[0] -> null // Auto
-                    options[1] -> 1
-                    options[2] -> 2
+                    options[1] -> GrammarVersion.V1
+                    options[2] -> GrammarVersion.V2
                     else -> null // Default to Auto
                   }
-                project.pklSettings.state.formatterCompatibilityVersion = version
+                project.pklSettings.state.formatterGrammarVersion = version
               }
             )
             .onApply {

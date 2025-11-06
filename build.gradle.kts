@@ -1,4 +1,6 @@
 import org.jetbrains.grammarkit.tasks.*
+import org.jetbrains.intellij.platform.gradle.TestFrameworkType
+import org.jetbrains.intellij.platform.gradle.tasks.VerifyPluginTask
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
 plugins {
@@ -73,7 +75,7 @@ dependencies {
     pluginVerifier()
     bundledPlugin("org.intellij.intelliLang")
     bundledPlugin("org.intellij.plugins.markdown")
-    testFramework(org.jetbrains.intellij.platform.gradle.TestFrameworkType.Platform)
+    testFramework(TestFrameworkType.Platform)
   }
 }
 
@@ -102,11 +104,11 @@ intellijPlatform {
       create("IC", libs.versions.intellijRunIde.get())
       create("GO", libs.versions.goLand.get())
     }
-    subsystemsToCheck.set(org.jetbrains.intellij.platform.gradle.tasks.VerifyPluginTask.Subsystems.WITHOUT_ANDROID)
+    subsystemsToCheck.set(VerifyPluginTask.Subsystems.WITHOUT_ANDROID)
     failureLevel.set(setOf(
-      org.jetbrains.intellij.platform.gradle.tasks.VerifyPluginTask.FailureLevel.COMPATIBILITY_PROBLEMS,
-      org.jetbrains.intellij.platform.gradle.tasks.VerifyPluginTask.FailureLevel.MISSING_DEPENDENCIES,
-      org.jetbrains.intellij.platform.gradle.tasks.VerifyPluginTask.FailureLevel.INVALID_PLUGIN
+      VerifyPluginTask.FailureLevel.COMPATIBILITY_PROBLEMS,
+      VerifyPluginTask.FailureLevel.MISSING_DEPENDENCIES,
+      VerifyPluginTask.FailureLevel.INVALID_PLUGIN
     ))
   }
 }
@@ -202,7 +204,7 @@ publishing {
   repositories {
     maven {
       name = "projectLocal" // affects task names
-      url = uri("file:///${layout.buildDirectory}/m2")
+      url = uri("file:///${layout.buildDirectory.get()}/m2")
     }
   }
 

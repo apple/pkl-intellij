@@ -21,25 +21,21 @@ import com.intellij.formatting.service.FormattingService
 import com.intellij.psi.PsiFile
 import org.pkl.formatter.Formatter
 import org.pkl.formatter.GrammarVersion
-import org.pkl.intellij.PklFileType
+import org.pkl.intellij.psi.PklModule
 import org.pkl.intellij.settings.pklSettings
 
 /** Asynchronous formatting service that delegates to the pkl-formatter library. */
 class PklFormattingService : AsyncDocumentFormattingService() {
   override fun getFeatures(): Set<FormattingService.Feature> = emptySet()
 
-  override fun canFormat(file: PsiFile): Boolean = file.fileType is PklFileType
+  override fun canFormat(file: PsiFile): Boolean = file is PklModule
 
   override fun createFormattingTask(request: AsyncFormattingRequest): FormattingTask {
     val file = request.context.containingFile
     val project = file.project
 
     // Get compatibility version from settings
-    val grammarVersion =
-      when (project.pklSettings.state.formatterCompatibilityVersion) {
-        1 -> GrammarVersion.V1
-        else -> GrammarVersion.V2 // null (auto) or 2 defaults to V2
-      }
+    val grammarVersion = project.pklSettings.state.formatterGrammarVersion ?: GrammarVersion.V2
 
     return object : FormattingTask {
       override fun run() {
