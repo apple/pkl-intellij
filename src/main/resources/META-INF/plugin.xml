@@ -6,7 +6,7 @@
   <description><![CDATA[
     <p>
       Language support for <a href="https://github.com/apple/pkl">Pkl</a>.
-      Compatible with <strong>IntelliJ 2023.1</strong> or higher and <strong>Pkl 0.25</strong> or higher.
+      Compatible with <strong>IntelliJ 2024.3</strong> or higher and <strong>Pkl 0.25</strong> or higher.
     </p>
     <p>
       Features:
