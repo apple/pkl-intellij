@@ -21,6 +21,10 @@
     ]]></description>
   <!-- language=html -->
   <change-notes><![CDATA[
+    <b>0.34.1</b>
+    <ul>
+      <li>Fix editor issues, like newline indenting, due to old formatter removal</li>
+    </ul>
     <b>0.34.0</b>
     <ul>
       <li>Fix an edge case when type checking complex union types</li>

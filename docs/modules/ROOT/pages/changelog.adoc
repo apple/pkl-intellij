@@ -1,5 +1,18 @@
 = Changelog
 
+[[release-0.34.1]]
+== 0.34.1 (2025-11-07)
+
+=== Fixes
+
+* Fix editor issues, like newline indenting, due to old formatter removal (https://github.com/apple/pkl-intellij/pull/128[#128]).
+
+=== Contributors ❤️
+
+We would like to thank the contributors to this release (in alphabetical order):
+
+* https://github.com/stackoverflow[@stackoverflow]
+
 [[release-0.34.0]]
 == 0.34.0 (2025-11-06)
 
