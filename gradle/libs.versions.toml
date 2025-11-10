@@ -15,7 +15,7 @@ intellijRunIde = "2024.3"
 intellijPlugin = "2.10.4"
 intellijSinceBuild = "243"
 # set to "999.*" to disable upper bound
-intellijUntilBuild = "252.*"
+intellijUntilBuild = "253.*"
 # Grammar-Kit isn't compatible with 1.7.0-2
 jflex = "1.7.0-1"
 junit = "4.13.2"
