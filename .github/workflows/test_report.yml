@@ -23,6 +23,8 @@ jobs:
       uses: dawidd6/action-download-artifact@v11
       with:
         path: artifacts
+        name: test-results-.*
+        name_is_regex: true
         run_id: ${{ github.event.workflow_run.id }}
     - name: Publish test results
       uses: EnricoMi/publish-unit-test-result-action@v2
@@ -30,5 +32,5 @@ jobs:
         commit: ${{ github.event.workflow_run.head_sha }}
         comment_mode: 'off'
         files: artifacts/**/*.xml
-        event_file: artifacts/Event File/event.json
+        event_file: artifacts/test-results-event-file/event.json
         event_name: ${{ github.event.workflow_run.event }}
