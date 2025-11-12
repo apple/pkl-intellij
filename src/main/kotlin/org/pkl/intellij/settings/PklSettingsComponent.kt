@@ -15,17 +15,23 @@
  */
 package org.pkl.intellij.settings
 
+import com.intellij.openapi.fileChooser.FileChooser
 import com.intellij.openapi.fileChooser.FileChooserDescriptorFactory
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.ui.DialogPanel
 import com.intellij.openapi.ui.Messages
 import com.intellij.ui.AnimatedIcon
+import com.intellij.ui.ToolbarDecorator
 import com.intellij.ui.components.JBLabel
 import com.intellij.ui.dsl.builder.*
+import com.intellij.ui.table.TableView
 import com.intellij.util.messages.Topic
+import com.intellij.util.ui.ColumnInfo
+import com.intellij.util.ui.ListTableModel
 import java.nio.file.Files
 import org.pkl.formatter.GrammarVersion
 import org.pkl.intellij.action.PklDownloadPklCliAction
+import org.pkl.intellij.packages.localFs
 
 fun interface PklSettingsChangedListener {
   fun settingsChanged()
@@ -35,6 +41,29 @@ class PklSettingsComponent(private val project: Project) {
   companion object {
     val PKL_SETTINGS_CHANGED_TOPIC: Topic<PklSettingsChangedListener> =
       Topic.create("PklSettingsChanged", PklSettingsChangedListener::class.java)
+  }
+
+  private val excludedPathsTableModel = createExcludedPathsTableModel()
+
+  private fun createExcludedPathsTableModel(): ListTableModel<String> {
+    return ListTableModel<String>(
+      arrayOf(
+        object : ColumnInfo<String, String>("Path") {
+          override fun valueOf(item: String): String = item
+
+          override fun isCellEditable(item: String): Boolean = true
+
+          override fun setValue(item: String, value: String) {
+            val items = excludedPathsTableModel.items
+            val index = items.indexOf(item)
+            if (index >= 0 && value.isNotBlank()) {
+              items[index] = value.trim()
+            }
+          }
+        }
+      ),
+      mutableListOf()
+    )
   }
 
   fun createPanel(): DialogPanel {
@@ -102,6 +131,70 @@ class PklSettingsComponent(private val project: Project) {
             }
         }
         .rowComment("The grammar version to use when formatting Pkl code.")
+
+      row("Excluded project paths") {
+          val tableView = TableView(excludedPathsTableModel)
+          val decorator =
+            ToolbarDecorator.createDecorator(tableView)
+              .setAddAction {
+                val descriptor =
+                  FileChooserDescriptorFactory.createSingleFolderDescriptor()
+                    .withTitle("Select Directory to Exclude")
+                    .withDescription("Choose a directory to exclude from Pkl project sync")
+                    .withFileFilter { it.isDirectory }
+
+                val projectRoot = project.basePath?.let { localFs.findFileByPath(it) }
+                val fileChooser = FileChooser.chooseFile(descriptor, project, projectRoot)
+
+                fileChooser?.let { selectedFile ->
+                  val path = selectedFile.path
+                  val basePath = project.basePath
+
+                  if (basePath == null || !path.startsWith(basePath)) {
+                    Messages.showErrorDialog(
+                      project,
+                      "Selected path must be within the project root.",
+                      "Invalid Path"
+                    )
+                    return@setAddAction
+                  }
+
+                  // Convert to relative path
+                  val relativePath = path.removePrefix(basePath).removePrefix("/")
+
+                  if (!excludedPathsTableModel.items.contains(relativePath)) {
+                    excludedPathsTableModel.addRow(relativePath)
+                  }
+                }
+              }
+              .setRemoveAction {
+                val selectedRows = tableView.selectedRows
+                if (selectedRows.isNotEmpty()) {
+                  // Remove in reverse order to maintain indices
+                  selectedRows.sortedDescending().forEach { row ->
+                    excludedPathsTableModel.removeRow(row)
+                  }
+                }
+              }
+              .disableUpDownActions()
+
+          cell(decorator.createPanel())
+            .align(AlignX.FILL)
+            .onReset {
+              excludedPathsTableModel.items =
+                project.pklSettings.state.excludedProjectPaths.toMutableList()
+            }
+            .onApply {
+              project.pklSettings.state.excludedProjectPaths =
+                excludedPathsTableModel.items.toMutableSet()
+              project.messageBus.syncPublisher(PKL_SETTINGS_CHANGED_TOPIC).settingsChanged()
+            }
+            .onIsModified {
+              excludedPathsTableModel.items.toSet() !=
+                project.pklSettings.state.excludedProjectPaths
+            }
+        }
+        .rowComment("Directory paths to exclude from the \"Sync Projects\" action.")
     }
   }
 }

@@ -39,5 +39,9 @@ class PklSettingsService : PersistentStateComponent<PklSettingsService.State> {
     this.state = state
   }
 
-  data class State(var pklPath: String = "", var formatterGrammarVersion: GrammarVersion? = null)
+  data class State(
+    var pklPath: String = "",
+    var formatterGrammarVersion: GrammarVersion? = null,
+    var excludedProjectPaths: MutableSet<String> = mutableSetOf()
+  )
 }
