@@ -1,5 +1,5 @@
 /**
- * Copyright © 2024 Apple Inc. and the Pkl project authors. All rights reserved.
+ * Copyright © 2024-2025 Apple Inc. and the Pkl project authors. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,9 +19,14 @@ import com.intellij.lang.annotation.AnnotationHolder
 import com.intellij.lang.annotation.HighlightSeverity
 import com.intellij.psi.PsiElement
 import org.pkl.intellij.intention.PklRemoveDefaultTypeQuickFix
+import org.pkl.intellij.psi.PklDeclaredType
 import org.pkl.intellij.psi.PklDefaultType
 import org.pkl.intellij.psi.PklType
 import org.pkl.intellij.psi.PklUnionType
+import org.pkl.intellij.psi.pklBaseModule
+import org.pkl.intellij.type.Type
+import org.pkl.intellij.type.toType
+import org.pkl.intellij.util.currentModule
 
 /**
  * Validate types:
@@ -33,7 +38,32 @@ class PklTypeAnnotator : PklAnnotator() {
     when (element) {
       is PklDefaultType -> validateDefaultType(element, holder)
       is PklUnionType -> validateUnionType(element, holder)
+      is PklDeclaredType -> validateDeclaredType(element, holder)
     }
+  }
+
+  private fun validateDeclaredType(type: PklDeclaredType, holder: AnnotationHolder) {
+    if (type.typeArgumentList?.elements.isNullOrEmpty()) return
+    val module = holder.currentModule ?: return
+    val referent = type.toType(module.project.pklBaseModule, emptyMap(), module.pklProject)
+
+    val argCount = type.typeArgumentList!!.elements.size
+    val paramCount =
+      when (referent) {
+        is Type.Class -> referent.typeParameters.size
+        is Type.Alias -> referent.typeParameters.size
+        else -> return
+      }
+    if (paramCount == 0 || paramCount == argCount) return
+
+    createAnnotation(
+      HighlightSeverity.ERROR,
+      type.textRange,
+      "Type argument count mismatch. Required: 0 or $paramCount Found: $argCount",
+      "Type argument count mismatch.<table><tr><td>Required:</td><td>0 or $paramCount</td></tr>" +
+        "<tr><td align=\"right\">Found:</td><td>$argCount</td></tr></table>",
+      holder
+    )
   }
 
   private fun validateDefaultType(type: PklDefaultType, holder: AnnotationHolder) {
