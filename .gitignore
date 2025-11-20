@@ -6,6 +6,7 @@
 build/
 generated/
 ides/
+.kotlin
 
 # IntelliJ
 .idea/
