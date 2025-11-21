@@ -1,5 +1,5 @@
 /**
- * Copyright © 2024 Apple Inc. and the Pkl project authors. All rights reserved.
+ * Copyright © 2024-2025 Apple Inc. and the Pkl project authors. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -75,22 +75,37 @@ class ModuleUriCompletionProvider(private val packageUriOnly: Boolean = false) :
         val importUri = importNode.moduleUri?.stringConstant?.content?.escapedText() ?: return
         val isAbsoluteUri = isAbsoluteUriLike(importUri)
         val isGlobImport = importNode.isGlob
-        if (!isAbsoluteUri && !isGlobImport) return
-        val numPounds = importNode.firstChildToken()!!.text.length - 1
-        var escaped = item.lookupString
-        // escape wildcards
-        if (isGlobImport) {
-          val replacement = if (numPounds > 0) "\\\\$1" else "\\\\\\\\$1"
-          escaped = escaped.replace(Regex("([*\\\\{\\[])"), replacement)
-        }
-        // percent-encode
-        if (isAbsoluteUri) {
-          escaped = URI(null, null, escaped, null).rawPath
-        }
+        val replacement =
+          if (!isAbsoluteUri && !isGlobImport) item.lookupString
+          else {
+            val numPounds = importNode.firstChildToken()!!.text.length - 1
+            var escaped = item.lookupString
+            // escape wildcards
+            if (isGlobImport) {
+              val replacement = if (numPounds > 0) "\\\\$1" else "\\\\\\\\$1"
+              escaped = escaped.replace(Regex("([*\\\\{\\[])"), replacement)
+            }
+            // percent-encode
+            if (isAbsoluteUri) {
+              escaped = URI(null, null, escaped, null).rawPath
+            }
+            escaped
+          }
+
+        // determine if the string following the insertion (up to a slash or end quote) is a suffix
+        // of the completion
+        // if it is, replace those extra characters too
+        val componentRemainder =
+          context.document.text
+            .substring(context.startOffset + item.lookupString.length)
+            .takeWhile { it != '/' && it != '"' }
+        val chompRemainderLength =
+          if (item.lookupString.endsWith(componentRemainder)) componentRemainder.length else 0
+
         context.document.replaceString(
           context.startOffset,
-          context.startOffset + item.lookupString.length,
-          escaped
+          context.startOffset + item.lookupString.length + chompRemainderLength,
+          replacement
         )
       }
     }
