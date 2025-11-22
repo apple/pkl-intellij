@@ -9,6 +9,9 @@ name: Build
     - release/*
     tags-ignore:
     - '**'
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: false
 permissions:
   contents: read
 jobs:
