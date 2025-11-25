@@ -1,5 +1,5 @@
 /**
- * Copyright © 2024 Apple Inc. and the Pkl project authors. All rights reserved.
+ * Copyright © 2024-2025 Apple Inc. and the Pkl project authors. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -38,6 +38,7 @@ import org.pkl.intellij.packages.dto.Checksums
 import org.pkl.intellij.packages.dto.PackageUri
 import org.pkl.intellij.packages.dto.PklProject
 import org.pkl.intellij.packages.dto.PklProject.Companion.DerivedProjectMetadata
+import org.pkl.intellij.settings.pklSettings
 import org.pkl.intellij.toolchain.PklEvalException
 import org.pkl.intellij.toolchain.pklCli
 import org.pkl.intellij.util.pklCacheDir
@@ -306,6 +307,23 @@ class PklProjectService(private val project: Project) :
 
   private fun discoverProjectFiles(): List<VirtualFile> {
     val excludedRoots = mutableSetOf<VirtualFile>()
+    val userExcludedPaths = project.pklSettings.state.excludedProjectPaths
+    val projectBasePath = project.basePath?.let { Path.of(it) }
+
+    val userExcludedRoots =
+      userExcludedPaths
+        .mapNotNull { pathStr ->
+          val path = Path.of(pathStr)
+          val absolutePath =
+            if (path.isAbsolute) {
+              path
+            } else {
+              projectBasePath?.resolve(path)
+            }
+          absolutePath?.let { localFs.findFileByNioFile(it) }
+        }
+        .toSet()
+
     return project.modules
       .toList()
       .flatMap { mod ->
@@ -321,7 +339,8 @@ class PklProjectService(private val project: Project) :
             if (
               file.fileType == PklFileType &&
                 file.name == PKL_PROJECT_FILENAME &&
-                !excludedRoots.any { VfsUtilCore.isAncestor(it, file, true) }
+                !excludedRoots.any { VfsUtilCore.isAncestor(it, file, true) } &&
+                !userExcludedRoots.any { VfsUtilCore.isAncestor(it, file, false) }
             ) {
               add(file)
             }
