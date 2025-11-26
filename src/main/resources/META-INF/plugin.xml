@@ -21,6 +21,13 @@
     ]]></description>
   <!-- language=html -->
   <change-notes><![CDATA[
+    <b>0.35.0</b>
+    <ul>
+      <li>Bump max allowed IntelliJ version to 253.*</li>
+      <li>Add diagnostic error for incorrect type argument counts</li>
+      <li>Improve mid-line module URI completion behavior</li>
+      <li>Add setting to exclude dirs from project sync</li>
+    </ul>
     <b>0.34.1</b>
     <ul>
       <li>Fix editor issues, like newline indenting, due to old formatter removal</li>
