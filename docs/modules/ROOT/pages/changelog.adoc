@@ -1,5 +1,23 @@
 = Changelog
 
+[[release-0.35.0]]
+== 0.35.0 (2025-11-26)
+
+== Changes
+
+* Bump max allowed IntelliJ version to 253.* (https://github.com/apple/pkl-intellij/pull/130[#130]).
+* Add diagnostic error for incorrect type argument counts (https://github.com/apple/pkl-intellij/pull/132[#132]).
+* Improve mid-line module URI completion behavior (https://github.com/apple/pkl-intellij/pull/133[#133]).
+* Add setting to exclude dirs from project sync (https://github.com/apple/pkl-intellij/pull/135[#135]).
+
+=== Contributors ❤️
+
+We would like to thank the contributors to this release (in alphabetical order):
+
+* https://github.com/bioball[@bioball]
+* https://github.com/HT154[@HT154]
+* https://github.com/tw[@tw]
+
 [[release-0.34.1]]
 == 0.34.1 (2025-11-07)
 
