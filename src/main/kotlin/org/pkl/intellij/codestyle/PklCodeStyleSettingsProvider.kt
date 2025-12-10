@@ -1,5 +1,5 @@
 /**
- * Copyright © 2024 Apple Inc. and the Pkl project authors. All rights reserved.
+ * Copyright © 2024-2025 Apple Inc. and the Pkl project authors. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,6 +17,7 @@ package org.pkl.intellij.codestyle
 
 import com.intellij.application.options.CodeStyleAbstractConfigurable
 import com.intellij.application.options.TabbedLanguageCodeStylePanel
+import com.intellij.lang.Language
 import com.intellij.psi.codeStyle.CodeStyleConfigurable
 import com.intellij.psi.codeStyle.CodeStyleSettings
 import com.intellij.psi.codeStyle.CodeStyleSettingsProvider
@@ -26,6 +27,8 @@ class PklCodeStyleSettingsProvider : CodeStyleSettingsProvider() {
   override fun createCustomSettings(settings: CodeStyleSettings) = PklCodeStyleSettings(settings)
 
   override fun getConfigurableDisplayName() = PklLanguage.displayName
+
+  override fun getLanguage(): Language = PklLanguage
 
   override fun createConfigurable(
     settings: CodeStyleSettings,
