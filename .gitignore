@@ -17,3 +17,5 @@ ides/
 .intellijPlatform
 
 .temp-pkl-deps
+
+.pkl-lsp/
