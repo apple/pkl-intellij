@@ -1,9 +1,22 @@
 = Changelog
 
+[[release-0.35.1]]
+== 0.35.1 (2025-12-15)
+
+=== Bugs fixed
+
+* Error: Legacy configurable id calculation mode (https://github.com/apple/pkl-intellij/issues/142[#142]).
+
+=== Contributors ❤️
+
+We would like to thank the contributors to this release (in alphabetical order):
+
+* https://github.com/bioball[@bioball]
+
 [[release-0.35.0]]
 == 0.35.0 (2025-11-26)
 
-== Changes
+=== Changes
 
 * Bump max allowed IntelliJ version to 253.* (https://github.com/apple/pkl-intellij/pull/130[#130]).
 * Add diagnostic error for incorrect type argument counts (https://github.com/apple/pkl-intellij/pull/132[#132]).
