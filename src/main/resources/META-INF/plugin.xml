@@ -21,6 +21,12 @@
     ]]></description>
   <!-- language=html -->
   <change-notes><![CDATA[
+    <b>0.35.1</b>
+    <ul>
+      <li>Fix editor diganostic "Legacy configurable id calculation mode..."</li>
+      <li>Add support for Pkl 0.30.2 standard library</li>
+      <li>Fix issues in the Pkl formatter</li>
+    </ul>
     <b>0.35.0</b>
     <ul>
       <li>Bump max allowed IntelliJ version to 253.*</li>

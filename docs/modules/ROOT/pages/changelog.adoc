@@ -6,6 +6,8 @@
 === Bugs fixed
 
 * Error: Legacy configurable id calculation mode (https://github.com/apple/pkl-intellij/issues/142[#142]).
+* Bump Pkl fallback standard library to 0.30.2 (https://github.com/apple/pkl-intellij/pull/144[#144]).
+* Fix various issues with the Pkl formatter (https://github.com/apple/pkl-intellij/pull/144[#144]).
 
 === Contributors ❤️
 
