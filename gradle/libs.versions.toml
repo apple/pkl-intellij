@@ -26,7 +26,7 @@ kotlinSerialization = "2.2.20"
 # bump when kotlin version bumps
 kotlinx = "1.8.0"
 # fallback if stdlib isn't found in IntelliJ project dependencies
-pkl = "0.30.0"
+pkl = "0.30.2"
 pkl-cli = "0.28.2"
 spotless = "6.21.0"
 
