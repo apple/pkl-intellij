@@ -100,6 +100,36 @@ class CompletionTest : PklTestCase() {
     assertThat(lookupStrings).contains("configMaps = ")
   }
 
+  fun `test complete from outer`() {
+    myFixture.configureByText(
+      PklFileType,
+      """
+      class BirdSpec {
+        name: String
+        songs: Listing<Song>
+        function generateSong(_tune: String): Song = new {
+          tune = _tune
+        }
+      }
+
+      class Song {
+        tune: String
+      }
+
+      peacock: BirdSpec = new {
+        name = "peacock"
+        songs {
+          outer.<caret>
+        }
+      }
+    """
+        .trimIndent()
+    )
+    myFixture.completeBasic()
+    val lookupStrings = myFixture.lookupElementStrings
+    assertThat(lookupStrings).contains("generateSong", "name", "songs")
+  }
+
   override val fixtureDir: Path?
     get() = Path.of("src/test/resources/completion")
 }
