@@ -130,7 +130,7 @@ private fun PsiElement.doComputeExprType(
         (type?.toType(base, bindings, context) ?: inferExprTypeFromContext(base, bindings, context))
           .instantiated(base, context)
       is PklThisExpr -> computeThisType(base, bindings, context)
-      is PklOuterExpr -> Type.Unknown // TODO
+      is PklOuterExpr -> computeOuterType(base, bindings, context)
       is PklSubscriptBinExpr -> {
         val receiverType = leftExpr.computeExprType(base, bindings, context)
         doComputeSubscriptExprType(receiverType, base, context)
