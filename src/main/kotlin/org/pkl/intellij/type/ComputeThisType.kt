@@ -1,5 +1,5 @@
 /**
- * Copyright © 2024 Apple Inc. and the Pkl project authors. All rights reserved.
+ * Copyright © 2024-2026 Apple Inc. and the Pkl project authors. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,8 +18,10 @@
 package org.pkl.intellij.type
 
 import com.intellij.psi.PsiElement
+import com.intellij.psi.util.parentOfType
 import org.pkl.intellij.packages.dto.PklProject
 import org.pkl.intellij.psi.*
+import org.pkl.intellij.resolve.ResolveVisitors
 
 fun PsiElement.computeThisType(
   base: PklBaseModule,
@@ -65,6 +67,23 @@ fun PsiElement.computeThisType(
       is PklObjectBody ->
         when {
           skipNextObjectBody -> skipNextObjectBody = false
+          // special support for convertPropertyTransformers
+          // optimization: only compute type if within a property called
+          // "convertPropertyTransformers" in a BaseValueRenderer subclass
+          (element.parent as? PklObjectEntry)
+            ?.keyExpr
+            ?.computeThisType(base, bindings, context)
+            ?.isSubtypeOf(base.baseValueRenderer, base, context) == true &&
+            element.parentOfType<PklProperty>()?.name == "convertPropertyTransformers" -> {
+            objectBodySeen = true
+            ((element.parent as PklObjectEntry).keyExpr as? PklUnqualifiedAccessExpr)?.let { keyExpr
+              ->
+              val visitor = ResolveVisitors.firstElementNamed(keyExpr.memberNameText, base, true)
+              (keyExpr.resolve(base, null, bindings, visitor, context) as? PklClass)?.let {
+                return Type.Class(it)
+              }
+            }
+          }
           else -> objectBodySeen = true
         }
       is PklProperty,

@@ -1,5 +1,5 @@
 /**
- * Copyright © 2024 Apple Inc. and the Pkl project authors. All rights reserved.
+ * Copyright © 2024-2026 Apple Inc. and the Pkl project authors. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -98,6 +98,60 @@ class CompletionTest : PklTestCase() {
     myFixture.completeBasic()
     val lookupStrings = myFixture.lookupElementStrings
     assertThat(lookupStrings).contains("configMaps = ")
+  }
+
+  fun `test BaseValueRenderer convertPropertyTransformers entry value object body this resolution`() {
+    return // SKIP until 0.31 stdlib is available
+    myFixture.configureByText(
+      PklFileType,
+      """
+        /// this is foo
+        class Foo extends ConvertProperty { 
+          /// this is bar
+          bar: String = "bar"
+          render = (_, _) -> Pair(bar, bar) 
+        }
+        
+        output {
+          renderer {
+            convertPropertyTransformers {
+              [Foo] { b<caret> }
+            }
+          }
+        }
+        """
+        .trimIndent()
+    )
+    myFixture.completeBasic()
+    val lookupStrings = myFixture.lookupElementStrings
+    assertThat(lookupStrings).contains("bar = ")
+  }
+
+  fun `test BaseValueRenderer convertPropertyTransformers entry value assign lambda amend this resolution`() {
+    return // SKIP until 0.31 stdlib is available
+    myFixture.configureByText(
+      PklFileType,
+      """
+        /// this is foo
+        class Foo extends ConvertProperty { 
+          /// this is bar
+          bar: String = "bar"
+          render = (_, _) -> Pair(bar, bar) 
+        }
+        
+        output {
+          renderer {
+            convertPropertyTransformers {
+              [Foo] = (it) -> (it) { b<caret> }
+            }
+          }
+        }
+        """
+        .trimIndent()
+    )
+    myFixture.completeBasic()
+    val lookupStrings = myFixture.lookupElementStrings
+    assertThat(lookupStrings).contains("bar = ")
   }
 
   override val fixtureDir: Path?

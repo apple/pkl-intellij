@@ -1,5 +1,5 @@
 /**
- * Copyright © 2024-2025 Apple Inc. and the Pkl project authors. All rights reserved.
+ * Copyright © 2024-2026 Apple Inc. and the Pkl project authors. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -123,7 +123,8 @@ class PklBaseModule(private val stdLib: PklStdLib) {
   val resourceType: Type.Class = classType("Resource")
   val moduleInfoType: Type.Class = classType("ModuleInfo")
   val regexType: Type.Class = classType("Regex")
-  val valueRenderer: Type.Class = classType("ValueRenderer")
+  val baseValueRenderer: Type.Class =
+    classTypeOrNull("BaseValueRenderer") ?: classType("ValueRenderer")
   // Will be `null` for versions < 0.29
   val bytesType: Type.Class? = classTypeOrNull("Bytes")
   val uint8Type: Type.Alias = aliasType("UInt8")

@@ -1,5 +1,5 @@
 /**
- * Copyright © 2024-2025 Apple Inc. and the Pkl project authors. All rights reserved.
+ * Copyright © 2024-2026 Apple Inc. and the Pkl project authors. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -116,27 +116,29 @@ private fun PklExpr?.doInferExprTypeFromContext(
               val defaultExpectedType by lazy {
                 parent.computeResolvedImportType(base, bindings, context, canInferExprBody = false)
               }
-              // special support for converters
-              return if (
-                // optimization: only compute type if within a property called "converters"
-                expr.parentOfType<PklProperty>()?.name == "converters" &&
-                  parent.keyExpr
-                    ?.computeThisType(base, bindings, context)
-                    ?.isSubtypeOf(base.valueRenderer, base, context) == true
+              // special support for converters/convertPropertyTransformers
+              if (
+                // optimization: only compute type if within a property called "converters" or
+                // "convertPropertyTransformers" in a BaseValueRenderer subclass
+                parent.keyExpr
+                  ?.computeThisType(base, bindings, context)
+                  ?.isSubtypeOf(base.baseValueRenderer, base, context) == true
               ) {
                 val keyExpr =
                   (parent.keyExpr as? PklUnqualifiedAccessExpr) ?: return defaultExpectedType
-                val visitor =
-                  ResolveVisitors.firstElementNamed(
-                    keyExpr.text,
-                    base,
-                    true,
-                  )
-                val resolved = keyExpr.resolve(base, null, bindings, visitor, context)
-                if (resolved is PklClass) {
-                  base.function1Type.withTypeArguments(Type.Class(resolved), base.anyType)
-                } else {
-                  defaultExpectedType
+                val visitor = ResolveVisitors.firstElementNamed(keyExpr.memberNameText, base, true)
+                val resolvedKeyClass =
+                  keyExpr.resolve(base, null, bindings, visitor, context) as? PklClass
+                when (expr.parentOfType<PklProperty>()?.name) {
+                  "converters" ->
+                    resolvedKeyClass?.let {
+                      base.function1Type.withTypeArguments(Type.Class(it), base.anyType)
+                    }
+                      ?: defaultExpectedType
+                  "convertPropertyTransformers" ->
+                    resolvedKeyClass?.let { base.mixinType.withTypeArguments(Type.Class(it)) }
+                      ?: defaultExpectedType
+                  else -> defaultExpectedType
                 }
               } else {
                 defaultExpectedType
