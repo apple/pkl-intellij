@@ -1,5 +1,5 @@
 /**
- * Copyright © 2024 Apple Inc. and the Pkl project authors. All rights reserved.
+ * Copyright © 2024-2026 Apple Inc. and the Pkl project authors. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,6 +15,7 @@
  */
 package org.pkl.intellij.psi
 
+import com.intellij.injected.editor.VirtualFileWindow
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.roots.ProjectFileIndex
 import com.intellij.openapi.roots.ProjectRootManager
@@ -437,7 +438,12 @@ class PklModuleUriReference(uri: PklModuleUri, rangeInElement: TextRange) :
               if (targetUriStr.startsWith('/')) {
                 return findOnClassPath(sourcePsiFile, null, targetUriStr.drop(1))
               }
-              val sourceDir = sourceVirtualFile.parent
+              val sourceDir =
+                when (sourceVirtualFile) {
+                  is VirtualFileWindow -> sourceVirtualFile.parent
+                      ?: sourceVirtualFile.delegate.parent
+                  else -> sourceVirtualFile.parent
+                }
               if (sourceDir == sourceRoot) {
                 return findOnClassPath(sourcePsiFile, null, targetUriStr)
               }
