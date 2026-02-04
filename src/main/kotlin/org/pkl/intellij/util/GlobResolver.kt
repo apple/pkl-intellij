@@ -1,5 +1,5 @@
 /**
- * Copyright © 2024 Apple Inc. and the Pkl project authors. All rights reserved.
+ * Copyright © 2024-2026 Apple Inc. and the Pkl project authors. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -216,13 +216,27 @@ object GlobResolver {
     virtualFile: VirtualFile,
     listChildren: (VirtualFile) -> Array<VirtualFile>,
     filter: (VirtualFile) -> Boolean,
+    listElementCallCount: AtomicInteger,
+    visited: MutableSet<String> = mutableSetOf(),
     result: MutableList<VirtualFile> = mutableListOf()
-  ): List<VirtualFile> {
+  ): List<VirtualFile>? {
+    // Detect cycles using canonical path, falling back to regular path for non-local filesystems
+    val pathKey = virtualFile.canonicalPath ?: virtualFile.path
+    if (!visited.add(pathKey)) {
+      return result
+    }
+
+    // Respect max children limit
+    if (listElementCallCount.getAndIncrement() > MAX_LIST_ELEMENTS) {
+      return null
+    }
+
     val children = listChildren(virtualFile)
     result.addAll(children.filter(filter))
     for (child in children) {
       if (child.isDirectory) {
-        gatherAllChildren(child, listChildren, filter, result)
+        gatherAllChildren(child, listChildren, filter, listElementCallCount, visited, result)
+          ?: return null
       }
     }
     return result
@@ -246,7 +260,8 @@ object GlobResolver {
         { file ->
           val matches = pattern.matcher(file.path.substringAfter(baseFile.path).drop(1)).matches()
           if (isPartial) matches && file.isDirectory else matches
-        }
+        },
+        listElementCallCount
       )
     }
     return baseFile.children
