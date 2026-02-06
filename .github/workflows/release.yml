@@ -27,7 +27,6 @@ jobs:
       with:
         java-version: '17'
         distribution: temurin
-        cache: gradle
     - name: Run tests
       run: |-
         # revert GHA's default `set -e` to prevent process exit from the first failure

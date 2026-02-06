@@ -5,7 +5,7 @@ import "@com.github.actions/Workflow.pkl"
 
 triggerDocsBuild = "release"
 
-local baseJob: Workflow.Job = new {
+local function baseJob(_cache: ("maven"|"gradle"|"sbt")?): Workflow.Job = new {
   `runs-on` = "ubuntu-latest"
   steps {
     (catalog.`actions/checkout@v6`) {
@@ -18,7 +18,7 @@ local baseJob: Workflow.Job = new {
       with {
         `java-version` = "17"
         distribution = "temurin"
-        cache = "gradle"
+        cache = _cache
       }
     }
     new {
@@ -52,7 +52,7 @@ testReports {
 
 local buildAndTest: Workflow = new {
   jobs {
-    ["build-and-test"] = (baseJob) {
+    ["build-and-test"] = (baseJob("gradle")) {
       name = "Build and test"
     }
   }
@@ -68,7 +68,7 @@ releaseBranch = buildAndTest
 
 release {
   jobs {
-    ["publish"] = (baseJob) {
+    ["publish"] = (baseJob(null)) {
       name = "Release"
       permissions {
         contents = "write"
