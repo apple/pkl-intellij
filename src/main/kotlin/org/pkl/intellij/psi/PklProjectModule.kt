@@ -1,5 +1,5 @@
 /**
- * Copyright © 2024 Apple Inc. and the Pkl project authors. All rights reserved.
+ * Copyright © 2024-2026 Apple Inc. and the Pkl project authors. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -43,7 +43,7 @@ class PklProjectModule(stdLib: PklStdLib) {
   val types: Map<String, Type> = buildMap {
     for (member in psi.members) {
       if (member is PklClass) {
-        put(member.name!!, Type.Class(member))
+        put(member.name!!, Type.Class.create(member))
       }
     }
     put("Project", Type.module(psi, "pkl.Project", context = null))
