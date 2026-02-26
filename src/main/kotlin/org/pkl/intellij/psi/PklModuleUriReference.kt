@@ -1,5 +1,5 @@
 /**
- * Copyright © 2024 Apple Inc. and the Pkl project authors. All rights reserved.
+ * Copyright © 2024-2026 Apple Inc. and the Pkl project authors. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -358,7 +358,7 @@ class PklModuleUriReference(uri: PklModuleUri, rangeInElement: TextRange) :
     ): VirtualFile? {
       // `.originalFile` because IntelliJ's code completion mechanism
       // creates PsiFile copy which returns `null` for `.virtualFile`
-      val sourceVirtualFile = sourcePsiFile.originalFile.virtualFile
+      val sourceVirtualFile = sourcePsiFile.originalFile.virtualFile ?: return null
       val sourceUriStr =
         sourceVirtualFile
           .url // don't convert to java.net.URI because not always a valid URI (e.g., may contain

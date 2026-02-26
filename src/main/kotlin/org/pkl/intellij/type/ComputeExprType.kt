@@ -1,5 +1,5 @@
 /**
- * Copyright © 2024-2025 Apple Inc. and the Pkl project authors. All rights reserved.
+ * Copyright © 2024-2026 Apple Inc. and the Pkl project authors. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -133,11 +133,13 @@ private fun PsiElement.doComputeExprType(
       is PklOuterExpr -> Type.Unknown // TODO
       is PklSubscriptBinExpr -> {
         val receiverType = leftExpr.computeExprType(base, bindings, context)
-        doComputeSubscriptExprType(receiverType, base, context)
+        val getKeyType = { rightExpr.computeExprType(base, bindings, context) }
+        doComputeSubscriptExprType(receiverType, getKeyType, base, context)
       }
       is PklSuperSubscriptExpr -> {
         val receiverType = computeThisType(base, bindings, context)
-        doComputeSubscriptExprType(receiverType, base, context)
+        val getKeyType = { expr.computeExprType(base, bindings, context) }
+        doComputeSubscriptExprType(receiverType, getKeyType, base, context)
       }
       is PklEqualityBinExpr -> base.booleanType
       is PklComparisonBinExpr -> base.booleanType
@@ -483,11 +485,13 @@ private fun PklStringContent.computeStringLiteralType(
 
 private fun doComputeSubscriptExprType(
   receiverType: Type,
+  getKeyType: () -> Type,
   base: PklBaseModule,
   context: PklProject?
 ) =
   when (receiverType) {
     is Type.StringLiteral -> base.stringType
+    is Type.Reference -> receiverType.valueTypeForSubscriptKeyType(getKeyType(), base, context)
     else -> {
       val receiverClassType = receiverType.toClassType(base, context)
       when {

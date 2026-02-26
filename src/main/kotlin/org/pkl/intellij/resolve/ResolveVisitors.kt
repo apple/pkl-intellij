@@ -1,5 +1,5 @@
 /**
- * Copyright © 2024-2025 Apple Inc. and the Pkl project authors. All rights reserved.
+ * Copyright © 2024-2026 Apple Inc. and the Pkl project authors. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -164,13 +164,17 @@ object ResolveVisitors {
 
         val type =
           when (element) {
+            is PklReferenceQualifiedAccessProxy ->
+              base.referenceType!!.withTypeArguments(
+                element.referent.toType(base, bindings, context, preserveUnboundTypeVars)
+              )
             is PklImport ->
               element
                 .resolve(context)
                 .computeResolvedImportType(base, bindings, preserveUnboundTypeVars, context)
             is PklTypeParameter -> bindings[element] ?: Type.Unknown
             is PklMethod -> computeMethodReturnType(element, bindings, context)
-            is PklClass -> base.classType.withTypeArguments(Type.Class(element))
+            is PklClass -> base.classType.withTypeArguments(Type.Class.create(element))
             is PklTypeAlias -> base.typeAliasType.withTypeArguments(Type.alias(element, context))
             is PklNavigableElement ->
               element.computeResolvedImportType(base, bindings, context, preserveUnboundTypeVars)
@@ -226,7 +230,7 @@ object ResolveVisitors {
           base.mapConstructor -> {
             val arguments = argumentList?.elements
             if (arguments == null || arguments.size < 2) {
-              Type.Class(base.mapType.psi)
+              Type.Class.create(base.mapType.psi)
             } else {
               var keyType = arguments[0].computeExprType(base, bindings, context)
               var valueType = arguments[1].computeExprType(base, bindings, context)
@@ -249,7 +253,7 @@ object ResolveVisitors {
                     )
                 }
               }
-              Type.Class(base.mapType.psi, listOf(keyType, valueType))
+              Type.Class.create(base.mapType.psi, listOf(keyType, valueType))
             }
           }
           else -> {
@@ -304,7 +308,7 @@ object ResolveVisitors {
           is Type.Variable -> collector[declaredType.psi] = computedType
           is Type.Class -> {
             when {
-              base.varArgsType != null && declaredType.classEquals(base.varArgsType) -> {
+              declaredType.classEquals(base.varArgsType) -> {
                 val unionType = Type.union(computedTypes.drop(index), base, context)
                 inferBindings(
                   declaredType.typeArguments[0],
@@ -352,6 +356,7 @@ object ResolveVisitors {
         if (name != expectedName) return true
 
         when {
+          element is PklReferenceQualifiedAccessProxy -> result = element
           element is PklImport -> {
             result =
               if (resolveImports && !element.isGlob) {
@@ -428,6 +433,12 @@ object ResolveVisitors {
         context: PklProject?
       ): Boolean {
         when (element) {
+          is PklReferenceQualifiedAccessProxy ->
+            result.add(
+              LookupElementBuilder.createWithIcon(element)
+                .bold()
+                .withTypeText(element.getLookupElementType(base, bindings, context).render(), true)
+            )
           is PklImport ->
             element.memberName?.let { importName ->
               var lookupElement = LookupElementBuilder.create(importName)
@@ -497,6 +508,7 @@ object ResolveVisitors {
         if (name != expectedName) return true
 
         when {
+          element is PklReferenceQualifiedAccessProxy -> return true
           element is PklImport ->
             resultList.addAll(element.resolveModules(context).map(::PklResolveResult))
           element is PklTypeParameter && bindings.contains(element) -> {

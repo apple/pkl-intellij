@@ -1,5 +1,5 @@
 /**
- * Copyright © 2024 Apple Inc. and the Pkl project authors. All rights reserved.
+ * Copyright © 2024-2026 Apple Inc. and the Pkl project authors. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -209,6 +209,9 @@ class PklDocumentationProvider : AbstractDocumentationProvider() {
   ): Boolean {
     val context = originalElement?.enclosingModule?.pklProject
     when (element) {
+      is PklReferenceQualifiedAccessProxy -> {
+        renderTypeAnnotation(element, element.name, element.type, originalElement)
+      }
       is PklModule -> {
         renderModifiers(element.modifierList)
         append("module ")
@@ -306,7 +309,7 @@ class PklDocumentationProvider : AbstractDocumentationProvider() {
       when {
         // support flow typing when showing documentation for nodes that navigate to ther nodes
         // (e.g. they aren't param declarations or class properties)
-        originalElement?.isAncestor(element) == false -> {
+        element.isPhysical && originalElement?.isAncestor(element) == false -> {
           val visitor =
             ResolveVisitors.typeOfFirstElementNamed(
               name,

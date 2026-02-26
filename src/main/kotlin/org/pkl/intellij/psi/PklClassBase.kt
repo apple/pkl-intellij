@@ -1,5 +1,5 @@
 /**
- * Copyright © 2024 Apple Inc. and the Pkl project authors. All rights reserved.
+ * Copyright © 2024-2026 Apple Inc. and the Pkl project authors. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -51,7 +51,7 @@ abstract class PklClassBase(node: ASTNode) : PklTypeDefBase(node), PklClass {
     base: PklBaseModule,
     bindings: TypeParameterBindings,
     context: PklProject?
-  ): Type = base.classType.withTypeArguments(Type.Class(this))
+  ): Type = base.classType.withTypeArguments(Type.Class.create(this))
 
   override val members: Sequence<PklClassMember>
     get() = body?.members ?: emptySequence()
