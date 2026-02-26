@@ -1,5 +1,5 @@
 /**
- * Copyright © 2024-2025 Apple Inc. and the Pkl project authors. All rights reserved.
+ * Copyright © 2024-2026 Apple Inc. and the Pkl project authors. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,10 +19,13 @@ import com.intellij.lang.annotation.AnnotationHolder
 import com.intellij.lang.annotation.HighlightSeverity
 import com.intellij.psi.PsiElement
 import org.pkl.intellij.intention.PklRemoveDefaultTypeQuickFix
+import org.pkl.intellij.packages.dto.PklProject
+import org.pkl.intellij.psi.PklBaseModule
 import org.pkl.intellij.psi.PklDeclaredType
 import org.pkl.intellij.psi.PklDefaultType
 import org.pkl.intellij.psi.PklType
 import org.pkl.intellij.psi.PklUnionType
+import org.pkl.intellij.psi.enclosingModule
 import org.pkl.intellij.psi.pklBaseModule
 import org.pkl.intellij.type.Type
 import org.pkl.intellij.type.toType
@@ -45,6 +48,9 @@ class PklTypeAnnotator : PklAnnotator() {
   private fun validateDeclaredType(type: PklDeclaredType, holder: AnnotationHolder) {
     if (type.typeArgumentList?.elements.isNullOrEmpty()) return
     val module = holder.currentModule ?: return
+    val project = module.project
+    val base = project.pklBaseModule
+    val context = type.enclosingModule?.pklProject
     val referent = type.toType(module.project.pklBaseModule, emptyMap(), module.pklProject)
 
     val argCount = type.typeArgumentList!!.elements.size
@@ -54,17 +60,40 @@ class PklTypeAnnotator : PklAnnotator() {
         is Type.Alias -> referent.typeParameters.size
         else -> return
       }
-    if (paramCount == 0 || paramCount == argCount) return
+    if (paramCount != 0 && paramCount != argCount) {
+      createAnnotation(
+        HighlightSeverity.ERROR,
+        type.textRange,
+        "Type argument count mismatch. Required: 0 or $paramCount Found: $argCount",
+        "Type argument count mismatch.<table><tr><td>Required:</td><td>0 or $paramCount</td></tr>" +
+          "<tr><td align=\"right\">Found:</td><td>$argCount</td></tr></table>",
+        holder
+      )
+    }
 
-    createAnnotation(
-      HighlightSeverity.ERROR,
-      type.textRange,
-      "Type argument count mismatch. Required: 0 or $paramCount Found: $argCount",
-      "Type argument count mismatch.<table><tr><td>Required:</td><td>0 or $paramCount</td></tr>" +
-        "<tr><td align=\"right\">Found:</td><td>$argCount</td></tr></table>",
-      holder
-    )
+    if (referent is Type.Reference && referent.containsConstrainedType(base, context)) {
+      createAnnotation(
+        HighlightSeverity.ERROR,
+        type.textRange,
+        "Reference type annotations may not contain type constraints.",
+        "<code>Reference</code> type annotations may not contain type constraints.",
+        holder
+      )
+    }
   }
+
+  private fun Type.containsConstrainedType(base: PklBaseModule, context: PklProject?): Boolean =
+    !constraints.isEmpty() ||
+      when (this) {
+        is Type.Class -> typeArguments.any { it.containsConstrainedType(base, context) }
+        is Type.Alias ->
+          typeArguments.any { it.containsConstrainedType(base, context) } ||
+            aliasedType(base, context).containsConstrainedType(base, context)
+        is Type.Union ->
+          leftType.containsConstrainedType(base, context) ||
+            rightType.containsConstrainedType(base, context)
+        else -> false
+      }
 
   private fun validateDefaultType(type: PklDefaultType, holder: AnnotationHolder) {
     if (type.parent !is PklUnionType) {

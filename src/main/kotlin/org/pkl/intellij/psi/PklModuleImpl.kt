@@ -295,13 +295,13 @@ class PklModuleImpl(viewProvider: FileViewProvider) :
     `package`?.let { project.pklPackageService.getResolvedDependencies(it, context) }
       ?: pklProject?.getResolvedDependencies(context)
 
-  override val canonicalUri: String
+  override val canonicalUri: String?
     get() {
       return when {
         `package` != null ->
           PackageAssetUri(`package`!!.packageUri, virtualFile.path.substringAfter("!/")).toString()
         isStdLibModule -> "pkl:${name}"
-        else -> virtualFile.url
+        else -> virtualFile?.url
       }
     }
 

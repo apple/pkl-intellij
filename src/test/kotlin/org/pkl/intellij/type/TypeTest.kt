@@ -1,5 +1,5 @@
 /**
- * Copyright © 2024-2025 Apple Inc. and the Pkl project authors. All rights reserved.
+ * Copyright © 2024-2026 Apple Inc. and the Pkl project authors. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -56,8 +56,8 @@ class TypeTest : BasePlatformTestCase() {
     assertTrue(nullableString2.isSubtypeOf(nullableString, base, null))
 
     val person = PklPsiFactory.createClass("Person", project)
-    val nullablePerson = Type.Class(person).nullable(base, null)
-    val nullablePerson2 = Type.Class(person).nullable(base, null)
+    val nullablePerson = Type.Class.create(person).nullable(base, null)
+    val nullablePerson2 = Type.Class.create(person).nullable(base, null)
 
     assertTrue(nullablePerson.isSubtypeOf(nullablePerson, base, null))
     assertTrue(nullablePerson.isSubtypeOf(nullablePerson2, base, null))
