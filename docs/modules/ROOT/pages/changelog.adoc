@@ -1,9 +1,29 @@
 = Changelog
 
+[[release-0.36.0]]
+== 0.36.0 (2026-02-27)
+
+=== Changes
+
+* Add support for Pkl 0.31.0 fallback standard library (pr:https://github.com/apple/pkl-intellij/pull/169[]).
+* Add support for type inference of pkldoc:BaseValueRenderer#convertPropertyTransformers[] entries (pr:https://github.com/apple/pkl-intellij/pull/160[]).
+
+=== Fixes
+
+* Fix potential stack overflow when resolving globs (pr:https://github.com/apple/pkl-intellij/pull/161[]).
+* Fix potential stack overflow when retrieving package metadata (pr:https://github.com/apple/pkl-intellij/pull/167[]).
+
+=== Contributors ❤️
+
+We would like to thank the contributors to this release (in alphabetical order):
+
+* https://github.com/HT154[@HT154]
+* https://github.com/stackoverflow[@stackoverflow]
+
 [[release-0.35.1]]
 == 0.35.1 (2025-12-15)
 
-=== Bugs fixed
+=== Fixes
 
 * Error: Legacy configurable id calculation mode (https://github.com/apple/pkl-intellij/issues/142[#142]).
 * Bump Pkl fallback standard library to 0.30.2 (https://github.com/apple/pkl-intellij/pull/144[#144]).
