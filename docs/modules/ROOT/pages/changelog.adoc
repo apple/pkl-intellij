@@ -1,7 +1,7 @@
 = Changelog
 
 [[release-0.36.0]]
-== 0.36.0 (2026-02-26)
+== 0.36.0 (2026-02-27)
 
 === Changes
 
@@ -12,6 +12,13 @@
 
 * Fix potential stack overflow when resolving globs (pr:https://github.com/apple/pkl-intellij/pull/161[]).
 * Fix potential stack overflow when retrieving package metadata (pr:https://github.com/apple/pkl-intellij/pull/167[]).
+
+=== Contributors ❤️
+
+We would like to thank the contributors to this release (in alphabetical order):
+
+* https://github.com/HT154[@HT154]
+* https://github.com/stackoverflow[@stackoverflow]
 
 [[release-0.35.1]]
 == 0.35.1 (2025-12-15)
