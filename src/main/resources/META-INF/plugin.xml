@@ -21,6 +21,10 @@
     ]]></description>
   <!-- language=html -->
   <change-notes><![CDATA[
+    <b>0.36.1</b>
+    <ul>
+      <li>Bump max allowed IntelliJ version to 263.*</li>
+    </ul>
     <b>0.36.0</b>
     <ul>
       <li>Add support for Pkl 0.31.0 standard library</li>
