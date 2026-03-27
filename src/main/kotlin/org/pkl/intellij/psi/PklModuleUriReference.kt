@@ -191,32 +191,15 @@ class PklModuleUriReference(uri: PklModuleUri, rangeInElement: TextRange) :
       val relPath = VfsUtilCore.findRelativePath(targetPklProjectDir, targetFile, '/')
 
       if (relPath != null) {
-        // Strategy 1: find an already-declared dependency whose root matches the target project.
-        val sourceDeps =
-          element.enclosingModule?.dependencies(null)
-            ?: sourcePklProjectDir?.let { srcDir ->
-              ideaProject.pklProjectService.pklProjects.values
-                .find { it.projectDirVirtualFile?.url == srcDir.url }
-                ?.myDependencies
-            }
-
+        // Strategy 1: if the source module already declares a dependency whose root matches the
+        // target project, reuse that dep name without touching any files.
         val declaredDepName =
-          sourceDeps?.entries?.find { (_, dep) ->
-            dep.getRoot(ideaProject)?.url == targetPklProjectDir.url
-          }?.key
-
+          findDeclaredDepName(sourcePklProjectDir, targetPklProjectDir, ideaProject)
         if (declaredDepName != null) return "@$declaredDepName/$relPath"
 
-        // Strategy 2: target has a package identity — derive the name and add the dependency
-        // declaration to the source PklProject file if it is not there already.
-        val targetPackageName =
-          ideaProject.pklProjectService.pklProjects.values
-            .find { it.projectDirVirtualFile?.url == targetPklProjectDir.url }
-            ?.metadata?.packageUri?.path
-            ?.substringBeforeLast('@')
-            ?.substringAfterLast('/')
-            ?.takeIf { it.isNotEmpty() }
-
+        // Strategy 2: derive the dep name from the target project's packageUri, add the entry to
+        // the source PklProject file if it is not already there, and return the @dep/path URI.
+        val targetPackageName = findTargetPackageName(targetPklProjectDir, ideaProject)
         if (targetPackageName != null && sourcePklProjectDir != null) {
           addDependencyToPklProject(
             sourcePklProjectDir, targetPklProjectDir, targetPackageName, ideaProject
@@ -239,9 +222,51 @@ class PklModuleUriReference(uri: PklModuleUri, rangeInElement: TextRange) :
   }
 
   /**
+   * Returns the name of an already-declared dependency in the source module (or its PklProject)
+   * whose resolved root equals [targetPklProjectDir], or `null` if none is found.
+   *
+   * Checks the in-memory module dependencies first; falls back to the project-level metadata so
+   * that the lookup works even when the source file has not been fully loaded yet.
+   */
+  private fun findDeclaredDepName(
+    sourcePklProjectDir: VirtualFile?,
+    targetPklProjectDir: VirtualFile,
+    ideaProject: Project
+  ): String? {
+    val sourceDeps =
+      element.enclosingModule?.dependencies(null)
+        ?: sourcePklProjectDir?.let { srcDir ->
+          ideaProject.pklProjectService.pklProjects.values
+            .find { it.projectDirVirtualFile?.url == srcDir.url }
+            ?.myDependencies
+        }
+    return sourceDeps?.entries?.find { (_, dep) ->
+      dep.getRoot(ideaProject)?.url == targetPklProjectDir.url
+    }?.key
+  }
+
+  /**
+   * Derives the dependency name for [targetPklProjectDir] from its project's `packageUri`
+   * (e.g. `package://localhost:0/myLib@1.0.0` → `"myLib"`), or returns `null` if the target
+   * project has no `packageUri` or the name cannot be extracted.
+   */
+  private fun findTargetPackageName(
+    targetPklProjectDir: VirtualFile,
+    ideaProject: Project
+  ): String? =
+    ideaProject.pklProjectService.pklProjects.values
+      .find { it.projectDirVirtualFile?.url == targetPklProjectDir.url }
+      ?.metadata?.packageUri?.path
+      ?.substringBeforeLast('@')
+      ?.substringAfterLast('/')
+      ?.takeIf { it.isNotEmpty() }
+
+  /**
    * Adds `["depName"] = import("relPath/PklProject")` to the `dependencies` block of the
    * `PklProject` file in [sourcePklProjectDir]. Creates the `dependencies` block if absent.
    * Does nothing if the entry is already present.
+   *
+   * After editing the document, schedules a PKL project sync via [scheduleSyncIfNeeded].
    */
   private fun addDependencyToPklProject(
     sourcePklProjectDir: VirtualFile,
@@ -275,16 +300,21 @@ class PklModuleUriReference(uri: PklModuleUri, rangeInElement: TextRange) :
       document.insertString(document.textLength, "\ndependencies {\n$newEntry}\n")
     }
 
-    // Schedule a PKL project sync (pkl project resolve → PklProject.deps.json) to run after
-    // the current write action completes. A project-level flag prevents multiple syncs when
-    // several references are updated in a single refactoring pass.
-    if (ideaProject.getUserData(SYNC_SCHEDULED_KEY) != true) {
-      ideaProject.putUserData(SYNC_SCHEDULED_KEY, true)
-      ApplicationManager.getApplication().invokeLater {
-        ideaProject.putUserData(SYNC_SCHEDULED_KEY, null)
-        FileDocumentManager.getInstance().saveAllDocuments()
-        ideaProject.pklProjectService.syncProjects()
-      }
+    scheduleSyncIfNeeded(ideaProject)
+  }
+
+  /**
+   * Schedules a PKL project sync (pkl project resolve → PklProject.deps.json) to run after the
+   * current write action completes. A project-level flag ([SYNC_SCHEDULED_KEY]) prevents multiple
+   * syncs when several references are updated in a single refactoring pass.
+   */
+  private fun scheduleSyncIfNeeded(ideaProject: Project) {
+    if (ideaProject.getUserData(SYNC_SCHEDULED_KEY) == true) return
+    ideaProject.putUserData(SYNC_SCHEDULED_KEY, true)
+    ApplicationManager.getApplication().invokeLater {
+      ideaProject.putUserData(SYNC_SCHEDULED_KEY, null)
+      FileDocumentManager.getInstance().saveAllDocuments()
+      ideaProject.pklProjectService.syncProjects()
     }
   }
 
