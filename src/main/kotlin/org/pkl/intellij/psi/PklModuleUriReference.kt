@@ -15,6 +15,7 @@
  */
 package org.pkl.intellij.psi
 
+import com.intellij.openapi.fileEditor.FileDocumentManager
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.roots.ProjectFileIndex
 import com.intellij.openapi.roots.ProjectRootManager
@@ -166,72 +167,112 @@ class PklModuleUriReference(uri: PklModuleUri, rangeInElement: TextRange) :
   }
 
   /**
-   * Returns the best URI string for a relative import after [targetFile] has moved.
+   * Returns the best URI string for a relative import after [targetFile] has moved, and
+   * auto-declares the dependency in the source `PklProject` file when needed.
    *
-   * When [sourceFile] is outside the PKL project that contains [targetFile], attempts to produce
-   * an `@<depName>/<relPath>` URI using the following resolution order:
+   * Resolution order when [sourceFile] is outside the target's PKL project:
    *
-   * 1. Search the source module's resolved dependencies for one whose root matches the target
-   *    project directory (handles the case where the dep is already declared).
-   * 2. Find the target project's own `package.name` via [pklProjectService] (handles the case
-   *    where the dep is not yet declared but the target has a package identity — the user still
-   *    needs to add the dependency declaration to their PklProject).
+   * 1. **Declared dep** — search the source module's resolved dependencies for one whose root
+   *    matches the target project directory. Returns `@<depName>/<relPath>` immediately.
+   * 2. **Package name** — derive the dep name from the target project's `packageUri` (e.g.
+   *    `package://localhost:0/tests@1.0.0` → `"tests"`), write the new dependency entry into the
+   *    source `PklProject` file (unless it already contains it), and return `@<name>/<relPath>`.
    *
-   * Falls back to a plain filesystem-relative path if neither strategy yields a name.
-   *
-   * Returns `null` if a path cannot be computed at all (e.g. no common ancestor).
+   * Falls back to a plain filesystem-relative path only when neither file has a `PklProject`
+   * ancestor (no PKL project context at all). Returns `null` if no path can be computed.
    */
   private fun computeNewRelativeUri(sourceFile: VirtualFile, targetFile: VirtualFile): String? {
     val ideaProject = element.project
-
-    // Find the PKL project dir of the moved (target) file.
     val targetPklProjectDir = findPklProjectDir(targetFile)
+    val sourcePklProjectDir = findPklProjectDir(sourceFile)
 
-    if (targetPklProjectDir != null) {
-      val sourcePklProjectDir = findPklProjectDir(sourceFile)
+    if (targetPklProjectDir != null && sourcePklProjectDir?.url != targetPklProjectDir.url) {
+      val relPath = VfsUtilCore.findRelativePath(targetPklProjectDir, targetFile, '/')
 
-      // Only attempt @dep/path when source is outside the target's PKL project.
-      // Compare by URL string to avoid VirtualFile identity mismatches.
-      if (sourcePklProjectDir?.url != targetPklProjectDir.url) {
-        val relPath = VfsUtilCore.findRelativePath(targetPklProjectDir, targetFile, '/')
+      if (relPath != null) {
+        // Strategy 1: find an already-declared dependency whose root matches the target project.
+        val sourceDeps =
+          element.enclosingModule?.dependencies(null)
+            ?: sourcePklProjectDir?.let { srcDir ->
+              ideaProject.pklProjectService.pklProjects.values
+                .find { it.projectDirVirtualFile?.url == srcDir.url }
+                ?.myDependencies
+            }
 
-        if (relPath != null) {
-          // Strategy 1: find a declared dependency in the source module whose root matches.
-          // Uses enclosing module's resolved deps so it works for both packages and projects.
-          val sourceDeps =
-            element.enclosingModule?.dependencies(null)
-              ?: sourcePklProjectDir?.let { srcDir ->
-                ideaProject.pklProjectService.pklProjects.values
-                  .find { it.projectDirVirtualFile?.url == srcDir.url }
-                  ?.myDependencies
-              }
+        val declaredDepName =
+          sourceDeps?.entries?.find { (_, dep) ->
+            dep.getRoot(ideaProject)?.url == targetPklProjectDir.url
+          }?.key
 
-          val declaredDepName =
-            sourceDeps?.entries?.find { (_, dep) ->
-              dep.getRoot(ideaProject)?.url == targetPklProjectDir.url
-            }?.key
+        if (declaredDepName != null) return "@$declaredDepName/$relPath"
 
-          if (declaredDepName != null) return "@$declaredDepName/$relPath"
+        // Strategy 2: target has a package identity — derive the name and add the dependency
+        // declaration to the source PklProject file if it is not there already.
+        val targetPackageName =
+          ideaProject.pklProjectService.pklProjects.values
+            .find { it.projectDirVirtualFile?.url == targetPklProjectDir.url }
+            ?.metadata?.packageUri?.path
+            ?.substringBeforeLast('@')
+            ?.substringAfterLast('/')
+            ?.takeIf { it.isNotEmpty() }
 
-          // Strategy 2: the source project hasn't declared the dep yet, but the target
-          // project has a package name we can derive from its packageUri.
-          // e.g. package://localhost:0/tests@1.0.0  →  name = "tests"
-          val targetPackageName =
-            ideaProject.pklProjectService.pklProjects.values
-              .find { it.projectDirVirtualFile?.url == targetPklProjectDir.url }
-              ?.metadata?.packageUri?.path
-              ?.substringBeforeLast('@')
-              ?.substringAfterLast('/')
-              ?.takeIf { it.isNotEmpty() }
-
-          if (targetPackageName != null) return "@$targetPackageName/$relPath"
+        if (targetPackageName != null && sourcePklProjectDir != null) {
+          addDependencyToPklProject(
+            sourcePklProjectDir, targetPklProjectDir, targetPackageName, ideaProject
+          )
+          return "@$targetPackageName/$relPath"
         }
       }
     }
 
-    // Default: plain relative path from the source file's directory.
-    val sourceDir = sourceFile.parent ?: return null
-    return VfsUtilCore.findRelativePath(sourceDir, targetFile, '/')
+    // Fall back to a relative path only when there is no PKL project context on either side.
+    if (targetPklProjectDir == null || sourcePklProjectDir == null) {
+      val sourceDir = sourceFile.parent ?: return null
+      return VfsUtilCore.findRelativePath(sourceDir, targetFile, '/')
+    }
+
+    // Both sides have a PKL project but we could not determine a dep name (e.g. target project
+    // has no packageUri). Return null so the import is left unchanged rather than producing a
+    // fragile relative path.
+    return null
+  }
+
+  /**
+   * Adds `["depName"] = import("relPath/PklProject")` to the `dependencies` block of the
+   * `PklProject` file in [sourcePklProjectDir]. Creates the `dependencies` block if absent.
+   * Does nothing if the entry is already present.
+   */
+  private fun addDependencyToPklProject(
+    sourcePklProjectDir: VirtualFile,
+    targetPklProjectDir: VirtualFile,
+    depName: String,
+    ideaProject: Project
+  ) {
+    val pklProjectVFile = sourcePklProjectDir.findChild(PKL_PROJECT_FILENAME) ?: return
+
+    // Relative path from the source project's directory to the target PklProject file.
+    val relToTarget =
+      VfsUtilCore.findRelativePath(sourcePklProjectDir, targetPklProjectDir, '/') ?: return
+    val importPath = "$relToTarget/$PKL_PROJECT_FILENAME"
+
+    val pklModule =
+      PsiManager.getInstance(ideaProject).findFile(pklProjectVFile) as? PklModule ?: return
+    val depsProperty = pklModule.properties.find { it.name == "dependencies" }
+
+    // Skip if this dep name is already present (avoids duplicate entries).
+    if (depsProperty?.text?.contains("[\"$depName\"]") == true) return
+
+    val document = FileDocumentManager.getInstance().getDocument(pklProjectVFile) ?: return
+    val newEntry = "  [\"$depName\"] = import(\"$importPath\")\n"
+
+    if (depsProperty != null) {
+      // Insert before the closing `}` of the existing dependencies block.
+      val objectBody = depsProperty.objectBodyList.firstOrNull() ?: return
+      document.insertString(objectBody.textRange.endOffset - 1, newEntry)
+    } else {
+      // Append a brand-new dependencies block at the end of the file.
+      document.insertString(document.textLength, "\ndependencies {\n$newEntry}\n")
+    }
   }
 
   companion object {
