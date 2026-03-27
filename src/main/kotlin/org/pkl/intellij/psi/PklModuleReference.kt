@@ -17,7 +17,9 @@ package org.pkl.intellij.psi
 
 import com.intellij.openapi.util.TextRange
 import com.intellij.psi.ElementManipulators
+import com.intellij.psi.PsiElement
 import com.intellij.psi.PsiReferenceBase
+import com.intellij.util.IncorrectOperationException
 import org.pkl.intellij.packages.dto.PklProject
 
 class PklModuleReference(source: PklElement) : PsiReferenceBase<PklElement>(source), PklReference {
@@ -27,4 +29,7 @@ class PklModuleReference(source: PklElement) : PsiReferenceBase<PklElement>(sour
   override fun resolve(): PklElement? = myElement.enclosingModule
 
   override fun resolveContextual(context: PklProject?): PklElement? = resolve()
+
+  @Throws(IncorrectOperationException::class)
+  override fun bindToElement(newTarget: PsiElement): PsiElement = element
 }
