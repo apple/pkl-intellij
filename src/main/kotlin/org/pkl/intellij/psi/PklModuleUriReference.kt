@@ -168,9 +168,9 @@ class PklModuleUriReference(uri: PklModuleUri, rangeInElement: TextRange) :
   /**
    * Returns the best URI string for a relative import after [targetFile] has moved.
    *
-   * When [sourceFile] is outside the PKL project that contains [targetFile] and the source's own
-   * PKL project declares that project as a local dependency, returns `@<depName>/<relPath>`.
-   * Otherwise returns a plain filesystem-relative path.
+   * When [sourceFile] is outside the PKL project that contains [targetFile] and the source
+   * module's resolved dependencies include that project as a local dependency, returns
+   * `@<depName>/<relPath>`. Otherwise returns a plain filesystem-relative path.
    *
    * Returns `null` if a path cannot be computed at all (e.g. no common ancestor).
    */
@@ -183,15 +183,26 @@ class PklModuleUriReference(uri: PklModuleUri, rangeInElement: TextRange) :
     if (targetPklProjectDir != null) {
       val sourcePklProjectDir = findPklProjectDir(sourceFile)
 
-      // Source is in a different (or absent) PKL project than the moved file.
-      if (sourcePklProjectDir != targetPklProjectDir) {
-        val sourcePklProject =
-          sourcePklProjectDir?.let { ideaProject.pklProjectService.getPklProject(it) }
+      // Only attempt @dep/path when source is outside the target's PKL project.
+      // Compare by URL string to avoid VirtualFile identity mismatches.
+      if (sourcePklProjectDir?.url != targetPklProjectDir.url) {
+        // Primary: use the enclosing module's resolved dependencies. This works for both
+        // PKL project files and files inside packages, and goes through the same resolution
+        // path used by the rest of the plugin.
+        val sourceDeps =
+          element.enclosingModule?.dependencies(null)
+          // Fallback: search all known PKL projects by URL in case the module is not available.
+            ?: sourcePklProjectDir?.let { srcDir ->
+              ideaProject.pklProjectService.pklProjects.values
+                .find { it.projectDirVirtualFile?.url == srcDir.url }
+                ?.myDependencies
+            }
 
-        // Search source project's local dependencies for one whose root is the target project.
+        // Match by URL string instead of VirtualFile identity to handle path-canonicalization
+        // differences (e.g. symlinks, findFileByRelativePath with ".." vs walking up).
         val depName =
-          sourcePklProject?.myDependencies?.entries?.find { (_, dep) ->
-            dep.getRoot(ideaProject) == targetPklProjectDir
+          sourceDeps?.entries?.find { (_, dep) ->
+            dep.getRoot(ideaProject)?.url == targetPklProjectDir.url
           }?.key
 
         if (depName != null) {
