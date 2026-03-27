@@ -155,8 +155,6 @@ class PklProjectService(private val project: Project) :
       modificationCount.getAndIncrement()
       project.messageBus.syncPublisher(PKL_PROJECTS_SYNC_TOPIC).pklProjectSyncFinished()
       project.messageBus.syncPublisher(PKL_PROJECTS_TOPIC).pklProjectsUpdated(this, pklProjects)
-      // Re-run annotators on all open editors so that @dep/path imports that were just resolved
-      // (or whose dependency was just added to a PklProject file) stop showing warnings.
       ApplicationManager.getApplication().invokeLater {
         DaemonCodeAnalyzer.getInstance(project).restart()
       }

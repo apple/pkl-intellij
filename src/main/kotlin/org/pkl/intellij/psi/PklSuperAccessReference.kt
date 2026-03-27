@@ -44,6 +44,5 @@ class PklSuperAccessReference(private val accessName: PklSuperAccessName) :
 
   override fun resolve(): PsiElement? = resolveContextual(accessName.enclosingModule?.pklProject)
 
-  @Throws(IncorrectOperationException::class)
   override fun bindToElement(newTarget: PsiElement): PsiElement = element
 }

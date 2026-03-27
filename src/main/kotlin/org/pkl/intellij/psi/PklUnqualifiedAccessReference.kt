@@ -46,6 +46,5 @@ class PklUnqualifiedAccessReference(private val accessName: PklUnqualifiedAccess
     return resolveContextual(accessName.enclosingModule?.pklProject)
   }
 
-  @Throws(IncorrectOperationException::class)
   override fun bindToElement(newTarget: PsiElement): PsiElement = element
 }

@@ -151,12 +151,9 @@ class PklModuleUriReference(uri: PklModuleUri, rangeInElement: TextRange) :
 
     val newUri =
       when {
-        // Absolute file: URI — replace with the new absolute VFS URL.
         currentUri.startsWith("file:", ignoreCase = true) -> targetVirtualFile.url
-        // Relative URI (no scheme) — prefer @dep/path when crossing project boundaries.
         !currentUri.contains(':') -> computeNewRelativeUri(sourceVirtualFile, targetVirtualFile)
             ?: return element
-        // modulepath:, package:, pkl:, https: — not affected by moves; skip.
         else -> return element
       }
 
@@ -190,14 +187,10 @@ class PklModuleUriReference(uri: PklModuleUri, rangeInElement: TextRange) :
       val relPath = VfsUtilCore.findRelativePath(targetPklProjectDir, targetFile, '/')
 
       if (relPath != null) {
-        // Strategy 1: if the source module already declares a dependency whose root matches the
-        // target project, reuse that dep name without touching any files.
         val declaredDepName =
           findDeclaredDepName(sourcePklProjectDir, targetPklProjectDir, ideaProject)
         if (declaredDepName != null) return "@$declaredDepName/$relPath"
 
-        // Strategy 2: derive the dep name from the target project's packageUri, add the entry to
-        // the source PklProject file if it is not already there, and return the @dep/path URI.
         val targetPackageName = findTargetPackageName(targetPklProjectDir, ideaProject)
         if (targetPackageName != null && sourcePklProjectDir != null) {
           addDependencyToPklProject(
@@ -211,7 +204,6 @@ class PklModuleUriReference(uri: PklModuleUri, rangeInElement: TextRange) :
       }
     }
 
-    // Fall back to a relative path only when there is no PKL project context on either side.
     if (targetPklProjectDir == null || sourcePklProjectDir == null) {
       val sourceDir = sourceFile.parent ?: return null
       return VfsUtilCore.findRelativePath(sourceDir, targetFile, '/')
@@ -281,7 +273,6 @@ class PklModuleUriReference(uri: PklModuleUri, rangeInElement: TextRange) :
   ) {
     val pklProjectVFile = sourcePklProjectDir.findChild(PKL_PROJECT_FILENAME) ?: return
 
-    // Relative path from the source project's directory to the target PklProject file.
     val relToTarget =
       VfsUtilCore.findRelativePath(sourcePklProjectDir, targetPklProjectDir, '/') ?: return
     val importPath = "$relToTarget/$PKL_PROJECT_FILENAME"
@@ -290,18 +281,15 @@ class PklModuleUriReference(uri: PklModuleUri, rangeInElement: TextRange) :
       PsiManager.getInstance(ideaProject).findFile(pklProjectVFile) as? PklModule ?: return
     val depsProperty = pklModule.properties.find { it.name == "dependencies" }
 
-    // Skip if this dep name is already present (avoids duplicate entries).
     if (depsProperty?.text?.contains("[\"$depName\"]") == true) return
 
     val document = FileDocumentManager.getInstance().getDocument(pklProjectVFile) ?: return
     val newEntry = "  [\"$depName\"] = import(\"$importPath\")\n"
 
     if (depsProperty != null) {
-      // Insert before the closing `}` of the existing dependencies block.
       val objectBody = depsProperty.objectBodyList.firstOrNull() ?: return
       document.insertString(objectBody.textRange.endOffset - 1, newEntry)
     } else {
-      // Append a brand-new dependencies block at the end of the file.
       document.insertString(document.textLength, "\ndependencies {\n$newEntry}\n")
     }
 

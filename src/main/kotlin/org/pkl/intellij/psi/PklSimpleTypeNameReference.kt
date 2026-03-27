@@ -56,6 +56,5 @@ class PklSimpleTypeNameReference(private val simpleTypeName: PklSimpleTypeName) 
     return resolveContextual(simpleTypeName.enclosingModule?.pklProject)
   }
 
-  @Throws(IncorrectOperationException::class)
   override fun bindToElement(newTarget: PsiElement): PsiElement = element
 }
