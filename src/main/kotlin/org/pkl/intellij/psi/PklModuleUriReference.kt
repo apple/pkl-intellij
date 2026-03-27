@@ -168,9 +168,16 @@ class PklModuleUriReference(uri: PklModuleUri, rangeInElement: TextRange) :
   /**
    * Returns the best URI string for a relative import after [targetFile] has moved.
    *
-   * When [sourceFile] is outside the PKL project that contains [targetFile] and the source
-   * module's resolved dependencies include that project as a local dependency, returns
-   * `@<depName>/<relPath>`. Otherwise returns a plain filesystem-relative path.
+   * When [sourceFile] is outside the PKL project that contains [targetFile], attempts to produce
+   * an `@<depName>/<relPath>` URI using the following resolution order:
+   *
+   * 1. Search the source module's resolved dependencies for one whose root matches the target
+   *    project directory (handles the case where the dep is already declared).
+   * 2. Find the target project's own `package.name` via [pklProjectService] (handles the case
+   *    where the dep is not yet declared but the target has a package identity — the user still
+   *    needs to add the dependency declaration to their PklProject).
+   *
+   * Falls back to a plain filesystem-relative path if neither strategy yields a name.
    *
    * Returns `null` if a path cannot be computed at all (e.g. no common ancestor).
    */
@@ -186,28 +193,38 @@ class PklModuleUriReference(uri: PklModuleUri, rangeInElement: TextRange) :
       // Only attempt @dep/path when source is outside the target's PKL project.
       // Compare by URL string to avoid VirtualFile identity mismatches.
       if (sourcePklProjectDir?.url != targetPklProjectDir.url) {
-        // Primary: use the enclosing module's resolved dependencies. This works for both
-        // PKL project files and files inside packages, and goes through the same resolution
-        // path used by the rest of the plugin.
-        val sourceDeps =
-          element.enclosingModule?.dependencies(null)
-          // Fallback: search all known PKL projects by URL in case the module is not available.
-            ?: sourcePklProjectDir?.let { srcDir ->
-              ideaProject.pklProjectService.pklProjects.values
-                .find { it.projectDirVirtualFile?.url == srcDir.url }
-                ?.myDependencies
-            }
+        val relPath = VfsUtilCore.findRelativePath(targetPklProjectDir, targetFile, '/')
 
-        // Match by URL string instead of VirtualFile identity to handle path-canonicalization
-        // differences (e.g. symlinks, findFileByRelativePath with ".." vs walking up).
-        val depName =
-          sourceDeps?.entries?.find { (_, dep) ->
-            dep.getRoot(ideaProject)?.url == targetPklProjectDir.url
-          }?.key
+        if (relPath != null) {
+          // Strategy 1: find a declared dependency in the source module whose root matches.
+          // Uses enclosing module's resolved deps so it works for both packages and projects.
+          val sourceDeps =
+            element.enclosingModule?.dependencies(null)
+              ?: sourcePklProjectDir?.let { srcDir ->
+                ideaProject.pklProjectService.pklProjects.values
+                  .find { it.projectDirVirtualFile?.url == srcDir.url }
+                  ?.myDependencies
+              }
 
-        if (depName != null) {
-          val relPath = VfsUtilCore.findRelativePath(targetPklProjectDir, targetFile, '/')
-          if (relPath != null) return "@$depName/$relPath"
+          val declaredDepName =
+            sourceDeps?.entries?.find { (_, dep) ->
+              dep.getRoot(ideaProject)?.url == targetPklProjectDir.url
+            }?.key
+
+          if (declaredDepName != null) return "@$declaredDepName/$relPath"
+
+          // Strategy 2: the source project hasn't declared the dep yet, but the target
+          // project has a package name we can derive from its packageUri.
+          // e.g. package://localhost:0/tests@1.0.0  →  name = "tests"
+          val targetPackageName =
+            ideaProject.pklProjectService.pklProjects.values
+              .find { it.projectDirVirtualFile?.url == targetPklProjectDir.url }
+              ?.metadata?.packageUri?.path
+              ?.substringBeforeLast('@')
+              ?.substringAfterLast('/')
+              ?.takeIf { it.isNotEmpty() }
+
+          if (targetPackageName != null) return "@$targetPackageName/$relPath"
         }
       }
     }
