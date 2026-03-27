@@ -26,6 +26,7 @@ import com.intellij.openapi.vfs.*
 import com.intellij.openapi.vfs.impl.http.HttpVirtualFile
 import com.intellij.openapi.vfs.impl.http.RemoteFileState
 import com.intellij.psi.*
+import com.intellij.util.IncorrectOperationException
 import com.intellij.psi.util.CachedValueProvider
 import com.intellij.psi.util.CachedValuesManager
 import com.intellij.psi.util.ParameterizedCachedValueProvider
@@ -119,6 +120,45 @@ class PklModuleUriReference(uri: PklModuleUri, rangeInElement: TextRange) :
       )
     val newContent = PklPsiFactory.createStringContent(newText, stringStart.text, element.project)
     stringContent.node.replaceAllChildrenToChildrenOf(newContent.node)
+    return element
+  }
+
+  /**
+   * Called by IntelliJ's refactoring engine when a referenced file/directory is moved.
+   * Recomputes the URI to point at [newTarget]'s new location.
+   *
+   * Only relative-path and `file:` URIs are updated; other schemes (pkl:, package:, https:, etc.)
+   * are unaffected by file moves and are left as-is.
+   */
+  @Throws(IncorrectOperationException::class)
+  override fun bindToElement(newTarget: PsiElement): PsiElement {
+    val targetVirtualFile =
+      when (newTarget) {
+        is PsiFile -> newTarget.virtualFile
+        is PsiDirectory -> newTarget.virtualFile
+        else -> null
+      } ?: return element
+
+    val sourceVirtualFile = element.containingFile.originalFile.virtualFile ?: return element
+    val currentUri = element.stringConstant.content.text
+
+    val newUri =
+      when {
+        // Absolute file: URI — replace with the new absolute VFS URL.
+        currentUri.startsWith("file:", ignoreCase = true) -> targetVirtualFile.url
+        // Relative URI (no scheme) — recompute the relative path from source dir to new target.
+        !currentUri.contains(':') -> {
+          val sourceDir = sourceVirtualFile.parent ?: return element
+          VfsUtilCore.findRelativePath(sourceDir, targetVirtualFile, '/') ?: return element
+        }
+        // modulepath:, package:, pkl:, https: — not affected by moves; skip.
+        else -> return element
+      }
+
+    val stringConstant = element.stringConstant
+    val newContent =
+      PklPsiFactory.createStringContent(newUri, stringConstant.stringStart.text, element.project)
+    stringConstant.content.node.replaceAllChildrenToChildrenOf(newContent.node)
     return element
   }
 
