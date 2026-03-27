@@ -1,5 +1,5 @@
 /**
- * Copyright © 2024 Apple Inc. and the Pkl project authors. All rights reserved.
+ * Copyright © 2024-2026 Apple Inc. and the Pkl project authors. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -28,11 +28,11 @@ import com.intellij.openapi.vfs.*
 import com.intellij.openapi.vfs.impl.http.HttpVirtualFile
 import com.intellij.openapi.vfs.impl.http.RemoteFileState
 import com.intellij.psi.*
-import com.intellij.util.IncorrectOperationException
 import com.intellij.psi.util.CachedValueProvider
 import com.intellij.psi.util.CachedValuesManager
 import com.intellij.psi.util.ParameterizedCachedValueProvider
 import com.intellij.psi.util.PsiModificationTracker
+import com.intellij.util.IncorrectOperationException
 import java.net.URI
 import java.net.URISyntaxException
 import org.pkl.intellij.PklLanguage
@@ -127,9 +127,8 @@ class PklModuleUriReference(uri: PklModuleUri, rangeInElement: TextRange) :
   }
 
   /**
-   * Called by IntelliJ's refactoring engine when a referenced file/directory is moved.
-   * Recomputes the URI to point at [newTarget]'s new location.
-   *
+   * Called by IntelliJ's refactoring engine when a referenced file/directory is moved. Recomputes
+   * the URI to point at [newTarget]'s new location.
    * - For `file:` URIs: replaces with the new absolute VFS URL.
    * - For relative URIs: if the source file is **outside** the PKL project that owns the moved
    *   file, and the source's PKL project declares that project as a local dependency, the URI is
@@ -144,7 +143,8 @@ class PklModuleUriReference(uri: PklModuleUri, rangeInElement: TextRange) :
         is PsiFile -> newTarget.virtualFile
         is PsiDirectory -> newTarget.virtualFile
         else -> null
-      } ?: return element
+      }
+        ?: return element
 
     val sourceVirtualFile = element.containingFile.originalFile.virtualFile ?: return element
     val currentUri = element.stringConstant.content.text
@@ -154,8 +154,8 @@ class PklModuleUriReference(uri: PklModuleUri, rangeInElement: TextRange) :
         // Absolute file: URI — replace with the new absolute VFS URL.
         currentUri.startsWith("file:", ignoreCase = true) -> targetVirtualFile.url
         // Relative URI (no scheme) — prefer @dep/path when crossing project boundaries.
-        !currentUri.contains(':') ->
-          computeNewRelativeUri(sourceVirtualFile, targetVirtualFile) ?: return element
+        !currentUri.contains(':') -> computeNewRelativeUri(sourceVirtualFile, targetVirtualFile)
+            ?: return element
         // modulepath:, package:, pkl:, https: — not affected by moves; skip.
         else -> return element
       }
@@ -172,7 +172,6 @@ class PklModuleUriReference(uri: PklModuleUri, rangeInElement: TextRange) :
    * auto-declares the dependency in the source `PklProject` file when needed.
    *
    * Resolution order when [sourceFile] is outside the target's PKL project:
-   *
    * 1. **Declared dep** — search the source module's resolved dependencies for one whose root
    *    matches the target project directory. Returns `@<depName>/<relPath>` immediately.
    * 2. **Package name** — derive the dep name from the target project's `packageUri` (e.g.
@@ -202,7 +201,10 @@ class PklModuleUriReference(uri: PklModuleUri, rangeInElement: TextRange) :
         val targetPackageName = findTargetPackageName(targetPklProjectDir, ideaProject)
         if (targetPackageName != null && sourcePklProjectDir != null) {
           addDependencyToPklProject(
-            sourcePklProjectDir, targetPklProjectDir, targetPackageName, ideaProject
+            sourcePklProjectDir,
+            targetPklProjectDir,
+            targetPackageName,
+            ideaProject
           )
           return "@$targetPackageName/$relPath"
         }
@@ -240,15 +242,16 @@ class PklModuleUriReference(uri: PklModuleUri, rangeInElement: TextRange) :
             .find { it.projectDirVirtualFile?.url == srcDir.url }
             ?.myDependencies
         }
-    return sourceDeps?.entries?.find { (_, dep) ->
-      dep.getRoot(ideaProject)?.url == targetPklProjectDir.url
-    }?.key
+    return sourceDeps
+      ?.entries
+      ?.find { (_, dep) -> dep.getRoot(ideaProject)?.url == targetPklProjectDir.url }
+      ?.key
   }
 
   /**
-   * Derives the dependency name for [targetPklProjectDir] from its project's `packageUri`
-   * (e.g. `package://localhost:0/myLib@1.0.0` → `"myLib"`), or returns `null` if the target
-   * project has no `packageUri` or the name cannot be extracted.
+   * Derives the dependency name for [targetPklProjectDir] from its project's `packageUri` (e.g.
+   * `package://localhost:0/myLib@1.0.0` → `"myLib"`), or returns `null` if the target project has
+   * no `packageUri` or the name cannot be extracted.
    */
   private fun findTargetPackageName(
     targetPklProjectDir: VirtualFile,
@@ -256,15 +259,17 @@ class PklModuleUriReference(uri: PklModuleUri, rangeInElement: TextRange) :
   ): String? =
     ideaProject.pklProjectService.pklProjects.values
       .find { it.projectDirVirtualFile?.url == targetPklProjectDir.url }
-      ?.metadata?.packageUri?.path
+      ?.metadata
+      ?.packageUri
+      ?.path
       ?.substringBeforeLast('@')
       ?.substringAfterLast('/')
       ?.takeIf { it.isNotEmpty() }
 
   /**
    * Adds `["depName"] = import("relPath/PklProject")` to the `dependencies` block of the
-   * `PklProject` file in [sourcePklProjectDir]. Creates the `dependencies` block if absent.
-   * Does nothing if the entry is already present.
+   * `PklProject` file in [sourcePklProjectDir]. Creates the `dependencies` block if absent. Does
+   * nothing if the entry is already present.
    *
    * After editing the document, schedules a PKL project sync via [scheduleSyncIfNeeded].
    */
@@ -320,8 +325,8 @@ class PklModuleUriReference(uri: PklModuleUri, rangeInElement: TextRange) :
 
   companion object {
     /**
-     * Project-level flag used to ensure at most one PKL project sync is scheduled per
-     * refactoring operation (even when multiple references are updated in one pass).
+     * Project-level flag used to ensure at most one PKL project sync is scheduled per refactoring
+     * operation (even when multiple references are updated in one pass).
      */
     private val SYNC_SCHEDULED_KEY = Key.create<Boolean>("pkl.depSync.scheduled")
 
