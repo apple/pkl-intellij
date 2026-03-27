@@ -15,6 +15,7 @@
  */
 package org.pkl.intellij.psi
 
+import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.fileEditor.FileDocumentManager
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.roots.ProjectFileIndex
@@ -273,9 +274,27 @@ class PklModuleUriReference(uri: PklModuleUri, rangeInElement: TextRange) :
       // Append a brand-new dependencies block at the end of the file.
       document.insertString(document.textLength, "\ndependencies {\n$newEntry}\n")
     }
+
+    // Schedule a PKL project sync (pkl project resolve → PklProject.deps.json) to run after
+    // the current write action completes. A project-level flag prevents multiple syncs when
+    // several references are updated in a single refactoring pass.
+    if (ideaProject.getUserData(SYNC_SCHEDULED_KEY) != true) {
+      ideaProject.putUserData(SYNC_SCHEDULED_KEY, true)
+      ApplicationManager.getApplication().invokeLater {
+        ideaProject.putUserData(SYNC_SCHEDULED_KEY, null)
+        FileDocumentManager.getInstance().saveAllDocuments()
+        ideaProject.pklProjectService.syncProjects()
+      }
+    }
   }
 
   companion object {
+    /**
+     * Project-level flag used to ensure at most one PKL project sync is scheduled per
+     * refactoring operation (even when multiple references are updated in one pass).
+     */
+    private val SYNC_SCHEDULED_KEY = Key.create<Boolean>("pkl.depSync.scheduled")
+
     /**
      * Walks up the directory tree from [file] and returns the first ancestor directory that
      * contains a `PklProject` file, or `null` if none is found.
