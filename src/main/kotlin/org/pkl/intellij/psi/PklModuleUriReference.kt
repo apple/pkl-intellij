@@ -35,6 +35,7 @@ import java.net.URI
 import java.net.URISyntaxException
 import org.pkl.intellij.PklLanguage
 import org.pkl.intellij.cacheKeyService
+import org.pkl.intellij.packages.PklProjectService.Companion.PKL_PROJECT_FILENAME
 import org.pkl.intellij.packages.dto.PackageUri
 import org.pkl.intellij.packages.dto.PklProject
 import org.pkl.intellij.packages.pklProjectService
@@ -127,8 +128,12 @@ class PklModuleUriReference(uri: PklModuleUri, rangeInElement: TextRange) :
    * Called by IntelliJ's refactoring engine when a referenced file/directory is moved.
    * Recomputes the URI to point at [newTarget]'s new location.
    *
-   * Only relative-path and `file:` URIs are updated; other schemes (pkl:, package:, https:, etc.)
-   * are unaffected by file moves and are left as-is.
+   * - For `file:` URIs: replaces with the new absolute VFS URL.
+   * - For relative URIs: if the source file is **outside** the PKL project that owns the moved
+   *   file, and the source's PKL project declares that project as a local dependency, the URI is
+   *   rewritten as `@<depName>/<path-from-dep-root>`. Otherwise falls back to a plain relative
+   *   path.
+   * - Other schemes (`pkl:`, `package:`, `https:`, `modulepath:`) are unaffected by file moves.
    */
   @Throws(IncorrectOperationException::class)
   override fun bindToElement(newTarget: PsiElement): PsiElement {
@@ -146,11 +151,9 @@ class PklModuleUriReference(uri: PklModuleUri, rangeInElement: TextRange) :
       when {
         // Absolute file: URI — replace with the new absolute VFS URL.
         currentUri.startsWith("file:", ignoreCase = true) -> targetVirtualFile.url
-        // Relative URI (no scheme) — recompute the relative path from source dir to new target.
-        !currentUri.contains(':') -> {
-          val sourceDir = sourceVirtualFile.parent ?: return element
-          VfsUtilCore.findRelativePath(sourceDir, targetVirtualFile, '/') ?: return element
-        }
+        // Relative URI (no scheme) — prefer @dep/path when crossing project boundaries.
+        !currentUri.contains(':') ->
+          computeNewRelativeUri(sourceVirtualFile, targetVirtualFile) ?: return element
         // modulepath:, package:, pkl:, https: — not affected by moves; skip.
         else -> return element
       }
@@ -162,7 +165,61 @@ class PklModuleUriReference(uri: PklModuleUri, rangeInElement: TextRange) :
     return element
   }
 
+  /**
+   * Returns the best URI string for a relative import after [targetFile] has moved.
+   *
+   * When [sourceFile] is outside the PKL project that contains [targetFile] and the source's own
+   * PKL project declares that project as a local dependency, returns `@<depName>/<relPath>`.
+   * Otherwise returns a plain filesystem-relative path.
+   *
+   * Returns `null` if a path cannot be computed at all (e.g. no common ancestor).
+   */
+  private fun computeNewRelativeUri(sourceFile: VirtualFile, targetFile: VirtualFile): String? {
+    val ideaProject = element.project
+
+    // Find the PKL project dir of the moved (target) file.
+    val targetPklProjectDir = findPklProjectDir(targetFile)
+
+    if (targetPklProjectDir != null) {
+      val sourcePklProjectDir = findPklProjectDir(sourceFile)
+
+      // Source is in a different (or absent) PKL project than the moved file.
+      if (sourcePklProjectDir != targetPklProjectDir) {
+        val sourcePklProject =
+          sourcePklProjectDir?.let { ideaProject.pklProjectService.getPklProject(it) }
+
+        // Search source project's local dependencies for one whose root is the target project.
+        val depName =
+          sourcePklProject?.myDependencies?.entries?.find { (_, dep) ->
+            dep.getRoot(ideaProject) == targetPklProjectDir
+          }?.key
+
+        if (depName != null) {
+          val relPath = VfsUtilCore.findRelativePath(targetPklProjectDir, targetFile, '/')
+          if (relPath != null) return "@$depName/$relPath"
+        }
+      }
+    }
+
+    // Default: plain relative path from the source file's directory.
+    val sourceDir = sourceFile.parent ?: return null
+    return VfsUtilCore.findRelativePath(sourceDir, targetFile, '/')
+  }
+
   companion object {
+    /**
+     * Walks up the directory tree from [file] and returns the first ancestor directory that
+     * contains a `PklProject` file, or `null` if none is found.
+     */
+    fun findPklProjectDir(file: VirtualFile): VirtualFile? {
+      var dir = if (file.isDirectory) file else file.parent
+      while (dir != null) {
+        if (dir.findChild(PKL_PROJECT_FILENAME) != null) return dir
+        dir = dir.parent
+      }
+      return null
+    }
+
     /**
      * [targetUri] is the prefix of [moduleUri] that this reference refers to. For URIs with a
      * single reference, `targetUri == moduleUri`. See [PklModuleUriBase] for which URIs have one
