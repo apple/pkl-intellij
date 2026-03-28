@@ -228,6 +228,8 @@
     <localInspection shortName="pkl.UnusedLocalDefinitions" displayName="Unused local definitions"
                      groupName="Pkl" enabledByDefault="true" level="WARNING" language="Pkl"
                      implementationClass="org.pkl.intellij.PklUnusedLocalDefinitionsInspection"/>
+    <internalFileTemplate name="Pkl File"/>
+    <internalFileTemplate name="Pkl Template"/>
   </extensions>
 
   <actions>
