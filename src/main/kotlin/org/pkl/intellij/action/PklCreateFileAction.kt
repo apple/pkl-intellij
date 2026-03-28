@@ -56,15 +56,21 @@ class PklCreateFileAction :
   ): PsiFile? =
     try {
       val project = dir.project
+      val parts = name.split("/")
+      val fileName = parts.last()
+      val targetDir =
+        parts.dropLast(1).fold(dir) { current, segment ->
+          current.findSubdirectory(segment) ?: current.createSubdirectory(segment)
+        }
       val templateManager = FileTemplateManager.getInstance(project)
       val properties = templateManager.defaultProperties
       properties["PKL_VERSION"] = project.pklBaseModule.pklVersion.toString()
       val dialog =
         CreateFromTemplateDialog(
           project,
-          dir,
+          targetDir,
           template,
-          AttributesDefaults(name).withFixedName(true),
+          AttributesDefaults(fileName).withFixedName(true),
           properties
         )
       dialog.create().containingFile
