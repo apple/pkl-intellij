@@ -56,8 +56,8 @@ class TypeTest : BasePlatformTestCase() {
     assertTrue(nullableString2.isSubtypeOf(nullableString, base, null))
 
     val person = PklPsiFactory.createClass("Person", project)
-    val nullablePerson = Type.Class(person).nullable(base, null)
-    val nullablePerson2 = Type.Class(person).nullable(base, null)
+    val nullablePerson = Type.Class.create(person).nullable(base, null)
+    val nullablePerson2 = Type.Class.create(person).nullable(base, null)
 
     assertTrue(nullablePerson.isSubtypeOf(nullablePerson, base, null))
     assertTrue(nullablePerson.isSubtypeOf(nullablePerson2, base, null))

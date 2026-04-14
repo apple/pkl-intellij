@@ -31,7 +31,7 @@ val Project.pklBaseModule: PklBaseModule
         // Invalidate [PklBaseModule] on any change to [rootManager], i.e., any change to a project
         // root.
         // (Is there a better way to track class roots affecting pkl.base?)
-        // Additionally track changes to the [baseModule] PSI (not sure if this makes a difference).
+        // Additionally, track changes to the [baseModule] PSI (not sure if this makes a difference).
         ProjectRootManager.getInstance(this),
         stdLib.baseModule.psi
       )
@@ -62,9 +62,9 @@ class PklBaseModule(private val stdLib: PklStdLib) {
               val typeParameters =
                 member.typeParameterList?.elements
                   ?: listOf(PklPsiFactory.createTypeParameter("Type", project))
-              types[className] = Type.Class(member, listOf(), listOf(), typeParameters)
+              types[className] = Type.Class.create(member, listOf(), listOf(), typeParameters)
             }
-            else -> types[className] = Type.Class(member)
+            else -> types[className] = Type.Class.create(member)
           }
         is PklTypeAlias -> types[member.name!!] = Type.Alias.unchecked(member, listOf(), listOf())
         is PklClassMethod -> methods[member.name!!] = member
@@ -128,6 +128,8 @@ class PklBaseModule(private val stdLib: PklStdLib) {
   // Will be `null` for versions < 0.29
   val bytesType: Type.Class? = classTypeOrNull("Bytes")
   val uint8Type: Type.Alias = aliasType("UInt8")
+  // Will be `null` for versions < 0.32
+  val referenceType: Type.Reference? = classTypeOrNull("Reference") as? Type.Reference
 
   val comparableType: Type = aliasType("Comparable")
 
@@ -193,6 +195,7 @@ class PklBaseModule(private val stdLib: PklStdLib) {
     val types =
       mutableListOf(stringType, collectionType, mapType, listingType, mappingType, dynamicType)
     if (bytesType != null) types += bytesType
+    if (referenceType != null) types += referenceType
     Type.union(types, this, null)
   }
 
