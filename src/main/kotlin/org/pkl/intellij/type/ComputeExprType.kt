@@ -1,5 +1,5 @@
 /**
- * Copyright © 2024-2025 Apple Inc. and the Pkl project authors. All rights reserved.
+ * Copyright © 2024-2026 Apple Inc. and the Pkl project authors. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -419,7 +419,7 @@ private fun PsiElement.doComputeExprType(
  * Computes `"foobar"|"foobaz"` in the case of `"foo\(barbaz)"`, where `barbaz` computes to type
  * `"bar"|"baz"`.
  */
-private fun PklStringContent.computeStringLiteralType(
+private fun PklStringContentEx.computeStringLiteralType(
   base: PklBaseModule,
   context: PklProject?
 ): Type {
@@ -441,14 +441,17 @@ private fun PklStringContent.computeStringLiteralType(
           }
         stringLiterals.forEach { it.append(char) }
       }
+      PklElementTypes.CONTINUATION_ESCAPE -> {}
       PklElementTypes.UNICODE_ESCAPE -> {
         val text = child.text
         val index = text.indexOf('{') + 1
         if (index != -1) {
           val hexString = text.substring(index, text.length - 1)
           try {
-            stringLiterals.forEach { it.append(Character.toChars(Integer.parseInt(hexString, 16))) }
-          } catch (ignored: NumberFormatException) {} catch (ignored: IllegalArgumentException) {}
+            stringLiterals.forEach {
+              it.append(Character.toChars(Integer.parseInt(hexString, 16)).contentToString())
+            }
+          } catch (_: NumberFormatException) {} catch (_: IllegalArgumentException) {}
         }
       }
       PklElementTypes.INTERPOLATION_START,

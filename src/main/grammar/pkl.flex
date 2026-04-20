@@ -132,6 +132,7 @@ ML_STRING_CHARS = ("\"" "\""?) | (("\"" "\""?)? [^\n\u000B\u000C\u0085\u2028\u20
 
 ESCAPE_PREFIX = "\\" "#"*
 CHAR_ESCAPE = {ESCAPE_PREFIX} [tnr\"\\]
+CONTINUATION_ESCAPE = {ESCAPE_PREFIX} {NEWLINE}
 UNICODE_ESCAPE = {ESCAPE_PREFIX} "u{" {HEX_DIGIT}+ "}"
 INTERPOLATION_START = {ESCAPE_PREFIX} "("
 
@@ -160,6 +161,8 @@ INTERPOLATION_START = {ESCAPE_PREFIX} "("
                                            return ML_STRING_START;
                                          }
 <ML_STRING> {ML_STRING_CHARS}            { return STRING_CHARS; }
+
+<ML_STRING> {CONTINUATION_ESCAPE}        { return CONTINUATION_ESCAPE; }
 
 // lexing as WHITE_SPACE helps with formatting
 // TODO: "excess" leading whitespace must not be removed when reformatting a multiline string

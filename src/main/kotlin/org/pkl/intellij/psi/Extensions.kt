@@ -1,5 +1,5 @@
 /**
- * Copyright © 2024-2025 Apple Inc. and the Pkl project authors. All rights reserved.
+ * Copyright © 2024-2026 Apple Inc. and the Pkl project authors. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -823,15 +823,39 @@ fun Appendable.renderTypeParameterList(typeParameters: PklTypeParameterList?): A
   return this
 }
 
-fun PklStringContent.escapedText(): String? = getEscapedText()
+fun PklStringContentEx.escapedText(): String? = getEscapedText()
 
 fun PklStringConstantContent.escapedText(): String? = getEscapedText()
 
 private fun PklElement.getEscapedText(): String? = buildString {
+  // multi-line: determine how much leading whitespace must be removed from each line
+  // assumes lines can only end in "\n" or "\r\n"
+  val mlPrefix =
+    (parent as? PklMlStringLiteral)
+      ?.childLeafs()
+      ?.toList()
+      ?.dropLast(1)
+      ?.last()
+      ?.text
+      ?.takeLastWhile { it != '\n' }
+  var afterContinuation = false
   eachChild { child ->
     when (child.elementType) {
-      PklElementTypes.STRING_CHARS,
-      TokenType.WHITE_SPACE -> append(child.text)
+      PklElementTypes.STRING_CHARS -> {
+        append(child.text)
+        afterContinuation = false
+      }
+      TokenType.WHITE_SPACE -> {
+        var text = child.text
+        mlPrefix?.let {
+          if (afterContinuation && text.startsWith(it)) {
+            text = text.drop(it.length)
+            afterContinuation = false
+          }
+          text = text.replace("\n$it", "\n")
+        }
+        append(text)
+      }
       PklElementTypes.CHAR_ESCAPE -> {
         val text = child.text
         when (text[text.lastIndex]) {
@@ -843,20 +867,27 @@ private fun PklElement.getEscapedText(): String? = buildString {
           else -> throw AssertionError("Unknown char escape: $text")
         }
       }
+      PklElementTypes.CONTINUATION_ESCAPE -> afterContinuation = true
       PklElementTypes.UNICODE_ESCAPE -> {
         val text = child.text
         val index = text.indexOf('{') + 1
         if (index != -1) {
           val hexString = text.substring(index, text.length - 1)
           try {
-            append(Character.toChars(Integer.parseInt(hexString, 16)))
-          } catch (ignored: NumberFormatException) {} catch (ignored: IllegalArgumentException) {}
+            append(Character.toChars(Integer.parseInt(hexString, 16)).contentToString())
+          } catch (_: NumberFormatException) {} catch (_: IllegalArgumentException) {}
         }
       }
       else ->
         // interpolated or invalid string -> bail out
         return null
     }
+  }
+  // multi-line: capture any spaces/tabs before the final newline
+  (parent as? PklMlStringLiteral)?.childLeafs()?.toList()?.dropLast(1)?.last()?.let {
+    trailingWhitespace ->
+    if (trailingWhitespace.elementType == TokenType.WHITE_SPACE)
+      append(trailingWhitespace.text.takeWhile { it != '\n' && it != '\r' })
   }
 }
 

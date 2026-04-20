@@ -153,6 +153,7 @@
     // Must use a character that is not matched by the IDENTIFIER regexp.
     STRING_CHARS = 'regexp:#+'
     CHAR_ESCAPE = 'regexp:\\[trn]'
+    CONTINUATION_ESCAPE = 'regexp:\\[\r\n]'
     UNICODE_ESCAPE = 'regexp:\\u\{[0-9A-Fa-f]+}'
     INVALID_ESCAPE = 'INVALID_ESCAPE'
     INTERPOLATION_START = 'regexp:\\\('
@@ -554,7 +555,7 @@ nullLiteral ::= null
 trueLiteral ::= true
 falseLiteral ::= false
 stringLiteral ::= STRING_START stringContent STRING_END { methods = [ content = "stringContent" ] }
-mlStringLiteral ::= ML_STRING_START stringContent ML_STRING_END { methods = [ content = "stringContent" ] }
+mlStringLiteral ::= ML_STRING_START mlStringContent ML_STRING_END { methods = [ content = "mlStringContent" ] }
 amendExpr ::= expr objectBody {
   implements = "org.pkl.intellij.psi.PklObjectBodyOwner"
   methods = [ parentExpr = "expr" ]
@@ -754,4 +755,10 @@ stringConstantContent ::= (STRING_CHARS | CHAR_ESCAPE | UNICODE_ESCAPE)*
 
 stringContent ::= (STRING_CHARS | CHAR_ESCAPE | UNICODE_ESCAPE | INTERPOLATION_START expr INTERPOLATION_END)* {
   mixin = "org.pkl.intellij.psi.PklStringContentBase"
+  implements = "org.pkl.intellij.psi.PklStringContentEx"
+}
+
+mlStringContent ::= (CONTINUATION_ESCAPE | STRING_CHARS | CHAR_ESCAPE | UNICODE_ESCAPE | INTERPOLATION_START expr INTERPOLATION_END)* {
+  mixin = "org.pkl.intellij.psi.PklStringContentBase"
+  implements = "org.pkl.intellij.psi.PklStringContentEx"
 }
