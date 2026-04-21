@@ -449,7 +449,7 @@ private fun PklStringContentEx.computeStringLiteralType(
           val hexString = text.substring(index, text.length - 1)
           try {
             stringLiterals.forEach {
-              it.append(Character.toChars(Integer.parseInt(hexString, 16)).contentToString())
+              it.append(Character.toChars(Integer.parseInt(hexString, 16)).concatToString())
             }
           } catch (_: NumberFormatException) {} catch (_: IllegalArgumentException) {}
         }

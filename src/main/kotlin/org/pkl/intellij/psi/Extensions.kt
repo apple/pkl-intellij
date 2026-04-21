@@ -829,7 +829,7 @@ fun PklStringConstantContent.escapedText(): String? = getEscapedText()
 
 private fun PklElement.getEscapedText(): String? = buildString {
   // multi-line: determine how much leading whitespace must be removed from each line
-  // assumes lines can only end in "\n" or "\r\n"
+  // assumes lines can only end in \n (or \r\n)
   val mlPrefix =
     (parent as? PklMlStringLiteral)
       ?.childLeafs()
@@ -848,8 +848,8 @@ private fun PklElement.getEscapedText(): String? = buildString {
       TokenType.WHITE_SPACE -> {
         var text = child.text
         mlPrefix?.let {
-          if (afterContinuation && text.startsWith(it)) {
-            text = text.drop(it.length)
+          if (afterContinuation) {
+            text = text.removePrefix(it)
             afterContinuation = false
           }
           text = text.replace("\n$it", "\n")
@@ -874,7 +874,7 @@ private fun PklElement.getEscapedText(): String? = buildString {
         if (index != -1) {
           val hexString = text.substring(index, text.length - 1)
           try {
-            append(Character.toChars(Integer.parseInt(hexString, 16)).contentToString())
+            append(Character.toChars(Integer.parseInt(hexString, 16)).concatToString())
           } catch (_: NumberFormatException) {} catch (_: IllegalArgumentException) {}
         }
       }
