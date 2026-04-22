@@ -147,3 +147,12 @@ dependabot {
     }
   }
 }
+
+codeql {
+  scans {
+    new {
+      language = "java-kotlin"
+      buildMode = "autobuild"
+    }
+  }
+}
