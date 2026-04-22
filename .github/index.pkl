@@ -6,7 +6,7 @@ import "@com.github.actions/Workflow.pkl"
 
 triggerDocsBuild = "release"
 
-local function baseJob(_cache: ("maven"|"gradle"|"sbt")?): Workflow.Job = new {
+local function baseJob(_cache: ("maven" | "gradle" | "sbt")?): Workflow.Job = new {
   `runs-on` = "ubuntu-latest"
   steps {
     (catalog.`actions/checkout@v6`) {
@@ -49,6 +49,9 @@ testReports {
   junit {
     "build/test-results/**/*.xml"
   }
+  excludeJobs {
+    "dependency-submission"
+  }
 }
 
 local buildAndTest: Workflow = new {
@@ -63,7 +66,32 @@ build = buildAndTest
 
 prb = buildAndTest
 
-main = buildAndTest
+main = (buildAndTest) {
+  jobs {
+    ["dependency-submission"] {
+      `runs-on` = "ubuntu-latest"
+      permissions {
+        contents = "write"
+      }
+      steps {
+        module.catalog.`actions/checkout@v6`
+        (module.catalog.`actions/setup-java@v5`) {
+          with {
+            `java-version` = "25"
+            distribution = "temurin"
+          }
+        }
+        (module.catalog.`gradle/actions/dependency-submission@v6`) {
+          with {
+            // language=regexp
+            `dependency-graph-include-configurations` =
+              ".*[rR]untimeClasspath|.*[cC]ompileClasspath"
+          }
+        }
+      }
+    }
+  }
+}
 
 releaseBranch = buildAndTest
 
@@ -100,6 +128,21 @@ release {
               release/*.*
             """#
         }
+      }
+    }
+  }
+}
+
+dependabot {
+  updates {
+    new {
+      `package-ecosystem` = "gradle"
+      schedule {
+        interval = "weekly"
+      }
+      directory = "/"
+      cooldown {
+        `default-days` = 7
       }
     }
   }

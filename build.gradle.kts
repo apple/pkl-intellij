@@ -22,6 +22,14 @@ repositories {
   }
 }
 
+configurations {
+  all {
+    resolutionStrategy {
+      failOnDynamicVersions()
+    }
+  }
+}
+
 val isCiBuild = System.getenv("CI") != null
 val isReleaseBuild = System.getProperty("releaseBuild") != null
 if (!isReleaseBuild) {
