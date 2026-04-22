@@ -21,7 +21,7 @@ jflex = "1.7.0-1"
 junit = "4.13.2"
 # use same version that ships with `intellijSinceBuild`
 # https://plugins.jetbrains.com/docs/intellij/kotlin.html#kotlin-standard-library
-kotlin = "2.2.20"
+kotlin = "2.3.20"
 kotlinSerialization = "2.2.20"
 # bump when kotlin version bumps
 kotlinx = "1.8.0"
