@@ -12,7 +12,7 @@ intellij = "2024.3"
 # IntelliJ version to run against (`runIde` task). Use latest version.
 # https://www.jetbrains.com/idea/download/#section=mac
 intellijRunIde = "2024.3"
-intellijPlugin = "2.10.4"
+intellijPlugin = "2.14.0"
 intellijSinceBuild = "243"
 # set to "999.*" to disable upper bound
 intellijUntilBuild = "263.*"
