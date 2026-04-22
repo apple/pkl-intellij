@@ -83,7 +83,7 @@ dependencies {
     pluginVerifier()
     bundledPlugin("org.intellij.intelliLang")
     bundledPlugin("org.intellij.plugins.markdown")
-    testFramework(TestFrameworkType.Platform)
+    testFramework(TestFrameworkType.Platform, libs.versions.intellijTestPlatform.get())
   }
 }
 
