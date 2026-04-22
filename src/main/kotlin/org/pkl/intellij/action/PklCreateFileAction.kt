@@ -1,5 +1,5 @@
 /**
- * Copyright © 2024-2025 Apple Inc. and the Pkl project authors. All rights reserved.
+ * Copyright © 2024-2026 Apple Inc. and the Pkl project authors. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -56,15 +56,21 @@ class PklCreateFileAction :
   ): PsiFile? =
     try {
       val project = dir.project
+      val parts = name.split("/")
+      val fileName = parts.last()
+      val targetDir =
+        parts.dropLast(1).fold(dir) { current, segment ->
+          current.findSubdirectory(segment) ?: current.createSubdirectory(segment)
+        }
       val templateManager = FileTemplateManager.getInstance(project)
       val properties = templateManager.defaultProperties
       properties["PKL_VERSION"] = project.pklBaseModule.pklVersion.toString()
       val dialog =
         CreateFromTemplateDialog(
           project,
-          dir,
+          targetDir,
           template,
-          AttributesDefaults(name).withFixedName(true),
+          AttributesDefaults(fileName).withFixedName(true),
           properties
         )
       dialog.create().containingFile
