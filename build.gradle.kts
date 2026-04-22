@@ -22,6 +22,14 @@ repositories {
   }
 }
 
+configurations {
+  all {
+    resolutionStrategy {
+      failOnDynamicVersions()
+    }
+  }
+}
+
 val isCiBuild = System.getenv("CI") != null
 val isReleaseBuild = System.getProperty("releaseBuild") != null
 if (!isReleaseBuild) {
@@ -75,7 +83,7 @@ dependencies {
     pluginVerifier()
     bundledPlugin("org.intellij.intelliLang")
     bundledPlugin("org.intellij.plugins.markdown")
-    testFramework(TestFrameworkType.Platform)
+    testFramework(TestFrameworkType.Platform, libs.versions.intellijTestPlatform.get())
   }
 }
 
