@@ -24,7 +24,7 @@ junit = "4.13.2"
 kotlin = "2.2.20"
 kotlinSerialization = "2.2.20"
 # bump when kotlin version bumps
-kotlinx = "1.8.0"
+kotlinx = "1.11.0"
 # fallback if stdlib isn't found in IntelliJ project dependencies
 pkl = "0.31.1"
 pkl-cli = "0.28.2"
