@@ -1,5 +1,5 @@
 [versions] # ordered alphabetically
-assertj = "3.23.0"
+assertj = "3.27.7"
 # GoLand version to verify against. Use latest version.
 # https://www.jetbrains.com/go/download/#section=mac
 goLand = "2024.3"
