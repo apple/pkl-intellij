@@ -5,7 +5,7 @@ assertj = "3.27.7"
 goLand = "2024.3"
 grammarKit = "2023.3"
 # https://github.com/JetBrains/gradle-grammar-kit-plugin
-grammarKitPlugin = "2022.3.2.2"
+grammarKitPlugin = "2023.3.0.3"
 # IntelliJ version to build and verify against. Use latest patch version of `intellijSinceBuild`.
 # https://www.jetbrains.com/idea/download/other.html
 intellij = "2024.3"
