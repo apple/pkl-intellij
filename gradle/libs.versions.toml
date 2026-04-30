@@ -22,7 +22,7 @@ junit = "4.13.2"
 # use same version that ships with `intellijSinceBuild`
 # https://plugins.jetbrains.com/docs/intellij/kotlin.html#kotlin-standard-library
 kotlin = "2.2.20"
-kotlinSerialization = "2.2.20"
+kotlinSerialization = "2.3.21"
 # bump when kotlin version bumps
 kotlinx = "1.11.0"
 # fallback if stdlib isn't found in IntelliJ project dependencies
