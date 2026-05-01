@@ -18,17 +18,16 @@ package org.pkl.intellij.psi
 import com.intellij.lang.ASTNode
 import com.intellij.navigation.ItemPresentation
 import javax.swing.Icon
-import org.pkl.intellij.PklIcons
 import org.pkl.intellij.util.toDisplayText
 
 abstract class PklObjectSpreadBase(node: ASTNode) : PklObjectMemberBase(node), PklObjectSpread {
-  override fun getIcon(flags: Int): Icon = PklIcons.PROPERTY
+  override fun getIcon(flags: Int): Icon? = null
 
   override fun getPresentation(): ItemPresentation =
     object : ItemPresentation {
       override fun getLocationString(): String? = null
 
-      override fun getIcon(unused: Boolean): Icon = PklIcons.PROPERTY
+      override fun getIcon(unused: Boolean): Icon? = null
 
       override fun getPresentableText(): String = buildString {
         append("...")
