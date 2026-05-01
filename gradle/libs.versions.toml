@@ -8,7 +8,7 @@ grammarKit = "2023.3"
 grammarKitPlugin = "2022.3.2.2"
 # IntelliJ version to build and verify against. Use latest patch version of `intellijSinceBuild`.
 # https://www.jetbrains.com/idea/download/other.html
-intellij = "2024.3"
+intellij = "2024.3.3"
 # IntelliJ version to run against (`runIde` task). Use latest version.
 # https://www.jetbrains.com/idea/download/#section=mac
 intellijRunIde = "2024.3"

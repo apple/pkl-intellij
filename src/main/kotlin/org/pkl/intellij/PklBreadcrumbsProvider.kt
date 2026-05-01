@@ -1,5 +1,5 @@
 /**
- * Copyright © 2024 Apple Inc. and the Pkl project authors. All rights reserved.
+ * Copyright © 2024-2026 Apple Inc. and the Pkl project authors. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,6 +19,7 @@ import com.intellij.lang.Language
 import com.intellij.psi.PsiElement
 import com.intellij.ui.breadcrumbs.BreadcrumbsProvider
 import org.pkl.intellij.psi.*
+import org.pkl.intellij.util.toDisplayText
 
 class PklBreadcrumbsProvider : BreadcrumbsProvider {
   override fun getLanguages(): Array<Language> = arrayOf(PklLanguage)
@@ -45,102 +46,22 @@ class PklBreadcrumbsProvider : BreadcrumbsProvider {
     }
   }
 
-  private fun PklArgumentList?.renderMethodCallArguments(): String {
-    if (this == null) return ""
-    return elements.joinToString(", ", prefix = "(", postfix = ")") { it.toDisplayText() ?: "…" }
-  }
-
-  private fun PklExpr.toDisplayText(): String? {
-    return when (this) {
-      is PklStringLiteral -> this.content.escapedText()
-      is PklNumberLiteral,
-      is PklTrueLiteral,
-      is PklFalseLiteral,
-      is PklNullLiteral,
-      is PklThisExpr,
-      is PklModuleExpr,
-      is PklOuterExpr -> this.text
-      is PklTypeTestExpr -> (this.expr.toDisplayText() ?: "…") + " is " + this.type.text
-      is PklTypeCastExpr -> (this.expr.toDisplayText() ?: "…") + " as " + this.type.text
-      is PklLogicalNotExpr -> this.expr?.toDisplayText()?.let { "!$it" }
-      is PklUnaryMinusExpr -> this.expr?.toDisplayText()?.let { "-$it" }
-      is PklNonNullAssertionExpr -> this.expr.toDisplayText()?.let { "$it!!" }
-      is PklNewExpr -> "new " + (this.type?.text?.let { "$it " } ?: "") + "{…}"
-      is PklSubscriptBinExpr -> {
-        val leftExpr = this.leftExpr.toDisplayText() ?: return null
-        val rightExpr = this.rightExpr?.toDisplayText() ?: "…"
-        return "$leftExpr[$rightExpr]"
-      }
-      is PklSuperAccessExpr -> "super.${memberNameText}${argumentList.renderMethodCallArguments()}"
-      is PklSuperSubscriptExpr -> "super[${expr.toDisplayText() ?: "…"}]"
-      is PklBinExpr -> {
-        val leftExpr = this.leftExpr.toDisplayText() ?: "…"
-        val rightExpr = this.rightExpr?.toDisplayText() ?: "…"
-        return "$leftExpr ${operator.text} $rightExpr"
-      }
-      is PklUnqualifiedAccessExpr -> "$memberNameText${argumentList.renderMethodCallArguments()}"
-      is PklQualifiedAccessExpr -> {
-        val receiver = (this.receiverExpr.toDisplayText() ?: "<receiver>")
-        receiver + "." + this.memberNameText + argumentList.renderMethodCallArguments()
-      }
-      is PklParenthesizedExpr -> expr?.toDisplayText()?.let { "($it)" }
-      else -> null
-    }
-  }
-
   private val classHandler = handler<PklClass> { it.identifier?.text ?: "<class>" }
 
   private val typealiasHandler = handler<PklTypeAlias> { it.identifier?.text ?: "<typealias>" }
 
-  private val propertyHandler = handler<PklProperty> { it.propertyName.identifier.text }
+  private val propertyHandler = handler<PklClassProperty> { it.propertyName.identifier.text }
 
-  private val objectEntryHandler =
-    handler<PklObjectEntry> { it.keyExpr?.toDisplayText() ?: "<entry>" }
-
-  private val memberPredicateHandler =
-    handler<PklMemberPredicate> { elem ->
-      buildString {
-        append("[[")
-        append(elem.conditionExpr?.toDisplayText() ?: "…")
-        append("]] {…}")
-      }
-    }
-
-  private val forGeneratorHandler =
-    handler<PklForGenerator> { elem ->
-      buildString {
-        append("for (")
-        append(elem.keyValueVars[0].identifier.text)
-        if (elem.keyValueVars.size == 2) {
-          append(", ")
-          append(elem.keyValueVars[1].identifier.text)
-        }
-        append(" in ")
-        append(elem.iterableExpr?.toDisplayText() ?: "…")
-        append(") {…}")
-      }
-    }
-
-  private val whenGeneratorHandler =
-    handler<PklWhenGenerator> { elem ->
-      buildString {
-        append("when (")
-        append(elem.conditionExpr?.toDisplayText() ?: "…")
-        append(") {…}")
-      }
-    }
+  private val objectMemberHandler = handler<PklObjectMember> { it.presentation!!.presentableText!! }
 
   private val annotationHandler =
     handler<PklAnnotation> { elem -> elem.typeName?.text?.let { "@$it" } ?: "<annotation>" }
 
-  private val methodHandler = handler<PklMethod> { it.identifier?.text ?: "<method>" }
+  private val methodHandler = handler<PklMethod> { it.presentation.presentableText!! }
 
   private val newExprHandler = handler<PklNewExpr> { it.toDisplayText()!! }
 
-  private val amendExprHandler =
-    handler<PklAmendExpr> { elem ->
-      elem.parentExpr.toDisplayText()?.let { "$it {…}" } ?: "(<parent>) {…}"
-    }
+  private val amendExprHandler = handler<PklAmendExpr> { it.toDisplayText()!! }
 
   private fun PsiElement.isThenBody(): Boolean {
     val p = parent
@@ -196,10 +117,7 @@ class PklBreadcrumbsProvider : BreadcrumbsProvider {
       classHandler,
       typealiasHandler,
       propertyHandler,
-      objectEntryHandler,
-      memberPredicateHandler,
-      forGeneratorHandler,
-      whenGeneratorHandler,
+      objectMemberHandler,
       annotationHandler,
       methodHandler,
       newExprHandler,

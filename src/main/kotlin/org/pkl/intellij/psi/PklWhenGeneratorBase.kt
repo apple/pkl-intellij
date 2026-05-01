@@ -15,24 +15,22 @@
  */
 package org.pkl.intellij.psi
 
-import com.intellij.extapi.psi.ASTWrapperPsiElement
 import com.intellij.lang.ASTNode
-import com.intellij.psi.PsiElementVisitor
+import com.intellij.navigation.ItemPresentation
+import javax.swing.Icon
+import org.pkl.intellij.util.toDisplayText
 
-abstract class PklAstWrapperPsiElement(node: ASTNode) : ASTWrapperPsiElement(node) {
-  // improve readability in PSI viewer
-  override fun toString(): String {
-    return javaClass.name.removePrefix("org.pkl.intellij.psi.impl.Pkl").removeSuffix("Impl")
-  }
+abstract class PklWhenGeneratorBase(node: ASTNode) : PklObjectMemberBase(node), PklWhenGenerator {
+  override fun getPresentation(): ItemPresentation =
+    object : ItemPresentation {
+      override fun getLocationString(): String? = null
 
-  override fun acceptChildren(visitor: PsiElementVisitor) {
-    var child = firstChild
-    while (child != null) {
-      // get next sibling before calling `accept()` so that visitor can `replace()` child without
-      // affecting traversal
-      val nextSibling = child.nextSibling
-      child.accept(visitor)
-      child = nextSibling
+      override fun getIcon(unused: Boolean): Icon? = null
+
+      override fun getPresentableText(): String = buildString {
+        append("when (")
+        append(conditionExpr?.toDisplayText() ?: "…")
+        append(") {…}")
+      }
     }
-  }
 }

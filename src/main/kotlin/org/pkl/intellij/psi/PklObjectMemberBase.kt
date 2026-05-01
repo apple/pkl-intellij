@@ -1,5 +1,5 @@
 /**
- * Copyright © 2024 Apple Inc. and the Pkl project authors. All rights reserved.
+ * Copyright © 2024-2026 Apple Inc. and the Pkl project authors. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,7 +16,23 @@
 package org.pkl.intellij.psi
 
 import com.intellij.lang.ASTNode
+import com.intellij.psi.PsiElement
+import org.pkl.intellij.packages.dto.PklProject
+import org.pkl.intellij.type.Type
+import org.pkl.intellij.type.TypeParameterBindings
 
 abstract class PklObjectMemberBase(node: ASTNode) : PklAstWrapperPsiElement(node), PklObjectMember {
+  override fun getName(): String? = null
+
+  override fun getNameIdentifier(): PsiElement? = null
+
+  override fun getLookupElementType(
+    base: PklBaseModule,
+    bindings: TypeParameterBindings,
+    context: PklProject?
+  ): Type {
+    throw AssertionError("This method should have been overridden by ${this::class.qualifiedName}.")
+  }
+
   override fun toString(): String = super.toString() + "($name)"
 }

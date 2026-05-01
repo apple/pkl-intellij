@@ -1,5 +1,5 @@
 /**
- * Copyright © 2024-2025 Apple Inc. and the Pkl project authors. All rights reserved.
+ * Copyright © 2024-2026 Apple Inc. and the Pkl project authors. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,6 +16,7 @@
 package org.pkl.intellij.psi
 
 import com.intellij.lang.ASTNode
+import com.intellij.navigation.ItemPresentation
 import com.intellij.psi.PsiElement
 import javax.swing.Icon
 import org.pkl.intellij.PklIcons
@@ -46,4 +47,16 @@ abstract class PklObjectPropertyBase(node: ASTNode) :
   override fun isDefinition(context: PklProject?): Boolean = type != null || isLocal
 
   override fun toString(): String = "ObjectProperty($name)"
+
+  override fun getPresentation(): ItemPresentation =
+    object : ItemPresentation {
+      override fun getLocationString(): String? = null
+
+      override fun getIcon(unused: Boolean): Icon = getIcon(0)
+
+      override fun getPresentableText(): String = buildString {
+        append(name)
+        type?.let { append(": ").append(it.text) }
+      }
+    }
 }

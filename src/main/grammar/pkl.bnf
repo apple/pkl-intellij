@@ -650,6 +650,7 @@ objectBody ::= '{' objectBodyParameterList? objectMember* '}' {
 
 objectMember ::= objectProperty | objectMethod | objectEntry | memberPredicate | forGenerator | whenGenerator | objectElement | objectSpread {
   recoverWhile = recoverObjectMember
+  implements = "org.pkl.intellij.psi.PklNavigableElement"
   mixin = "org.pkl.intellij.psi.PklObjectMemberBase"
 }
 
@@ -699,6 +700,7 @@ objectEntry ::= SEP? '[' expr ']' (objectMemberAssign | objectBody+) {
     keyExpr = "/expr[0]"
     valueExpr = "/expr[1]"
   ]
+  mixin = "org.pkl.intellij.psi.PklObjectEntryBase"
 }
 
 private objectMemberAssign ::= '=' expr { pin = 1 }
@@ -710,6 +712,7 @@ memberPredicate ::= SEP? '[[' expr ']]' (objectMemberAssign | objectBody+) {
     "org.pkl.intellij.psi.PklObjectBodyListOwner"
     "org.pkl.intellij.psi.PklSuppressWarningsTarget"
   ]
+  mixin = "org.pkl.intellij.psi.PklMemberPredicateBase"
   methods = [
     conditionExpr = "/expr[0]"
     valueExpr = "/expr[1]"
@@ -720,6 +723,7 @@ forGenerator ::= for '(' typedIdentifier (',' typedIdentifier)? in expr ')' obje
   pin = 1
   extends = objectMember
   implements = "org.pkl.intellij.psi.PklSuppressWarningsTarget"
+  mixin = "org.pkl.intellij.psi.PklForGeneratorBase"
   methods = [
     keyValueVars = "typedIdentifier"
     iterableExpr = "expr"
@@ -729,6 +733,7 @@ forGenerator ::= for '(' typedIdentifier (',' typedIdentifier)? in expr ')' obje
 whenGenerator ::= when '(' expr ')' (objectBody ('else' objectBody)?) {
   pin = 1
   extends = objectMember
+  mixin = "org.pkl.intellij.psi.PklWhenGeneratorBase"
   methods = [
     conditionExpr = "expr"
     thenBody = "/objectBody[0]"
@@ -738,11 +743,13 @@ whenGenerator ::= when '(' expr ')' (objectBody ('else' objectBody)?) {
 
 objectSpread ::= ('...' | '...?') expr {
   extends = objectMember
+  mixin = "org.pkl.intellij.psi.PklObjectSpreadBase"
 }
 
 objectElement ::= expr {
   extends = objectMember
   implements = "org.pkl.intellij.psi.PklSuppressWarningsTarget"
+  mixin = "org.pkl.intellij.psi.PklObjectElementBase"
 }
 
 stringConstant ::= STRING_START stringConstantContent STRING_END {

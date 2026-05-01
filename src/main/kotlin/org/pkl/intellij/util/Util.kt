@@ -1,5 +1,5 @@
 /**
- * Copyright © 2024-2025 Apple Inc. and the Pkl project authors. All rights reserved.
+ * Copyright © 2024-2026 Apple Inc. and the Pkl project authors. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -40,7 +40,32 @@ import java.util.concurrent.CompletionException
 import java.util.concurrent.ExecutionException
 import java.util.regex.Pattern
 import kotlin.math.max
+import org.pkl.intellij.psi.PklAmendExpr
+import org.pkl.intellij.psi.PklArgumentList
+import org.pkl.intellij.psi.PklBinExpr
+import org.pkl.intellij.psi.PklExpr
+import org.pkl.intellij.psi.PklFalseLiteral
+import org.pkl.intellij.psi.PklLogicalNotExpr
 import org.pkl.intellij.psi.PklModule
+import org.pkl.intellij.psi.PklModuleExpr
+import org.pkl.intellij.psi.PklNewExpr
+import org.pkl.intellij.psi.PklNonNullAssertionExpr
+import org.pkl.intellij.psi.PklNullLiteral
+import org.pkl.intellij.psi.PklNumberLiteral
+import org.pkl.intellij.psi.PklOuterExpr
+import org.pkl.intellij.psi.PklParenthesizedExpr
+import org.pkl.intellij.psi.PklQualifiedAccessExpr
+import org.pkl.intellij.psi.PklStringLiteral
+import org.pkl.intellij.psi.PklSubscriptBinExpr
+import org.pkl.intellij.psi.PklSuperAccessExpr
+import org.pkl.intellij.psi.PklSuperSubscriptExpr
+import org.pkl.intellij.psi.PklThisExpr
+import org.pkl.intellij.psi.PklTrueLiteral
+import org.pkl.intellij.psi.PklTypeCastExpr
+import org.pkl.intellij.psi.PklTypeTestExpr
+import org.pkl.intellij.psi.PklUnaryMinusExpr
+import org.pkl.intellij.psi.PklUnqualifiedAccessExpr
+import org.pkl.intellij.psi.escapedText
 
 private const val SIGNIFICAND_MASK = 0x000fffffffffffffL
 
@@ -380,4 +405,48 @@ fun InputStream.copyToWithIndicator(
     bytesCopied += bytes
     bytes = read(buffer)
   }
+}
+
+fun PklExpr.toDisplayText(): String? {
+  return when (this) {
+    is PklStringLiteral -> this.content.escapedText()
+    is PklNumberLiteral,
+    is PklTrueLiteral,
+    is PklFalseLiteral,
+    is PklNullLiteral,
+    is PklThisExpr,
+    is PklModuleExpr,
+    is PklOuterExpr -> this.text
+    is PklTypeTestExpr -> (this.expr.toDisplayText() ?: "…") + " is " + this.type.text
+    is PklTypeCastExpr -> (this.expr.toDisplayText() ?: "…") + " as " + this.type.text
+    is PklLogicalNotExpr -> this.expr?.toDisplayText()?.let { "!$it" }
+    is PklUnaryMinusExpr -> this.expr?.toDisplayText()?.let { "-$it" }
+    is PklNonNullAssertionExpr -> this.expr.toDisplayText()?.let { "$it!!" }
+    is PklNewExpr -> "new " + (this.type?.text?.let { "$it " } ?: "") + "{…}"
+    is PklSubscriptBinExpr -> {
+      val leftExpr = this.leftExpr.toDisplayText() ?: return null
+      val rightExpr = this.rightExpr?.toDisplayText() ?: "…"
+      "$leftExpr[$rightExpr]"
+    }
+    is PklSuperAccessExpr -> "super.${memberNameText}${argumentList.renderMethodCallArguments()}"
+    is PklSuperSubscriptExpr -> "super[${expr.toDisplayText() ?: "…"}]"
+    is PklBinExpr -> {
+      val leftExpr = this.leftExpr.toDisplayText() ?: "…"
+      val rightExpr = this.rightExpr?.toDisplayText() ?: "…"
+      "$leftExpr ${operator.text} $rightExpr"
+    }
+    is PklUnqualifiedAccessExpr -> "$memberNameText${argumentList.renderMethodCallArguments()}"
+    is PklQualifiedAccessExpr -> {
+      val receiver = (this.receiverExpr.toDisplayText() ?: "<receiver>")
+      receiver + "." + this.memberNameText + argumentList.renderMethodCallArguments()
+    }
+    is PklParenthesizedExpr -> expr?.toDisplayText()?.let { "($it)" }
+    is PklAmendExpr -> parentExpr.toDisplayText()?.let { "$it {…}" } ?: "(<parent>) {…}"
+    else -> null
+  }
+}
+
+private fun PklArgumentList?.renderMethodCallArguments(): String {
+  if (this == null) return ""
+  return elements.joinToString(", ", prefix = "(", postfix = ")") { it.toDisplayText() ?: "…" }
 }
