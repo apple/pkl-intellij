@@ -1,5 +1,5 @@
 /**
- * Copyright © 2024-2025 Apple Inc. and the Pkl project authors. All rights reserved.
+ * Copyright © 2024-2026 Apple Inc. and the Pkl project authors. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -81,9 +81,10 @@ class PklMemberAnnotator : PklAnnotator() {
           val thisType = element.computeThisType(base, mapOf(), context)
           val thisClassType = thisType.toClassType(base, context)
           if (
-            thisClassType != null &&
-              !thisClassType.classEquals(base.listingType) &&
-              !thisClassType.classEquals(base.dynamicType)
+            thisType is Module ||
+              thisClassType != null &&
+                !thisClassType.classEquals(base.listingType) &&
+                !thisClassType.classEquals(base.dynamicType)
           ) {
             val typeText = thisType.render()
             createAnnotation(
@@ -100,11 +101,12 @@ class PklMemberAnnotator : PklAnnotator() {
           val thisType = element.computeThisType(base, mapOf(), context)
           val thisClassType = thisType.toClassType(base, context)
           if (
-            thisClassType != null &&
-              // listing can *syntactically* have an entry (override by index)
-              !thisClassType.classEquals(base.listingType) &&
-              !thisClassType.classEquals(base.mappingType) &&
-              !thisClassType.classEquals(base.dynamicType)
+            thisType is Module ||
+              thisClassType != null &&
+                // listing can *syntactically* have an entry (override by index)
+                !thisClassType.classEquals(base.listingType) &&
+                !thisClassType.classEquals(base.mappingType) &&
+                !thisClassType.classEquals(base.dynamicType)
           ) {
             val typeText = thisType.render()
             createAnnotation(
