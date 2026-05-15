@@ -21,12 +21,12 @@ import com.intellij.psi.util.CachedValueProvider
 import com.intellij.psi.util.CachedValuesManager
 import org.pkl.intellij.type.Type
 
-val Project.pklProjectModule: PklProjectModule
+val Project.pklRefModule: PklRefModule
   get() =
     CachedValuesManager.getManager(this).getCachedValue(this) {
       val stdLib = pklStdLib
       CachedValueProvider.Result.create(
-        PklProjectModule(stdLib),
+        PklRefModule(stdLib),
         // Invalidate [PklProjectModule] on any change to [rootManager], i.e., any change to a
         // project root.
         // (Is there a better way to track class roots affecting pkl.base?)
@@ -37,17 +37,17 @@ val Project.pklProjectModule: PklProjectModule
       )
     }
 
-class PklProjectModule(stdLib: PklStdLib) {
-  val psi: PklModule = stdLib.projectModule.psi
+class PklRefModule(stdLib: PklStdLib) {
+  val psi: PklModule? = stdLib.refModule?.psi
 
   val types: Map<String, Type> = buildMap {
-    for (member in psi.members) {
+    for (member in psi?.members ?: emptySequence()) {
       if (member is PklClass) {
         put(member.name!!, Type.Class.create(member))
       }
     }
-    put("Project", Type.module(psi, "pkl.Project", context = null))
   }
 
-  val projectType by lazy { types["Project"] as Type.Module }
+  // Will be `null` for versions < 0.32
+  val referenceType: Type.Reference? by lazy { types["Reference"] as? Type.Reference }
 }

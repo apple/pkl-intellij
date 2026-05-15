@@ -31,7 +31,7 @@ val Project.pklBaseModule: PklBaseModule
         // Invalidate [PklBaseModule] on any change to [rootManager], i.e., any change to a project
         // root.
         // (Is there a better way to track class roots affecting pkl.base?)
-        // Additionally, track changes to the [baseModule] PSI (not sure if this makes a
+        // Aditionally, track changes to the [baseModule] PSI (not sure if this makes a
         // difference).
         ProjectRootManager.getInstance(this),
         stdLib.baseModule.psi
@@ -130,8 +130,6 @@ class PklBaseModule(private val stdLib: PklStdLib) {
   // Will be `null` for versions < 0.29
   val bytesType: Type.Class? = classTypeOrNull("Bytes")
   val uint8Type: Type.Alias = aliasType("UInt8")
-  // Will be `null` for versions < 0.32
-  val referenceType: Type.Reference? = classTypeOrNull("Reference") as? Type.Reference
 
   val comparableType: Type = aliasType("Comparable")
 
@@ -185,7 +183,7 @@ class PklBaseModule(private val stdLib: PklStdLib) {
   val additiveOperandType: Type by lazy {
     val types =
       mutableListOf(stringType, numberType, durationType, dataSizeType, collectionType, mapType)
-    if (bytesType != null) types += bytesType
+    bytesType?.let(types::add)
     Type.union(types, this, null)
   }
 
@@ -196,8 +194,8 @@ class PklBaseModule(private val stdLib: PklStdLib) {
   val subscriptableType: Type by lazy {
     val types =
       mutableListOf(stringType, collectionType, mapType, listingType, mappingType, dynamicType)
-    if (bytesType != null) types += bytesType
-    if (referenceType != null) types += referenceType
+    bytesType?.let(types::add)
+    project.pklRefModule.referenceType?.let(types::add)
     Type.union(types, this, null)
   }
 

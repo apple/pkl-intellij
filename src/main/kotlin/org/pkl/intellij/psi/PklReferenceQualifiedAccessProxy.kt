@@ -17,9 +17,13 @@ package org.pkl.intellij.psi
 
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.util.Iconable
+import com.intellij.openapi.util.TextRange
+import com.intellij.psi.ElementManipulators
 import com.intellij.psi.PsiElement
 import com.intellij.psi.PsiFile
 import com.intellij.psi.PsiNamedElement
+import com.intellij.psi.PsiReference
+import com.intellij.psi.PsiReferenceBase
 import com.intellij.psi.impl.FakePsiElement
 import com.intellij.psi.impl.source.tree.LeafPsiElement
 import javax.swing.Icon
@@ -31,14 +35,16 @@ import org.pkl.intellij.type.toType
 
 class PklReferenceQualifiedAccessProxy(
   private val myName: String,
+  val domain: Type,
   val referent: PklType,
   val myProject: Project
 ) : FakePsiElement(), PklElement, PsiNamedElement, Iconable {
-  val type = ReferenceType(referent)
+  val type =
+    DeclaredType(project.pklRefModule.referenceType!!, listOf(DeclaredType(domain), referent))
 
   override fun <R> accept(visitor: PklVisitor<R>): R? = null
 
-  override fun clone(): Any = PklReferenceQualifiedAccessProxy(myName, referent, myProject)
+  override fun clone(): Any = PklReferenceQualifiedAccessProxy(myName, domain, referent, myProject)
 
   override fun getParent(): PsiElement? = null
 
@@ -56,7 +62,11 @@ class PklReferenceQualifiedAccessProxy(
     base: PklBaseModule,
     bindings: TypeParameterBindings,
     context: PklProject?
-  ): Type = base.referenceType!!.withTypeArguments(referent.toType(base, bindings, context))
+  ): Type =
+    project.pklRefModule.referenceType!!.withTypeArguments(
+      domain,
+      referent.toType(base, bindings, context)
+    )
 
   object UnknownType : FakePsiElement(), PklUnknownType {
     override fun <R> accept(visitor: PklVisitor<R>): R? = visitor.visitUnknownType(this)
@@ -92,7 +102,8 @@ class PklReferenceQualifiedAccessProxy(
     override fun getRightType(): PklType = myRightType
   }
 
-  class ReferenceType(val referent: PklType) : FakePsiElement(), PklDeclaredType {
+  class DeclaredType(val type: Type, val typeArguments: List<PklType?> = emptyList()) :
+    FakePsiElement(), PklDeclaredType {
     override fun <R> accept(visitor: PklVisitor<R>): R? = visitor.visitDeclaredType(this)
 
     override fun clone(): Any = UnknownType
@@ -107,32 +118,103 @@ class PklReferenceQualifiedAccessProxy(
 
         override fun getParent(): PsiElement? = null
 
-        override fun getElements(): List<PklType?> = listOf(referent)
+        override fun getElements(): List<PklType?> = typeArguments
       }
 
-    override fun getTypeName(): PklTypeName =
-      object : FakePsiElement(), PklTypeName {
-        override fun <R> accept(visitor: PklVisitor<R>): R? = visitor.visitTypeName(this)
+    override fun getTypeName(): PklTypeName = TypeName(type)
+  }
 
-        override fun clone(): Any = UnknownType
+  class TypeName(val type: Type) : FakePsiElement(), PklTypeName {
+    override fun <R> accept(visitor: PklVisitor<R>): R? = visitor.visitTypeName(this)
 
-        override fun getParent(): PsiElement? = null
+    override fun clone(): Any = UnknownType
 
-        override fun getModuleName(): PklModuleName? = null
+    override fun getParent(): PsiElement? = null
 
-        override fun getSimpleName(): PklSimpleTypeName =
-          object : FakePsiElement(), PklSimpleTypeName {
-            override fun <R> accept(visitor: PklVisitor<R>): R? = visitor.visitSimpleTypeName(this)
+    override fun getModuleName(): PklModuleName = ModuleName(type)
 
-            override fun clone(): Any = UnknownType
+    override fun getSimpleName(): PklSimpleTypeName = SimpleTypeName(type)
+  }
 
-            override fun getParent(): PsiElement? = null
+  class ModuleName(val type: Type) : FakePsiElement(), PklModuleName {
+    override fun <R> accept(visitor: PklVisitor<R>): R? = visitor.visitModuleName(this)
 
-            override val identifier: PsiElement =
-              LeafPsiElement(PklElementTypes.IDENTIFIER, "Reference")
+    override fun clone(): Any = UnknownType
 
-            override fun getText(): String = "Reference"
-          }
+    override fun getParent(): PsiElement? = null
+
+    override fun getIdentifier(): PsiElement =
+      LeafPsiElement(
+        PklElementTypes.IDENTIFIER,
+        when (type) {
+          is Type.Class -> type.psi.enclosingModule?.declaredName?.text
+          is Type.Alias -> type.psi.enclosingModule?.declaredName?.text
+          is Type.Module -> ""
+          else -> null
+        }
+          ?: "<module>"
+      )
+
+    override fun getText(): String = identifier.text
+
+    override fun getReference(): PsiReference? =
+      type.psi?.let { psi ->
+        object : PsiReferenceBase<PklModuleName>(this), PklModuleNameReferenceEx {
+          override fun getRangeInElement(): TextRange =
+            ElementManipulators.getValueTextRange(this@ModuleName)
+
+          override fun getCanonicalText(): String = this@ModuleName.identifier.text
+
+          override fun resolveContextual(context: PklProject?): PklModule? = psi.enclosingModule
+
+          override fun resolve(): PklModule? = psi.enclosingModule
+        }
+      }
+  }
+
+  class SimpleTypeName(val type: Type) : FakePsiElement(), PklSimpleTypeName {
+    override fun <R> accept(visitor: PklVisitor<R>): R? = visitor.visitSimpleTypeName(this)
+
+    override fun clone(): Any = UnknownType
+
+    override fun getParent(): PsiElement? = null
+
+    override val identifier: PsiElement =
+      LeafPsiElement(
+        PklElementTypes.IDENTIFIER,
+        when (type) {
+          is Type.Class -> type.psi.name ?: "<class>"
+          is Type.Alias -> type.psi.name ?: "<alias>"
+          is Type.Module -> type.psi.displayName
+          is Type.Variable -> type.psi.text
+          else -> "<type>"
+        }
+      )
+
+    override fun getText(): String = identifier.text
+
+    override fun getReference(): PsiReference? =
+      type.psi?.let { psi ->
+        object : PsiReferenceBase<PklSimpleTypeName>(this), PklReference {
+          override fun getRangeInElement(): TextRange =
+            ElementManipulators.getValueTextRange(this@SimpleTypeName)
+
+          override fun getCanonicalText(): String = this@SimpleTypeName.identifier.text
+
+          override fun resolveContextual(context: PklProject?): PsiElement = psi
+
+          override fun resolve(): PsiElement = psi
+        }
       }
   }
 }
+
+private val Type.psi: PklElement?
+  get() =
+    when (this) {
+      is Type.Alias -> psi
+      is Type.Class -> psi
+      is Type.Module -> psi
+      is Type.Variable -> psi
+      else -> null
+    }
