@@ -66,6 +66,9 @@ val PsiElement.enclosingModule: PklModule?
 val PsiElement.isInPklBaseModule: Boolean
   get() = enclosingModule?.declaredName?.textMatches("pkl.base") == true
 
+val PsiElement.isInPklRefModule: Boolean
+  get() = enclosingModule?.declaredName?.textMatches("pkl.ref") == true
+
 @Suppress("unused")
 val PsiElement.isInPklStdLibModule: Boolean
   get() = enclosingModule?.declaredName?.text?.startsWith("pkl.") == true
@@ -590,7 +593,7 @@ fun PklImportBase.resolveModules(context: PklProject?): List<PklModule> =
   }
 
 fun PklModuleName.resolve(context: PklProject?): PklModule? =
-  (reference as PklModuleNameReference?)?.resolveContextual(context)
+  (reference as PklModuleNameReferenceEx?)?.resolveContextual(context)
 
 val PklModuleExtendsAmendsClause.keyword: LeafPsiElement?
   get() = firstChildTokenOfEitherType(PklElementTypes.EXTENDS, PklElementTypes.AMENDS)

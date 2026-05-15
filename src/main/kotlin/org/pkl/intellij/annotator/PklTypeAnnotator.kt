@@ -71,12 +71,13 @@ class PklTypeAnnotator : PklAnnotator() {
       )
     }
 
-    if (referent is Type.Reference && referent.containsConstrainedType(base, context)) {
+    val unaliased = referent.unaliased(base, context)
+    if (unaliased is Type.Reference && referent.containsConstrainedType(base, context)) {
       createAnnotation(
         HighlightSeverity.ERROR,
         type.textRange,
         "Reference type annotations may not contain type constraints.",
-        "<code>Reference</code> type annotations may not contain type constraints.",
+        "<code>pkl.ref#Reference</code> type annotations may not contain type constraints.",
         holder
       )
     }
