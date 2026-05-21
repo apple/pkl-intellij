@@ -1,5 +1,5 @@
 /**
- * Copyright © 2024 Apple Inc. and the Pkl project authors. All rights reserved.
+ * Copyright © 2024-2026 Apple Inc. and the Pkl project authors. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,6 +21,7 @@ import com.intellij.psi.PsiElement
 import org.pkl.intellij.intention.PklRedundantStringInterpolationQuickFix
 import org.pkl.intellij.psi.*
 import org.pkl.intellij.resolve.ResolveVisitors
+import org.pkl.intellij.type.computeThisType
 import org.pkl.intellij.util.canModify
 import org.pkl.intellij.util.currentFile
 import org.pkl.intellij.util.currentProject
@@ -50,15 +51,17 @@ class PklStringLiteralAnnotator : PklAnnotator() {
 
         when (expr) {
           is PklUnqualifiedAccessExpr -> {
+            val recieverType = expr.computeThisType(base, emptyMap(), context)
             val visitor =
               ResolveVisitors.typeOfFirstElementNamed(
                 expr.memberName.identifier.text,
                 null,
                 base,
                 expr.isNullSafeAccess,
-                false
+                false,
+                recieverType,
               )
-            val type = expr.resolve(base, null, mapOf(), visitor, context)
+            val type = expr.resolve(base, recieverType, mapOf(), visitor, context)
             if (type.isSubtypeOf(base.stringType, base, context)) {
               warn(element, holder)
             }

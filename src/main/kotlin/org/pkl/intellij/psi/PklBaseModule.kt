@@ -86,6 +86,7 @@ class PklBaseModule(private val stdLib: PklStdLib) {
   val regexConstructor: PklClassMethod = method("Regex")
 
   val anyType: Type.Class = classType("Any")
+  val anyGetClassMethod: PklClassMethod = anyType.psi.methods.first { it.name == "getClass" }
   val nullType: Type.Class = classType("Null")
   val booleanType: Type.Class = classType("Boolean")
   val numberType: Type.Class = classType("Number")

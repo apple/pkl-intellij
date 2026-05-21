@@ -1,5 +1,5 @@
 /**
- * Copyright © 2024-2025 Apple Inc. and the Pkl project authors. All rights reserved.
+ * Copyright © 2024-2026 Apple Inc. and the Pkl project authors. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -116,7 +116,8 @@ object ResolveVisitors {
     argumentList: PklArgumentList?,
     base: PklBaseModule,
     isNullSafeAccess: Boolean,
-    preserveUnboundTypeVars: Boolean
+    preserveUnboundTypeVars: Boolean,
+    receiverType: Type,
   ): FlowTypingResolveVisitor<Type> =
     object : FlowTypingResolveVisitor<Type> {
       var isNonNull = false
@@ -169,7 +170,7 @@ object ResolveVisitors {
                 .resolve(context)
                 .computeResolvedImportType(base, bindings, preserveUnboundTypeVars, context)
             is PklTypeParameter -> bindings[element] ?: Type.Unknown
-            is PklMethod -> computeMethodReturnType(element, bindings, context)
+            is PklMethod -> computeMethodReturnType(element, bindings, context, receiverType)
             is PklClass -> base.classType.withTypeArguments(Type.Class(element))
             is PklTypeAlias -> base.typeAliasType.withTypeArguments(Type.alias(element, context))
             is PklNavigableElement ->
@@ -219,7 +220,8 @@ object ResolveVisitors {
       private fun computeMethodReturnType(
         method: PklMethod,
         bindings: TypeParameterBindings,
-        context: PklProject?
+        context: PklProject?,
+        receiverType: Type,
       ): Type {
         return when (method) {
           // infer return type of `base#Map()` from arguments (type signature is too weak)
@@ -251,6 +253,11 @@ object ResolveVisitors {
               }
               Type.Class(base.mapType.psi, listOf(keyType, valueType))
             }
+          }
+          base.anyGetClassMethod -> {
+            base.classType.withTypeArguments(
+              receiverType.toClassType(base, context) ?: receiverType
+            )
           }
           else -> {
             val typeParameterList = method.typeParameterList
