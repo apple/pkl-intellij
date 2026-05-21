@@ -76,37 +76,43 @@ private fun PsiElement.doComputeExprType(
   return RecursionManager.doPreventingRecursion(this, false) {
     when (this) {
       is PklUnqualifiedAccessExpr -> {
+        val thisType = computeThisType(base, bindings, context)
         val visitor =
           ResolveVisitors.typeOfFirstElementNamed(
             memberNameText,
             argumentList,
             base,
             isNullSafeAccess,
-            false
+            false,
+            thisType,
           )
-        resolve(base, null, bindings, visitor, context)
+        resolve(base, thisType, bindings, visitor, context)
       }
       is PklQualifiedAccessExpr -> {
+        val receiverType = receiverExpr.computeExprType(base, bindings, context)
         val visitor =
           ResolveVisitors.typeOfFirstElementNamed(
             memberNameText,
             argumentList,
             base,
             isNullSafeAccess,
-            false
+            false,
+            receiverType,
           )
-        resolve(base, null, bindings, visitor, context)
+        resolve(base, receiverType, bindings, visitor, context)
       }
       is PklSuperAccessExpr -> {
+        val thisType = computeThisType(base, bindings, context)
         val visitor =
           ResolveVisitors.typeOfFirstElementNamed(
             memberNameText,
             argumentList,
             base,
             isNullSafeAccess,
-            false
+            false,
+            thisType,
           )
-        resolve(base, null, bindings, visitor, context)
+        resolve(base, thisType, bindings, visitor, context)
       }
       is PklTrueLiteral,
       is PklFalseLiteral -> base.booleanType

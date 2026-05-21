@@ -1,5 +1,5 @@
 /**
- * Copyright © 2024-2025 Apple Inc. and the Pkl project authors. All rights reserved.
+ * Copyright © 2024-2026 Apple Inc. and the Pkl project authors. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -62,7 +62,8 @@ fun PsiElement?.computeResolvedImportType(
                     null,
                     base,
                     false,
-                    preserveUnboundTypeVars
+                    preserveUnboundTypeVars,
+                    receiverType,
                   )
                 Resolvers.resolveQualifiedAccess(receiverType, true, base, visitor, context)
               }
@@ -86,7 +87,8 @@ fun PsiElement?.computeResolvedImportType(
             null,
             base,
             isNullSafeAccess = false,
-            preserveUnboundTypeVars = false
+            preserveUnboundTypeVars = false,
+            receiverClassType,
           )
         if (
           Resolvers.visitSatisfiedCondition(cond, bindings, visitor, context) ||

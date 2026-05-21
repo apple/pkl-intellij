@@ -1,5 +1,5 @@
 /**
- * Copyright © 2024 Apple Inc. and the Pkl project authors. All rights reserved.
+ * Copyright © 2024-2026 Apple Inc. and the Pkl project authors. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -307,18 +307,20 @@ class PklDocumentationProvider : AbstractDocumentationProvider() {
         // support flow typing when showing documentation for nodes that navigate to ther nodes
         // (e.g. they aren't param declarations or class properties)
         originalElement?.isAncestor(element) == false -> {
+          val thisType = element.computeThisType(base, mapOf(), context)
           val visitor =
             ResolveVisitors.typeOfFirstElementNamed(
               name,
               null,
               element.project.pklBaseModule,
               isNullSafeAccess = false,
-              preserveUnboundTypeVars = false
+              preserveUnboundTypeVars = false,
+              thisType,
             )
           val computedType =
             Resolvers.resolveUnqualifiedAccess(
               originalElement,
-              element.computeThisType(base, mapOf(), context),
+              thisType,
               true,
               element.project.pklBaseModule,
               mapOf(),
