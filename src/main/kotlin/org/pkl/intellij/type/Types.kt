@@ -560,6 +560,26 @@ sealed class Type(val constraints: List<ConstraintExpr> = listOf()) {
 
     override fun withTypeArguments(arguments: List<Type>) = Reference(psi, arguments, constraints)
 
+    // enforce restrictions! cannot reference:
+    // - external or local properties
+    // - properties of Listing or Mapping
+    // - Dynamic.default
+    // - properties of any external class
+    // - any Module.output
+    private fun isViable(
+      prop: PklClassProperty,
+      type: Type,
+      base: PklBaseModule,
+      context: PklProject?
+    ): Boolean =
+      !(prop.isExternal ||
+        prop.isLocal ||
+        (type as? Class)?.let {
+          it == base.listingType || it == base.mappingType || it.psi.isExternal
+        }
+          ?: false ||
+        (type.isSubtypeOf(base.moduleType, base, context) && prop.name == "output"))
+
     override fun visitMembers(
       isProperty: Boolean,
       allowClasses: Boolean,
@@ -583,9 +603,9 @@ sealed class Type(val constraints: List<ConstraintExpr> = listOf()) {
           var isUnknown = false
           val candidates = mutableSetOf<PklType>()
 
-          walkCandidates(referent, base, context) { _, properties ->
+          walkCandidates(referent, base, context) { type, properties ->
             for (prop in properties) {
-              if (!(prop.isExternal || prop.isLocal) && prop.name == visitor.exactName) {
+              if (isViable(prop, type, base, context) && prop.name == visitor.exactName) {
                 val propType = prop.type ?: PklReferenceQualifiedAccessProxy.UnknownType
                 if (propType is PklUnknownType) {
                   isUnknown = true
@@ -608,9 +628,9 @@ sealed class Type(val constraints: List<ConstraintExpr> = listOf()) {
         }
         else -> {
           val propertyCandidates = mutableMapOf<String, MutableSet<PklType>>()
-          walkCandidates(referent, base, context) { _, properties ->
+          walkCandidates(referent, base, context) { type, properties ->
             for (prop in properties) {
-              if (!(prop.isExternal || prop.isLocal)) {
+              if (isViable(prop, type, base, context)) {
                 propertyCandidates
                   .getOrPut(prop.name) { mutableSetOf() }
                   .add(prop.type ?: PklReferenceQualifiedAccessProxy.UnknownType)
