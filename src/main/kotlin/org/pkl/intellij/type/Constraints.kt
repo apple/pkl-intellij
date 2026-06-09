@@ -1,5 +1,5 @@
 /**
- * Copyright © 2024 Apple Inc. and the Pkl project authors. All rights reserved.
+ * Copyright © 2024-2026 Apple Inc. and the Pkl project authors. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -1320,7 +1320,8 @@ sealed class ConstraintExpr {
 
     override fun evaluate(thisValue: ConstraintValue): ConstraintValue {
       val receiver = receiverExpr.evaluate(thisValue) as? StringValue ?: return Error
-      return IntValue(receiver.value.length.toLong())
+      val length = receiver.value.let { it.codePointCount(0, it.length) }
+      return IntValue(length.toLong())
     }
 
     override fun computeType(base: PklBaseModule, context: PklProject?): Type = base.intType
