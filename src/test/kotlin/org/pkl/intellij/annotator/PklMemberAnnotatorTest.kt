@@ -18,6 +18,7 @@ package org.pkl.intellij.annotator
 import com.intellij.testFramework.LightProjectDescriptor
 import com.intellij.testFramework.fixtures.CodeInsightTestFixture
 import com.intellij.testFramework.fixtures.IdeaTestFixtureFactory
+import org.junit.After
 import org.junit.Before
 import org.junit.Test
 
@@ -43,6 +44,12 @@ class PklMemberAnnotatorTest {
     codeInsightTestFixture = fixtureFactory.createCodeInsightFixture(fixture)
     codeInsightTestFixture.setUp()
     PklAnnotator.enabledTestAnnotator = PklMemberAnnotator::class
+  }
+
+  @After
+  fun after() {
+    codeInsightTestFixture.tearDown()
+    PklAnnotator.enabledTestAnnotator = null
   }
 
   @Test
