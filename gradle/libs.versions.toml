@@ -2,7 +2,7 @@
 assertj = "3.27.7"
 # GoLand version to verify against. Use latest version.
 # https://www.jetbrains.com/go/download/#section=mac
-goLand = "2024.3"
+goLand = "2024.3.3"
 grammarKit = "2023.3"
 # https://github.com/JetBrains/gradle-grammar-kit-plugin
 grammarKitPlugin = "2023.3.0.3"
@@ -11,7 +11,7 @@ grammarKitPlugin = "2023.3.0.3"
 intellij = "2024.3.3"
 # IntelliJ version to run against (`runIde` task). Use latest version.
 # https://www.jetbrains.com/idea/download/#section=mac
-intellijRunIde = "2024.3"
+intellijRunIde = "2024.3.3"
 intellijPlugin = "2.16.0"
 intellijSinceBuild = "243"
 # set to "999.*" to disable upper bound

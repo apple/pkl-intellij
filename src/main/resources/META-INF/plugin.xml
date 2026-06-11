@@ -143,6 +143,8 @@
     <generatedSourcesFilter implementation="org.pkl.intellij.PklGeneratedSourcesFilter" />
     <fileType name="Pkl" implementationClass="org.pkl.intellij.PklFileType"
               fieldName="INSTANCE" language="Pkl" extensions="pkl;pcf" fileNames="PklProject"/>
+    <!--suppress PluginXmlI18n -->
+    <notificationGroup displayType="BALLOON" id="PklModuleUriReference" />
     <externalIconProvider key="PklProject" implementationClass="org.pkl.intellij.packages.PklExternalSystemIconProvider"/>
     <editorNotificationProvider implementation="org.pkl.intellij.notification.PklSyncProjectNotificationProvider" />
     <editorNotificationProvider implementation="org.pkl.intellij.notification.PklToolchainNotificationProvider" />
