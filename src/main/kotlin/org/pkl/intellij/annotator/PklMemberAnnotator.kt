@@ -24,6 +24,7 @@ import com.intellij.psi.tree.TokenSet
 import com.intellij.psi.util.elementType
 import com.intellij.psi.util.parentOfType
 import com.intellij.psi.util.parentOfTypes
+import com.intellij.psi.util.prevLeaf
 import org.pkl.intellij.PklVersion
 import org.pkl.intellij.intention.PklAddDefaultValueQuickFix
 import org.pkl.intellij.intention.PklAddModifierQuickFix
@@ -39,17 +40,15 @@ import org.pkl.intellij.util.*
 
 // TODO: verify that Type.constraints are propagated correctly, e.g., in `amended()` calls
 class PklMemberAnnotator : PklAnnotator() {
-
-  companion object {
-    private val MODULE_MODIFIERS = TokenSet.create(ABSTRACT, OPEN)
-    private val AMENDING_MODULE_MODIFIERS = TokenSet.create()
-    private val CLASS_MODIFIERS = TokenSet.create(ABSTRACT, OPEN, EXTERNAL, LOCAL)
-    private val TYPE_ALIAS_MODIFIERS = TokenSet.create(EXTERNAL, LOCAL)
-    private val CLASS_METHOD_MODIFIERS = TokenSet.create(ABSTRACT, EXTERNAL, LOCAL, CONST)
-    private val CLASS_PROPERTY_MODIFIERS =
-      TokenSet.create(ABSTRACT, EXTERNAL, HIDDEN, LOCAL, FIXED, CONST)
-    private val OBJECT_METHOD_MODIFIERS = TokenSet.create(LOCAL, CONST)
-    private val OBJECT_PROPERTY_MODIFIERS = TokenSet.create(LOCAL, CONST)
+  private object ModifierSets {
+    val MODULE_MODIFIERS = TokenSet.create(ABSTRACT, OPEN)
+    val AMENDING_MODULE_MODIFIERS = TokenSet.create()
+    val CLASS_MODIFIERS = TokenSet.create(ABSTRACT, OPEN, EXTERNAL, LOCAL)
+    val TYPE_ALIAS_MODIFIERS = TokenSet.create(EXTERNAL, LOCAL)
+    val CLASS_METHOD_MODIFIERS = TokenSet.create(ABSTRACT, EXTERNAL, LOCAL, CONST)
+    val CLASS_PROPERTY_MODIFIERS = TokenSet.create(ABSTRACT, EXTERNAL, HIDDEN, LOCAL, FIXED, CONST)
+    val OBJECT_METHOD_MODIFIERS = TokenSet.create(LOCAL, CONST)
+    val OBJECT_PROPERTY_MODIFIERS = TokenSet.create(LOCAL, CONST)
   }
 
   override fun doAnnotate(element: PsiElement, holder: AnnotationHolder) {
@@ -71,7 +70,13 @@ class PklMemberAnnotator : PklAnnotator() {
     element.accept(
       object : PklVisitor<Unit>() {
         override fun visitObjectProperty(element: PklObjectProperty) {
-          checkModifiers(element, "object properties", OBJECT_PROPERTY_MODIFIERS, module, holder)
+          checkModifiers(
+            element,
+            "object properties",
+            ModifierSets.OBJECT_PROPERTY_MODIFIERS,
+            module,
+            holder
+          )
           checkUnresolvedProperty(element, memberType, base, holder, context)
           checkIsAmendable(element, memberType, base, holder)
           checkIsAssignable(element, base, holder, context)
@@ -129,11 +134,23 @@ class PklMemberAnnotator : PklAnnotator() {
         }
 
         override fun visitObjectMethod(element: PklObjectMethod) {
-          checkModifiers(element, "object methods", OBJECT_METHOD_MODIFIERS, module, holder)
+          checkModifiers(
+            element,
+            "object methods",
+            ModifierSets.OBJECT_METHOD_MODIFIERS,
+            module,
+            holder
+          )
         }
 
         override fun visitClassProperty(element: PklClassProperty) {
-          checkModifiers(element, "properties", CLASS_PROPERTY_MODIFIERS, module, holder)
+          checkModifiers(
+            element,
+            "properties",
+            ModifierSets.CLASS_PROPERTY_MODIFIERS,
+            module,
+            holder
+          )
           checkAbstractModifier(element, holder)
           checkUnresolvedProperty(element, memberType, base, holder, context)
           checkIsAmendable(element, memberType, base, holder)
@@ -141,18 +158,18 @@ class PklMemberAnnotator : PklAnnotator() {
         }
 
         override fun visitClassMethod(element: PklClassMethod) {
-          checkModifiers(element, "methods", CLASS_METHOD_MODIFIERS, module, holder)
+          checkModifiers(element, "methods", ModifierSets.CLASS_METHOD_MODIFIERS, module, holder)
           checkAbstractModifier(element, holder)
           checkTypeParameters(element, module, holder)
         }
 
         override fun visitClass(element: PklClass) {
-          checkModifiers(element, "classes", CLASS_MODIFIERS, module, holder)
+          checkModifiers(element, "classes", ModifierSets.CLASS_MODIFIERS, module, holder)
           checkTypeParameters(element, module, holder)
         }
 
         override fun visitTypeAlias(element: PklTypeAlias) {
-          checkModifiers(element, "type aliases", TYPE_ALIAS_MODIFIERS, module, holder)
+          checkModifiers(element, "type aliases", ModifierSets.TYPE_ALIAS_MODIFIERS, module, holder)
           val body = element.body
           if (body != null && element.isRecursive(context)) {
             holder
@@ -166,8 +183,15 @@ class PklMemberAnnotator : PklAnnotator() {
           val clause = element.extendsAmendsClause
           when {
             clause.isAmend ->
-              checkModifiers(element, "amending modules", AMENDING_MODULE_MODIFIERS, module, holder)
-            else -> checkModifiers(element, "modules", MODULE_MODIFIERS, module, holder)
+              checkModifiers(
+                element,
+                "amending modules",
+                ModifierSets.AMENDING_MODULE_MODIFIERS,
+                module,
+                holder
+              )
+            else ->
+              checkModifiers(element, "modules", ModifierSets.MODULE_MODIFIERS, module, holder)
           }
         }
       }
@@ -372,25 +396,48 @@ class PklMemberAnnotator : PklAnnotator() {
       owner.parentOfTypes(PklModule::class, PklClass::class, /* stop class */ PklObjectBody::class)
         as? PklModifierListOwner
         ?: return
-    if (containingClassOrModule.getAbstractModifier() != null) return
-    if (containingClassOrModule is PklModule) {
+    if (containingClassOrModule.getAbstractModifier() == null) {
+      if (containingClassOrModule is PklModule) {
+        createAnnotation(
+          HighlightSeverity.ERROR,
+          myAbstractModifier.textRange,
+          "Cannot declare an abstract member inside a non-abstract module",
+          "Cannot declare an abstract member inside a non-abstract module",
+          holder
+        )
+      } else {
+        createAnnotation(
+          HighlightSeverity.ERROR,
+          myAbstractModifier.textRange,
+          "Cannot declare an abstract member inside a non-abstract class",
+          "Cannot declare an abstract member inside a non-abstract class",
+          holder
+        )
+      }
+    }
+    val bodyTextRange =
+      if (owner is PklClassProperty) {
+        owner.expr?.textRangeWithAssign
+          ?: owner.objectBodyList.let { list ->
+            if (list.isEmpty()) null else list.first().textRange.union(list.last().textRange)
+          }
+      } else {
+        owner as PklClassMethod
+        owner.body?.textRangeWithAssign
+      }
+    if (bodyTextRange != null) {
       createAnnotation(
         HighlightSeverity.ERROR,
-        myAbstractModifier.textRange,
-        "Cannot declare an abstract member inside a non-abstract module",
-        "Cannot declare an abstract member inside a non-abstract module",
-        holder
-      )
-    } else {
-      createAnnotation(
-        HighlightSeverity.ERROR,
-        myAbstractModifier.textRange,
-        "Cannot declare an abstract member inside a non-abstract class",
-        "Cannot declare an abstract member inside a non-abstract class",
+        bodyTextRange,
+        "Abstract member cannot have a body",
+        "Abstract member cannot have a body",
         holder
       )
     }
   }
+
+  private val PklExpr.textRangeWithAssign
+    get() = this.prevLeaf { it.elementType == ASSIGN }!!.textRange.union(this.textRange)
 
   private fun checkModifiers(
     owner: PklModifierListOwner,
