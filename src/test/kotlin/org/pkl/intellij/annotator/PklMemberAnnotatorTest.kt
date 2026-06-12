@@ -69,4 +69,20 @@ class PklMemberAnnotatorTest {
         .trimIndent()
     )
   }
+
+  @Test
+  fun `abstract member with body`() {
+    checkHighlighting(
+      """
+      abstract module Foo
+
+      abstract bar <error descr="Abstract member cannot have a body">= 1</error>
+
+      abstract baz <error descr="Abstract member cannot have a body">{} {}</error>
+
+      abstract function bar() <error descr="Abstract member cannot have a body">= 15</error>
+    """
+        .trimIndent()
+    )
+  }
 }
