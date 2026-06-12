@@ -31,7 +31,8 @@ val Project.pklBaseModule: PklBaseModule
         // Invalidate [PklBaseModule] on any change to [rootManager], i.e., any change to a project
         // root.
         // (Is there a better way to track class roots affecting pkl.base?)
-        // Additionally track changes to the [baseModule] PSI (not sure if this makes a difference).
+        // Aditionally, track changes to the [baseModule] PSI (not sure if this makes a
+        // difference).
         ProjectRootManager.getInstance(this),
         stdLib.baseModule.psi
       )
@@ -62,9 +63,9 @@ class PklBaseModule(private val stdLib: PklStdLib) {
               val typeParameters =
                 member.typeParameterList?.elements
                   ?: listOf(PklPsiFactory.createTypeParameter("Type", project))
-              types[className] = Type.Class(member, listOf(), listOf(), typeParameters)
+              types[className] = Type.Class.create(member, listOf(), listOf(), typeParameters)
             }
-            else -> types[className] = Type.Class(member)
+            else -> types[className] = Type.Class.create(member)
           }
         is PklTypeAlias -> types[member.name!!] = Type.Alias.unchecked(member, listOf(), listOf())
         is PklClassMethod -> methods[member.name!!] = member
@@ -182,7 +183,7 @@ class PklBaseModule(private val stdLib: PklStdLib) {
   val additiveOperandType: Type by lazy {
     val types =
       mutableListOf(stringType, numberType, durationType, dataSizeType, collectionType, mapType)
-    if (bytesType != null) types += bytesType
+    bytesType?.let(types::add)
     Type.union(types, this, null)
   }
 
@@ -193,7 +194,8 @@ class PklBaseModule(private val stdLib: PklStdLib) {
   val subscriptableType: Type by lazy {
     val types =
       mutableListOf(stringType, collectionType, mapType, listingType, mappingType, dynamicType)
-    if (bytesType != null) types += bytesType
+    bytesType?.let(types::add)
+    project.pklRefModule.referenceType?.let(types::add)
     Type.union(types, this, null)
   }
 
