@@ -15,6 +15,7 @@
  */
 package org.pkl.intellij.psi
 
+import com.intellij.navigation.ItemPresentation
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.util.Iconable
 import com.intellij.openapi.util.TextRange
@@ -26,6 +27,7 @@ import com.intellij.psi.PsiReference
 import com.intellij.psi.PsiReferenceBase
 import com.intellij.psi.impl.FakePsiElement
 import com.intellij.psi.impl.source.tree.LeafPsiElement
+import com.intellij.util.containers.headTail
 import javax.swing.Icon
 import org.pkl.intellij.PklIcons
 import org.pkl.intellij.packages.dto.PklProject
@@ -37,14 +39,17 @@ class PklReferenceQualifiedAccessProxy(
   private val myName: String,
   val domain: Type,
   val referent: PklType,
-  val myProject: Project
-) : FakePsiElement(), PklElement, PsiNamedElement, Iconable {
+  val myProject: Project,
+  val classProperties: List<PklClassProperty>
+) : FakePsiElement(), PklElement, PsiNamedElement, Iconable, PklDocCommentOwner {
+
   val type =
     DeclaredType(project.pklRefModule.referenceType!!, listOf(DeclaredType(domain), referent))
 
   override fun <R> accept(visitor: PklVisitor<R>): R? = null
 
-  override fun clone(): Any = PklReferenceQualifiedAccessProxy(myName, domain, referent, myProject)
+  override fun clone(): Any =
+    PklReferenceQualifiedAccessProxy(myName, domain, referent, myProject, classProperties)
 
   override fun getParent(): PsiElement? = null
 
@@ -58,6 +63,22 @@ class PklReferenceQualifiedAccessProxy(
 
   override fun getIcon(open: Boolean): Icon = PklIcons.PROPERTY
 
+  override fun navigate(requestFocus: Boolean) {
+    classProperties.firstOrNull()?.navigate(requestFocus)
+  }
+
+  override fun canNavigate(): Boolean {
+    return true
+  }
+
+  override fun canNavigateToSource(): Boolean {
+    return true
+  }
+
+  override fun getPresentation(): ItemPresentation? {
+    return classProperties.firstOrNull()?.presentation
+  }
+
   fun getLookupElementType(
     base: PklBaseModule,
     bindings: TypeParameterBindings,
@@ -67,6 +88,8 @@ class PklReferenceQualifiedAccessProxy(
       domain,
       referent.toType(base, bindings, context)
     )
+
+  override val docComment: PklDocComment? = classProperties.firstOrNull()?.docComment
 
   object UnknownType : FakePsiElement(), PklUnknownType {
     override fun <R> accept(visitor: PklVisitor<R>): R? = visitor.visitUnknownType(this)
@@ -81,11 +104,14 @@ class PklReferenceQualifiedAccessProxy(
   class UnionType private constructor(val myLeftType: PklType, val myRightType: PklType) :
     FakePsiElement(), PklUnionType {
     companion object {
-      fun create(types: List<PklType>): PklType =
+      fun create(properties: List<PklClassProperty>): PklType =
         when {
-          types.isEmpty() -> UnknownType
-          types.size == 1 -> types.first()
-          else -> types.reduce { t1, t2 -> UnionType(t1, t2) }
+          properties.isEmpty() -> UnknownType
+          properties.size == 1 -> properties.first().type ?: UnknownType
+          else -> {
+            val (head, tail) = properties.headTail()
+            UnionType(head.type ?: UnknownType, create(tail))
+          }
         }
     }
 

@@ -17,6 +17,7 @@ package org.pkl.intellij.documentation
 
 import com.intellij.lang.documentation.AbstractDocumentationProvider
 import com.intellij.lang.documentation.DocumentationMarkup
+import com.intellij.openapi.editor.Editor
 import com.intellij.psi.PsiDocCommentBase
 import com.intellij.psi.PsiElement
 import com.intellij.psi.PsiFile
@@ -36,6 +37,30 @@ import org.pkl.intellij.type.*
 import org.pkl.intellij.util.escapeXml
 
 class PklDocumentationProvider : AbstractDocumentationProvider() {
+  // IntelliJ will call `resolve()` on an element, then show docs for the resolved element.
+  // However, in the case of `PsiPolyVariantReference`, we purposefully return `null` for `resolve()` calls, because
+  // the go-to definition logic needs this in order to make the IDE show multiple declarations.
+  //
+  // To continue showing correct hover docs, we must implement this hook to force IJ to show docs correctly.
+  override fun getCustomDocumentationElement(
+    editor: Editor,
+    file: PsiFile,
+    contextElement: PsiElement?,
+    targetOffset: Int
+  ): PsiElement? {
+    val qualifiedAccessName =
+      contextElement?.parentOfTypes(
+        PklQualifiedAccessNameBase::class, /* stop class */
+        PklObjectBody::class
+      ) as? PklQualifiedAccessNameBase
+        ?: return null
+    val ref = qualifiedAccessName.reference
+    val results = ref.multiResolve(false)
+    if (results.isEmpty()) return null
+    val firstResult = results.first()
+    return firstResult.proxy ?: firstResult.element
+  }
+
   override fun getQuickNavigateInfo(element: PsiElement, originalElement: PsiElement): String? =
     buildString {
       if (!renderSignature(element, originalElement)) return null

@@ -587,10 +587,10 @@ sealed class Type(val constraints: List<ConstraintExpr> = listOf()) {
       visitor: ResolveVisitor<*>,
       context: PklProject?
     ): Boolean {
-      fun visit(name: String, type: PklType): Boolean =
+      fun visit(name: String, type: PklType, classProperties: List<PklClassProperty>): Boolean =
         visitor.visit(
           name,
-          PklReferenceQualifiedAccessProxy(name, domain, type, psi.project),
+          PklReferenceQualifiedAccessProxy(name, domain, type, psi.project, classProperties),
           bindings,
           context
         )
@@ -598,10 +598,14 @@ sealed class Type(val constraints: List<ConstraintExpr> = listOf()) {
       return when {
         !isProperty -> super.visitMembers(false, allowClasses, base, visitor, context)
         referencesUnknown ->
-          visit(visitor.exactName ?: "UNKNOWN", PklReferenceQualifiedAccessProxy.UnknownType)
+          visit(
+            visitor.exactName ?: "UNKNOWN",
+            PklReferenceQualifiedAccessProxy.UnknownType,
+            listOf()
+          )
         visitor.exactName != null -> {
           var isUnknown = false
-          val candidates = mutableSetOf<PklType>()
+          val candidates = mutableListOf<PklClassProperty>()
 
           walkCandidates(referent, base, context) { type, properties ->
             for (prop in properties) {
@@ -611,29 +615,29 @@ sealed class Type(val constraints: List<ConstraintExpr> = listOf()) {
                   isUnknown = true
                   return@walkCandidates false
                 }
-                candidates.add(propType)
+                candidates.add(prop)
                 return@walkCandidates true
               }
             }
             return@walkCandidates true
           }
 
-          if (isUnknown) visit(visitor.exactName!!, PklReferenceQualifiedAccessProxy.UnknownType)
+          if (isUnknown)
+            visit(visitor.exactName!!, PklReferenceQualifiedAccessProxy.UnknownType, candidates)
           else if (!candidates.isEmpty())
             visit(
               visitor.exactName!!,
-              PklReferenceQualifiedAccessProxy.UnionType.create(candidates.toList())
+              PklReferenceQualifiedAccessProxy.UnionType.create(candidates),
+              candidates
             )
           else true
         }
         else -> {
-          val propertyCandidates = mutableMapOf<String, MutableSet<PklType>>()
-          walkCandidates(referent, base, context) { type, properties ->
+          val propertyCandidates = mutableMapOf<String, MutableList<PklClassProperty>>()
+          walkCandidates(referent, base, context) { _, properties ->
             for (prop in properties) {
               if (isViable(prop, type, base, context)) {
-                propertyCandidates
-                  .getOrPut(prop.name) { mutableSetOf() }
-                  .add(prop.type ?: PklReferenceQualifiedAccessProxy.UnknownType)
+                propertyCandidates.getOrPut(prop.name) { mutableListOf() }.add(prop)
               }
             }
             return@walkCandidates true
@@ -641,11 +645,12 @@ sealed class Type(val constraints: List<ConstraintExpr> = listOf()) {
           for ((propName, candidates) in propertyCandidates) {
             when {
               candidates.any { it is PklUnknownType } ->
-                visit(propName, PklReferenceQualifiedAccessProxy.UnknownType)
+                visit(propName, PklReferenceQualifiedAccessProxy.UnknownType, candidates)
               else ->
                 visit(
                   propName,
-                  PklReferenceQualifiedAccessProxy.UnionType.create(candidates.toList())
+                  PklReferenceQualifiedAccessProxy.UnionType.create(candidates),
+                  candidates
                 )
             }
           }
