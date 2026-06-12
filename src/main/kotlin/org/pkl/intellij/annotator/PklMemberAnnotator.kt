@@ -134,6 +134,7 @@ class PklMemberAnnotator : PklAnnotator() {
 
         override fun visitClassProperty(element: PklClassProperty) {
           checkModifiers(element, "properties", CLASS_PROPERTY_MODIFIERS, module, holder)
+          checkAbstractModifier(element, holder)
           checkUnresolvedProperty(element, memberType, base, holder, context)
           checkIsAmendable(element, memberType, base, holder)
           checkFixedOrConstModifier(element, holder, base, context)
@@ -141,6 +142,7 @@ class PklMemberAnnotator : PklAnnotator() {
 
         override fun visitClassMethod(element: PklClassMethod) {
           checkModifiers(element, "methods", CLASS_METHOD_MODIFIERS, module, holder)
+          checkAbstractModifier(element, holder)
           checkTypeParameters(element, module, holder)
         }
 
@@ -349,6 +351,42 @@ class PklMemberAnnotator : PklAnnotator() {
         element.propertyName.textRange,
         "Cannot $action $modifier property '${property.name}'",
         "Cannot $action $modifier property <code>${property.name.escapeXml()}</code>",
+        holder
+      )
+    }
+  }
+
+  private fun PklModifierListOwner.getAbstractModifier(): PsiElement? {
+    val elements = modifierList?.elements ?: return null
+    for (elem in elements) {
+      if (elem.elementType == ABSTRACT) {
+        return elem
+      }
+    }
+    return null
+  }
+
+  private fun checkAbstractModifier(owner: PklModifierListOwner, holder: AnnotationHolder) {
+    val myAbstractModifier = owner.getAbstractModifier() ?: return
+    val containingClassOrModule =
+      owner.parentOfTypes(PklModule::class, PklClass::class, /* stop class */ PklObjectBody::class)
+        as? PklModifierListOwner
+        ?: return
+    if (containingClassOrModule.getAbstractModifier() != null) return
+    if (containingClassOrModule is PklModule) {
+      createAnnotation(
+        HighlightSeverity.ERROR,
+        myAbstractModifier.textRange,
+        "Cannot declare an abstract member inside a non-abstract module",
+        "Cannot declare an abstract member inside a non-abstract module",
+        holder
+      )
+    } else {
+      createAnnotation(
+        HighlightSeverity.ERROR,
+        myAbstractModifier.textRange,
+        "Cannot declare an abstract member inside a non-abstract class",
+        "Cannot declare an abstract member inside a non-abstract class",
         holder
       )
     }
