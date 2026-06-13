@@ -1,5 +1,5 @@
 /**
- * Copyright © 2025 Apple Inc. and the Pkl project authors. All rights reserved.
+ * Copyright © 2025-2026 Apple Inc. and the Pkl project authors. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -196,18 +196,34 @@ class PklDownloadPklCliAction(
         }
       }
 
-    private fun defaultExecutableName(): String =
-      if (System.getProperty("os.name").lowercase().contains("win")) "pkl.exe" else "pkl"
+    private fun defaultExecutableName(): String = if (isWindows()) "pkl.exe" else "pkl"
 
-    private fun suggestedDownloadPath(): String =
-      Paths.get(
-          System.getProperty("user.home"),
-          ".pkl",
-          "editor-support",
-          "bin",
-          defaultExecutableName()
-        )
-        .toString()
+    private fun isWindows(): Boolean = System.getProperty("os.name").lowercase().contains("win")
+
+    /**
+     * Suggested filesystem path for the downloaded Pkl CLI.
+     *
+     * Mirrors the editor-support layout from `org.pkl.core.util.IoUtils#getDefaultModuleCacheDir`:
+     * Unix uses `~/.local/share/pkl/editor-support/bin/pkl`, Windows uses
+     * `%LOCALAPPDATA%/pkl/editor-support/bin/pkl.exe`. Falls back to the legacy
+     * `~/.pkl/editor-support/bin/<exe>` when that directory already exists, so a user who
+     * downloaded the CLI to the old location keeps seeing it as the default.
+     */
+    private fun suggestedDownloadPath(): String {
+      val home = System.getProperty("user.home")
+      val executable = defaultExecutableName()
+      val legacy = Paths.get(home, ".pkl", "editor-support", "bin", executable)
+      if (Files.exists(legacy)) return legacy.toString()
+      val preferred: Path? =
+        if (isWindows()) {
+          System.getenv("LOCALAPPDATA")
+            ?.takeIf { it.isNotEmpty() }
+            ?.let { Paths.get(it, "pkl", "editor-support", "bin", executable) }
+        } else {
+          Paths.get(home, ".local", "share", "pkl", "editor-support", "bin", executable)
+        }
+      return (preferred ?: legacy).toString()
+    }
   }
 }
 
