@@ -23,6 +23,7 @@ import com.intellij.openapi.progress.ProgressIndicator
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.roots.OrderEnumerator
 import com.intellij.openapi.util.ModificationTracker
+import com.intellij.openapi.util.SystemInfo
 import com.intellij.openapi.util.text.StringUtil
 import com.intellij.openapi.vfs.VfsUtil
 import com.intellij.openapi.vfs.VirtualFile
@@ -73,11 +74,26 @@ private const val SIGNIFICAND_BITS = 52
 
 private const val IMPLICIT_BIT: Long = SIGNIFICAND_MASK + 1
 
-val pklDir: VirtualFile?
-  get() = VfsUtil.getUserHomeDir()?.findChild(".pkl")
-
+/**
+ * The default Pkl package cache directory. Prefers the OS-appropriate location – `~/.cache/pkl` on
+ * Unix, `%LOCALAPPDATA%/pkl/cache` on Windows – falling back to the legacy `~/.pkl/cache` when it
+ * already exists. New setups land in the new location; existing setups keep working without
+ * migration.
+ *
+ * Keep in sync with `org.pkl.core.util.IoUtils#getDefaultModuleCacheDir`.
+ */
 val pklCacheDir: VirtualFile?
-  get() = pklDir?.findChild("cache")
+  get() {
+    val home = VfsUtil.getUserHomeDir() ?: return null
+    val newLocation: VirtualFile? =
+      if (SystemInfo.isWindows) {
+        val localAppData = System.getenv("LOCALAPPDATA")?.takeIf { it.isNotEmpty() }
+        localAppData?.let { home.fileSystem.findFileByPath("$it/pkl/cache") }
+      } else {
+        home.findFileByRelativePath(".cache/pkl")
+      }
+    return newLocation ?: home.findFileByRelativePath(".pkl/cache")
+  }
 
 interface CacheDir {
   val file: VirtualFile
