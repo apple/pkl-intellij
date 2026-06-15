@@ -324,7 +324,7 @@ class PklModuleUriAndVersionAnnotator : PklAnnotator() {
       val resolved = reference.resolveGlob(context) ?: continue
       if (resolved.exceededMaxElements) {
         val message =
-          "This glob pattern segment matches too many modules. Only the first ${GlobResolver.MAX_GLOB_ELEMENTS} is shown."
+          "This glob pattern segment matches too many modules. Only the first ${GlobResolver.MAX_GLOB_ELEMENTS} are shown."
         createAnnotation(
           HighlightSeverity.INFORMATION,
           reference.rangeInElement.shiftRight(element.textOffset),
