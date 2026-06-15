@@ -41,9 +41,7 @@ import org.pkl.intellij.util.*
 
 /** A reference within a module URI. May reference a package/directory or file. */
 class PklModuleUriReference(uri: PklModuleUri, rangeInElement: TextRange) :
-  PsiPolyVariantReferenceBase<PklModuleUri>(uri, rangeInElement),
-  UserDataHolder,
-  PklReference {
+  PsiPolyVariantReferenceBase<PklModuleUri>(uri, rangeInElement), UserDataHolder, PklReference {
   val moduleUri: String = element.stringConstant.content.text
 
   private val project = uri.project
