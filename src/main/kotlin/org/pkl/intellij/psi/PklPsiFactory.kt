@@ -1,5 +1,5 @@
 /**
- * Copyright © 2024 Apple Inc. and the Pkl project authors. All rights reserved.
+ * Copyright © 2024-2026 Apple Inc. and the Pkl project authors. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,6 +21,7 @@ import com.intellij.psi.PsiElement
 import com.intellij.psi.PsiFileFactory
 import com.intellij.psi.impl.source.tree.LeafPsiElement
 import com.intellij.util.LocalTimeCounter
+import kotlin.text.appendLine
 import org.pkl.intellij.PklFileType
 import org.pkl.intellij.util.escapeString
 
@@ -49,23 +50,25 @@ object PklPsiFactory {
   }
 
   fun createImportList(imports: Sequence<PklImport>, project: Project): PklImportList {
-    val source = buildString {
-      for (import in imports) {
-        import.moduleUri?.stringConstant?.let { stringConstant ->
-          append("import ")
-          append(stringConstant.stringStart.text)
-          append(stringConstant.content.text)
-          append(stringConstant.stringEnd.text)
-          import.identifier?.let { identifier ->
-            append(" as ")
-            append(identifier.text)
-          }
-          appendLine()
-        }
-      }
-    }
+    val source = buildString { renderImportList(imports) }
     val module = createModule(source, project)
     return module.importList
+  }
+
+  fun StringBuilder.renderImportList(imports: Sequence<PklImport>) {
+    for (import in imports) {
+      import.moduleUri?.stringConstant?.let { stringConstant ->
+        append("import ")
+        append(stringConstant.stringStart.text)
+        append(stringConstant.content.text)
+        append(stringConstant.stringEnd.text)
+        import.identifier?.let { identifier ->
+          append(" as ")
+          append(identifier.text)
+        }
+        appendLine()
+      }
+    }
   }
 
   fun createClass(name: String, project: Project): PklClass {
@@ -89,8 +92,12 @@ object PklPsiFactory {
   }
 
   fun createSimpleTypeName(name: String, project: Project): PklSimpleTypeName {
+    return createDeclaredType(name, project).typeName.simpleName
+  }
+
+  fun createDeclaredType(name: String, project: Project): PklDeclaredType {
     val module = createModule("x: $name", project)
-    return (module.properties.single().type as PklDeclaredType).typeName.simpleName
+    return module.properties.single().type as PklDeclaredType
   }
 
   fun createObjectBody(project: Project, member: PklObjectMember): PklObjectBody {
@@ -274,5 +281,41 @@ object PklPsiFactory {
   fun createAmendsClause(moduleUri: String, project: Project): PklModuleExtendsAmendsClause {
     val module = createModule("amends \"$moduleUri\"", project)
     return module.extendsAmendsClause!!
+  }
+
+  fun createClassProperty(text: String, project: Project): PklClassProperty {
+    val module = createModule(text, project)
+    return module.properties.first()
+  }
+
+  fun createClassMethod(text: String, project: Project): PklClassMethod {
+    val module = createModule(text, project)
+    return module.methods.first()
+  }
+
+  fun createClassWithEmptyBody(originalClass: PklClass, project: Project): PklClass {
+    val text = buildString {
+      append(originalClass.text)
+      append(" {}")
+    }
+    val module = createModule(text, project)
+    return module.typeDefs.first() as PklClass
+  }
+
+  fun createModifierListWithoutAbstract(
+    modifierList: PklModifierList,
+    project: Project
+  ): PklModifierList {
+    val text = buildString {
+      for (elem in modifierList.elements) {
+        if (elem.elementType != PklElementTypes.ABSTRACT) {
+          append(elem)
+          append(" ")
+        }
+      }
+      append("module foo")
+    }
+    val module = createModule(text, project)
+    return module.modifierList!!
   }
 }

@@ -1,5 +1,5 @@
 /**
- * Copyright © 2024 Apple Inc. and the Pkl project authors. All rights reserved.
+ * Copyright © 2024-2026 Apple Inc. and the Pkl project authors. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -31,5 +31,14 @@ data class PackageAssetUri(val packageUri: PackageUri, val assetPath: String) {
       val packageUri = PackageUri.create(uri) ?: return null
       return PackageAssetUri(packageUri, assetPath)
     }
+  }
+
+  fun toUri(): URI {
+    val base = packageUri.toUri()
+    return URI(base.scheme, base.schemeSpecificPart, assetPath)
+  }
+
+  override fun toString(): String {
+    return toUri().toString()
   }
 }

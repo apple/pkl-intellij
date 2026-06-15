@@ -1,5 +1,5 @@
 /**
- * Copyright © 2024-2025 Apple Inc. and the Pkl project authors. All rights reserved.
+ * Copyright © 2024-2026 Apple Inc. and the Pkl project authors. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,11 +19,9 @@ import com.intellij.codeInsight.intention.IntentionAction
 import com.intellij.lang.annotation.AnnotationHolder
 import com.intellij.lang.annotation.HighlightSeverity
 import com.intellij.psi.PsiElement
-import com.intellij.psi.SmartPointerManager
 import com.intellij.psi.util.parentOfTypes
-import com.jetbrains.rd.util.first
 import org.pkl.intellij.intention.PklAddModifierQuickFix
-import org.pkl.intellij.intention.PklDefinePropertiesValuesQuickFix
+import org.pkl.intellij.intention.PklImplementMembersQuickFix
 import org.pkl.intellij.packages.dto.PklProject
 import org.pkl.intellij.psi.*
 import org.pkl.intellij.type.toType
@@ -165,10 +163,97 @@ class PklExtendsClauseAnnotator : PklAnnotator() {
     checkParentClassDef(clause, parent, holder.currentProject.pklBaseModule, holder, context)
   }
 
-  /**
-   * Check that extending an abstract class defines values for types that are missing default
-   * values.
-   */
+  private fun checkAbstractMembers(
+    element: PsiElement,
+    def: PklTypeDefOrModule,
+    parentMembers: Collection<PklClassMember>,
+    holder: AnnotationHolder
+  ): Boolean {
+    for (parentMember in parentMembers) {
+      if (!parentMember.isAbstract) continue
+      val parentName = parentMember.name ?: continue
+      val definedMember =
+        when (parentMember) {
+          is PklClassProperty -> def.declaredProperties.find { it.name == parentName }
+          else -> def.declaredMethods.find { it.name == parentName }
+        }
+      if (definedMember != null) continue
+
+      // copy Java/Kotlin error message and provide information about just the first missing
+      // method/property.
+      val entityName = if (def is PklModule) "module" else "class"
+      val classOrModuleName = def.name.orEmpty()
+      val memberEntityName = if (parentMember is PklClassProperty) "property" else "method"
+      val message =
+        "$entityName $classOrModuleName is not abstract and does not implement $memberEntityName '${parentName}'"
+      val tooltipMessagee =
+        "${entityName.escapeXml()} ${classOrModuleName.escapeXml()} is not abstract and does not implement ${memberEntityName.escapeXml()} '${parentName.escapeXml()}'"
+      holder
+        .newAnnotation(HighlightSeverity.ERROR, message)
+        .apply {
+          range(element.textRange)
+          tooltip(tooltipMessagee)
+          withFix(PklImplementMembersQuickFix(def))
+          def.modifierList?.let { modifierList ->
+            withFix(
+              PklAddModifierQuickFix(
+                "Make '${classOrModuleName}' abstract",
+                modifierList,
+                PklElementTypes.ABSTRACT
+              )
+            )
+          }
+        }
+        .create()
+      return true
+    }
+    return false
+  }
+
+  private fun checkFixedOrConstMembers(
+    element: PsiElement,
+    def: PklTypeDefOrModule,
+    parentMembers: Collection<PklClassMember>,
+    holder: AnnotationHolder,
+    base: PklBaseModule,
+    context: PklProject?
+  ) {
+    for (member in parentMembers) {
+      if (member !is PklClassProperty || !member.isFixedOrConst) continue
+      val definedProperty = def.declaredProperties.find { it.name == member.name }
+      if (definedProperty != null) continue
+      if (member.expr != null) continue
+      if (member.type.toType(base, mapOf(), context).hasDefault(base, context)) continue
+
+      // copy Java/Kotlin error message and provide information about just the first missing
+      // property.
+      val entityName = if (def is PklModule) "module" else "class"
+      val classOrModuleName = def.name.orEmpty()
+      val message =
+        "$entityName $classOrModuleName is not abstract and does not define a default value for property '${member.name}'"
+      val tooltipMessagee =
+        "${entityName.escapeXml()} ${classOrModuleName.escapeXml()} is not abstract and does not define a default value for property '${member.name.escapeXml()}'"
+      holder
+        .newAnnotation(HighlightSeverity.ERROR, message)
+        .apply {
+          range(element.textRange)
+          tooltip(tooltipMessagee)
+          withFix(PklImplementMembersQuickFix(def))
+          def.modifierList?.let { modifierList ->
+            withFix(
+              PklAddModifierQuickFix(
+                "Make '${classOrModuleName}' abstract",
+                modifierList,
+                PklElementTypes.ABSTRACT
+              )
+            )
+          }
+        }
+        .create()
+      return
+    }
+  }
+
   private fun checkParentClassDef(
     element: PsiElement,
     def: PklTypeDefOrModule,
@@ -177,60 +262,11 @@ class PklExtendsClauseAnnotator : PklAnnotator() {
     context: PklProject?
   ) {
     if (def.isAbstract) return
-    // skip annotation if parent is not abstract nor open
-    if (def.parentTypeDef(context)?.isAbstractOrOpen == false) return
-    val parentProperties = def.effectiveParentProperties(context) ?: return
-    val definedProperties =
-      when (def) {
-        is PklClass -> def.properties.associateBy { it.name }
-        else -> {
-          def as PklModule
-          def.properties.associateBy { it.name }
-        }
-      }
-    val missingProperties =
-      parentProperties.filter { (propName, property) ->
-        val type = property.type.toType(base, mapOf(), context)
-        property.isFixedOrConst &&
-          property.expr == null &&
-          definedProperties[propName] == null &&
-          !type.hasDefault(base, context)
-      }
-    if (missingProperties.isEmpty()) return
-    val entityName = if (def is PklModule) "module" else "class"
-    val firstMissingProperty = missingProperties.first().key
-    val classOrModuleName = def.name.orEmpty()
-    holder
-      .newAnnotation(
-        HighlightSeverity.WARNING,
-        // Copy Java/Kotlin's error message and only notify about the first missing property.
-        "$entityName $classOrModuleName is not abstract and does not define a default value for property '${firstMissingProperty}'"
-      )
-      .apply {
-        range(element.textRange)
-        // language=html
-        tooltip(
-          """
-            ${entityName.escapeXml()} ${classOrModuleName.escapeXml()} is not abstract and does not define a default value for property <code>${firstMissingProperty.escapeXml()}.</code>
-          """
-            .trimIndent()
-        )
-        withFix(
-          PklDefinePropertiesValuesQuickFix(
-            def,
-            missingProperties.values.map { SmartPointerManager.createPointer(it) }
-          )
-        )
-        def.modifierList?.let { modifierList ->
-          withFix(
-            PklAddModifierQuickFix(
-              "Make '${classOrModuleName}' abstract",
-              modifierList,
-              PklElementTypes.ABSTRACT
-            )
-          )
-        }
-      }
-      .create()
+    val parentProperties = def.effectiveParentProperties(context)?.values ?: emptyList()
+    val parentMethods = def.methods(context)?.values ?: emptyList()
+    val parentMembers = parentProperties + parentMethods
+    if (parentMembers.isEmpty()) return
+    if (checkAbstractMembers(element, def, parentMembers, holder)) return
+    checkFixedOrConstMembers(element, def, parentMembers, holder, base, context)
   }
 }

@@ -1,5 +1,5 @@
 /**
- * Copyright © 2024 Apple Inc. and the Pkl project authors. All rights reserved.
+ * Copyright © 2024-2026 Apple Inc. and the Pkl project authors. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -243,8 +243,9 @@ private class ReplacementVisitor(
    * Handles inlined imports in expressions, such as `replaceWith = #"import("pkl:math").maxInt"#`.
    */
   override fun visitImportExpr(expr: PklImportExpr) {
-    val importUri = expr.moduleUri.escapedContent ?: return
-    val importName = usageImportList?.findOrInsertImport(importUri) ?: return
+    if (expr.isGlob) return
+    val resolvedModule = expr.resolveModules(null).singleOrNull() ?: return
+    val importName = usageImportList?.findOrInsertImport(resolvedModule) ?: return
     expr.replace(PklPsiFactory.createUnqualifiedPropertyAccessExpr(importName, project))
   }
 
@@ -268,10 +269,11 @@ private class ReplacementVisitor(
   private fun handleReferencedImport(name: String, nameReplacer: (String) -> Unit) {
     if (declImportList != null && usageImportList != null) {
       for (declImport in declImportList.elements) {
+        if (declImport.isGlob) continue
         val declImportName = declImport.memberName ?: continue
         if (declImportName == name) {
-          val declImportUri = declImport.moduleUri?.escapedContent ?: return
-          val usageImportName = usageImportList.findOrInsertImport(declImportUri) ?: return
+          val importedModule = declImport.resolveModules(null).singleOrNull() ?: return
+          val usageImportName = usageImportList.findOrInsertImport(importedModule) ?: return
           if (usageImportName != name) {
             // import had to be aliased due to naming conflict -> replace reference with alias
             nameReplacer(usageImportName)
