@@ -15,13 +15,17 @@
  */
 package org.pkl.intellij.util
 
+import com.intellij.openapi.project.Project
 import com.intellij.openapi.vfs.VirtualFile
+import com.intellij.psi.PsiFileSystemItem
+import com.intellij.psi.PsiManager
 import java.util.*
 import java.util.concurrent.atomic.AtomicInteger
 import java.util.regex.Pattern
 import kotlin.collections.ArrayList
 
 object GlobResolver {
+  data class GlobResult(val elements: List<PsiFileSystemItem>, val exceededMaxElements: Boolean)
 
   private val cache = Collections.synchronizedMap(WeakHashMap<String, Pattern>())
 
@@ -33,6 +37,8 @@ object GlobResolver {
    * and `..`)
    */
   private const val MAX_LIST_ELEMENTS = 16384
+
+  const val MAX_GLOB_ELEMENTS = 300
 
   private fun getNextChar(pattern: String, i: Int): Char =
     if (i >= pattern.length - 1) NULL else pattern[i + 1]
@@ -279,6 +285,8 @@ object GlobResolver {
    * @param listElementCallCount The number of times we have listed children
    * @param isPartial Whether [globPatternParts] represents the whole URI
    * @param result The return value
+   * @return a boolean indicating whether the number of elements in the glob exceeded
+   *   [MAX_GLOB_ELEMENTS]
    */
   private fun expandGlob(
     globPatternParts: List<String>,
@@ -287,8 +295,9 @@ object GlobResolver {
     listElementCallCount: AtomicInteger,
     isPartial: Boolean,
     listChildren: (VirtualFile) -> Array<VirtualFile>,
-    result: MutableList<VirtualFile>
-  ) {
+    psiManager: PsiManager,
+    result: MutableList<PsiFileSystemItem>
+  ): Boolean {
     val patternPart = globPatternParts[idx]
     val isLeaf = idx == globPatternParts.size - 1
     // no expanding needed, carry on
@@ -297,70 +306,108 @@ object GlobResolver {
         when (patternPart) {
           "." -> currentDir
           ".." -> currentDir.parent
-          else -> listChildren(currentDir).find { it.name == patternPart } ?: return
+          else -> listChildren(currentDir).find { it.name == patternPart } ?: return false
         }
       if (isLeaf) {
-        result.add(child)
-        return
+        if (result.size == MAX_GLOB_ELEMENTS) return true
+        child.toFileSystemItem(psiManager)?.let { result.add(it) }
+        return false
       }
       if (child.isDirectory) {
-        expandGlob(
+        return expandGlob(
           globPatternParts,
           idx + 1,
           child,
           listElementCallCount,
           isPartial,
           listChildren,
+          psiManager,
           result
         )
       }
     } else {
       val expandedFiles =
         expandGlobPart(currentDir, patternPart, listElementCallCount, listChildren, isPartial)
-          ?: return
+          ?: return false
       for (file in expandedFiles) {
         if (isLeaf) {
-          result.add(file)
+          if (result.size == MAX_GLOB_ELEMENTS) return true
+          file.toFileSystemItem(psiManager)?.let { result.add(it) }
         } else if (file.isDirectory) {
-          expandGlob(
-            globPatternParts,
-            idx + 1,
-            file,
-            listElementCallCount,
-            isPartial,
-            listChildren,
-            result
-          )
+          val exceededMaxElements =
+            expandGlob(
+              globPatternParts,
+              idx + 1,
+              file,
+              listElementCallCount,
+              isPartial,
+              listChildren,
+              psiManager,
+              result
+            )
+          if (exceededMaxElements) return true
         }
       }
     }
+    return false
+  }
+
+  fun VirtualFile.toFileSystemItem(psiManager: PsiManager): PsiFileSystemItem? {
+    return if (isDirectory) psiManager.findDirectory(this) else psiManager.findFile(this)
   }
 
   fun resolveRelativeGlob(
     enclosingDirectory: VirtualFile,
     globPattern: String,
     isPartial: Boolean,
+    project: Project,
     listChildren: (VirtualFile) -> Array<VirtualFile>
-  ): List<VirtualFile> {
-    if (globPattern.isEmpty()) return listOf(enclosingDirectory)
-    val result = ArrayList<VirtualFile>()
+  ): GlobResult {
+    val psiManager = PsiManager.getInstance(project)
+    if (globPattern.isEmpty()) {
+      return GlobResult(listOfNotNull(enclosingDirectory.toFileSystemItem(psiManager)), false)
+    }
+    val result = ArrayList<PsiFileSystemItem>()
     val globParts = globPattern.split("/")
-    if (globParts.isEmpty()) return emptyList()
-    expandGlob(globParts, 0, enclosingDirectory, AtomicInteger(0), isPartial, listChildren, result)
-    return result
+    if (globParts.isEmpty()) return GlobResult(emptyList(), false)
+    val exceededMaxElements =
+      expandGlob(
+        globParts,
+        0,
+        enclosingDirectory,
+        AtomicInteger(0),
+        isPartial,
+        listChildren,
+        psiManager,
+        result
+      )
+    return GlobResult(result, exceededMaxElements)
   }
 
   fun resolveAbsoluteGlob(
     rootFile: VirtualFile,
     globPattern: String,
     isPartial: Boolean,
+    project: Project,
     listChildren: (VirtualFile) -> Array<VirtualFile>
-  ): List<VirtualFile> {
-    if (globPattern == "/") return listOf(rootFile)
-    val result = ArrayList<VirtualFile>()
+  ): GlobResult {
+    val psiManager = PsiManager.getInstance(project)
+    if (globPattern == "/")
+      return GlobResult(listOfNotNull(rootFile.toFileSystemItem(psiManager)), false)
+    val result = ArrayList<PsiFileSystemItem>()
     val globParts = globPattern.split("/").drop(1)
-    if (globParts.isEmpty()) return emptyList()
-    expandGlob(globParts, 0, rootFile, AtomicInteger(0), isPartial, listChildren, result)
-    return result
+    if (globParts.isEmpty()) return GlobResult(emptyList(), false)
+    val exceededMaxElements =
+      expandGlob(
+        globParts,
+        0,
+        rootFile,
+        AtomicInteger(0),
+        isPartial,
+        listChildren,
+        psiManager,
+        result
+      )
+    return GlobResult(result, exceededMaxElements)
   }
 }

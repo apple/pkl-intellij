@@ -37,6 +37,7 @@ import org.pkl.intellij.packages.pklPackageService
 import org.pkl.intellij.packages.pklProjectService
 import org.pkl.intellij.psi.PklElementTypes.IMPORT_GLOB
 import org.pkl.intellij.type.*
+import org.pkl.intellij.util.GlobResolver
 import org.pkl.intellij.util.appendNumericSuffix
 import org.pkl.intellij.util.inferImportPropertyName
 import org.pkl.intellij.util.unexpectedType
@@ -411,14 +412,8 @@ fun PklModuleUri.resolve(context: PklProject?): PklModule? =
       as? PklModule?
   }
 
-fun resolveModuleUriGlob(element: PklModuleUri, context: PklProject?): List<PklModule> =
-  element.escapedContent
-    ?.let { PklModuleUriReference.resolveGlob(it, it, element, context) }
-    ?.filterIsInstance<PklModule>()
-    ?: emptyList()
-
-fun PklModuleUri.resolveGlob(context: PklProject?): List<PklModule> =
-  resolveModuleUriGlob(this, context)
+private fun PklModuleUri.resolveGlob(context: PklProject?): GlobResolver.GlobResult? =
+  escapedContent?.let { PklModuleUriReference.resolveGlob(it, it, this, context) }
 
 /**
  * Finds or inserts (in sort order) an import for [uri] and returns its member name. Returns `null`
@@ -492,17 +487,21 @@ class SimpleModuleResolutionResult(val resolved: PklModule?) : ModuleResolutionR
   }
 }
 
-class GlobModuleResolutionResult(val resolved: List<PklModule>) : ModuleResolutionResult() {
+class GlobModuleResolutionResult(val resolved: GlobResolver.GlobResult) : ModuleResolutionResult() {
+  companion object {
+    val EMPTY = GlobModuleResolutionResult(GlobResolver.GlobResult(emptyList(), false))
+  }
+
   override fun computeResolvedImportType(
     base: PklBaseModule,
     bindings: TypeParameterBindings,
     preserveUnboundedVars: Boolean,
     context: PklProject?
   ): Type {
-    if (resolved.isEmpty())
+    if (resolved.exceededMaxElements || resolved.elements.isEmpty())
       return base.mappingType.withTypeArguments(base.stringType, base.moduleType)
     val allTypes =
-      resolved.map {
+      resolved.elements.map {
         it.computeResolvedImportType(
           base,
           bindings,
@@ -537,9 +536,15 @@ class GlobModuleResolutionResult(val resolved: List<PklModule>) : ModuleResoluti
   }
 }
 
-fun PklImportBase.resolve(context: PklProject?): ModuleResolutionResult =
-  if (isGlob) GlobModuleResolutionResult(moduleUri?.resolveGlob(context) ?: emptyList())
-  else SimpleModuleResolutionResult(moduleUri?.resolve(context))
+fun PklImportBase.resolve(context: PklProject?): ModuleResolutionResult {
+  return if (isGlob) {
+    val moduleUri = moduleUri ?: return GlobModuleResolutionResult.EMPTY
+    val result = moduleUri.resolveGlob(context) ?: return GlobModuleResolutionResult.EMPTY
+    GlobModuleResolutionResult(result)
+  } else {
+    SimpleModuleResolutionResult(moduleUri?.resolve(context))
+  }
+}
 
 fun PklImportBase.resolveModules(context: PklProject?): List<PklModule> =
   resolve(context).let { result ->
@@ -547,7 +552,9 @@ fun PklImportBase.resolveModules(context: PklProject?): List<PklModule> =
       is SimpleModuleResolutionResult -> result.resolved?.let(::listOf) ?: emptyList()
       else -> {
         result as GlobModuleResolutionResult
-        result.resolved
+        val resolved = result.resolved
+        if (resolved.exceededMaxElements) emptyList()
+        else resolved.elements.filterIsInstance<PklModule>()
       }
     }
   }

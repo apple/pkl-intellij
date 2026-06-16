@@ -1,5 +1,5 @@
 /**
- * Copyright © 2024 Apple Inc. and the Pkl project authors. All rights reserved.
+ * Copyright © 2024-2026 Apple Inc. and the Pkl project authors. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -34,6 +34,7 @@ import org.pkl.intellij.packages.dto.PklProject
 import org.pkl.intellij.packages.dto.Version
 import org.pkl.intellij.packages.pklPackageService
 import org.pkl.intellij.psi.*
+import org.pkl.intellij.util.GlobResolver
 import org.pkl.intellij.util.currentProject
 import org.pkl.intellij.util.escapeXml
 import org.pkl.intellij.util.parseUriOrNull
@@ -320,11 +321,25 @@ class PklModuleUriAndVersionAnnotator : PklAnnotator() {
 
     for ((index, reference) in references.withIndex()) {
       if (reference !is PklModuleUriReference) return
-      val resolved = reference.resolveGlob(context) ?: return
-      if (index == 0 && checkDependencyNotation(element, reference, resolved, holder, context)) {
+      val resolved = reference.resolveGlob(context) ?: continue
+      if (resolved.exceededMaxElements) {
+        val message =
+          "This glob pattern segment matches too many modules. Only the first ${GlobResolver.MAX_GLOB_ELEMENTS} are shown."
+        createAnnotation(
+          HighlightSeverity.INFORMATION,
+          reference.rangeInElement.shiftRight(element.textOffset),
+          message,
+          message,
+          holder
+        )
+      }
+      if (
+        index == 0 &&
+          checkDependencyNotation(element, reference, resolved.elements, holder, context)
+      ) {
         return
       }
-      if (resolved.isEmpty()) {
+      if (resolved.elements.isEmpty()) {
         createAnnotation(
           HighlightSeverity.WARNING,
           reference.rangeInElement.shiftRight(element.textOffset),
@@ -335,7 +350,7 @@ class PklModuleUriAndVersionAnnotator : PklAnnotator() {
           element
         )
       }
-      if (index == references.lastIndex && resolved.any { it !is PklModule }) {
+      if (index == references.lastIndex && resolved.elements.any { it !is PklModule }) {
         createAnnotation(
           HighlightSeverity.WARNING,
           reference.rangeInElement.shiftRight(element.textOffset),
