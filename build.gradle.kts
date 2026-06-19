@@ -285,7 +285,7 @@ val originalRemoteName = System.getenv("PKL_ORIGINAL_REMOTE_NAME") ?: "origin"
 spotless {
   ratchetFrom = "$originalRemoteName/main"
   kotlin {
-    ktfmt("0.44").googleStyle()
+    ktfmt(libs.versions.ktfmt.get()).googleStyle()
     licenseHeader(licenseHeader)
   }
 }
