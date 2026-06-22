@@ -1,5 +1,5 @@
 /**
- * Copyright © 2024 Apple Inc. and the Pkl project authors. All rights reserved.
+ * Copyright © 2024-2026 Apple Inc. and the Pkl project authors. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -31,6 +31,7 @@ import javax.swing.Icon
 import org.pkl.intellij.*
 import org.pkl.intellij.packages.*
 import org.pkl.intellij.packages.PklProjectService.Companion.PKL_PROJECT_FILENAME
+import org.pkl.intellij.packages.dto.PackageAssetUri
 import org.pkl.intellij.packages.dto.PackageMetadata
 import org.pkl.intellij.packages.dto.PklProject
 import org.pkl.intellij.type.Type
@@ -295,9 +296,14 @@ class PklModuleImpl(viewProvider: FileViewProvider) :
       ?: pklProject?.getResolvedDependencies(context)
 
   override val canonicalUri: String
-    get() =
-      `package`?.let { "${it.packageUri}#/${virtualFile.path.substringAfter("!/")}" }
-        ?: virtualFile.url
+    get() {
+      return when {
+        `package` != null ->
+          PackageAssetUri(`package`!!.packageUri, virtualFile.path.substringAfter("!/")).toString()
+        isStdLibModule -> "pkl:${name}"
+        else -> virtualFile.url
+      }
+    }
 
   override fun isEquivalentTo(other: PsiElement): Boolean {
     if (this === other) return true

@@ -19,6 +19,7 @@ import com.intellij.lang.ASTNode
 import com.intellij.openapi.progress.ProgressIndicatorProvider
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.util.Iconable
+import com.intellij.openapi.vfs.VfsUtilCore
 import com.intellij.psi.PsiElement
 import com.intellij.psi.PsiManager
 import com.intellij.psi.PsiWhiteSpace
@@ -416,27 +417,56 @@ private fun PklModuleUri.resolveGlob(context: PklProject?): GlobResolver.GlobRes
   escapedContent?.let { PklModuleUriReference.resolveGlob(it, it, this, context) }
 
 /**
- * Finds or inserts (in sort order) an import for [uri] and returns its member name. Returns `null`
- * if this operation could not be performed (e.g., due to invalid code).
+ * Finds or inserts (in sort order) an import for [module] and returns its member name. Returns
+ * `null` if this operation could not be performed (e.g., due to invalid code).
+ *
+ * Creates dependency-notation URIs, or constructs relative path segments if available.
  */
-fun PklImportList.findOrInsertImport(uri: String): String? {
-  val defaultImportName = inferImportPropertyName(uri) ?: return null
+fun PklImportList.findOrInsertImport(module: PklModule): String? {
+  val canonicalUri = module.canonicalUri
+
+  val defaultImportName = inferImportPropertyName(canonicalUri) ?: return null
   var effectiveImportName: String = defaultImportName
 
   val oldImports = elements
   for (oldImport in oldImports) {
-    if (oldImport.moduleUri?.escapedContent == uri) return oldImport.memberName
+    if (oldImport.isGlob) continue
+    val importedModule = oldImport.resolveModules(null).singleOrNull()
+    if (importedModule == module) return oldImport.memberName
 
     if (oldImport.memberName == effectiveImportName) {
       effectiveImportName = appendNumericSuffix(effectiveImportName)
     }
   }
 
+  val importPath =
+    when {
+      canonicalUri.startsWith("package:") -> {
+        val myDependency =
+          this.enclosingModule?.pklProject?.myDependencies?.entries?.find {
+            canonicalUri.startsWith(it.value.packageUri.toString())
+          }
+        if (myDependency != null) {
+          val pathWithinPackage = canonicalUri.substringAfter("#/")
+          "@${myDependency.key}/${pathWithinPackage}"
+        } else {
+          // this module comes from is a package, but the originating module doesn't declare this as
+          // a dependency.
+          // bail out and just import the `package://` URI
+          canonicalUri
+        }
+      }
+      else -> {
+        val myModule = enclosingModule ?: return null
+        VfsUtilCore.findRelativePath(myModule.virtualFile, module.virtualFile, '/') ?: canonicalUri
+      }
+    }
+
   val newImport =
     if (effectiveImportName == defaultImportName) {
-      PklPsiFactory.createImport(uri, project)
+      PklPsiFactory.createImport(importPath, project)
     } else {
-      PklPsiFactory.createAliasedImport(uri, effectiveImportName, project)
+      PklPsiFactory.createAliasedImport(importPath, effectiveImportName, project)
     }
 
   val newElementInfo = ImportInfo.create(newImport)
@@ -937,15 +967,57 @@ fun PklTypeDefOrModule.parentTypeDef(context: PklProject?): PklTypeDefOrModule? 
   }
 }
 
+fun PklTypeDefOrModule.methods(context: PklProject?): Map<String, PklClassMethod>? {
+  return when (val def = parentTypeDef(context)) {
+    is PklClass -> def.cache(context).methods
+    is PklModule -> def.cache(context).methods
+    else -> null
+  }
+}
+
 fun PklTypeDefOrModule.effectiveParentProperties(
   context: PklProject?
 ): Map<String, PklClassProperty>? {
-
   return when (val def = parentTypeDef(context)) {
     is PklClass -> def.cache(context).leafProperties
     is PklModule -> def.cache(context).leafProperties
     else -> null
   }
+}
+
+val PklTypeDefOrModule.declaredProperties: Sequence<PklClassProperty>
+  get() =
+    when (this) {
+      is PklClass -> this.properties
+      is PklModule -> this.properties
+      else -> emptySequence()
+    }
+
+fun PklTypeDefOrModule.hasDeclaredProperty(name: String): Boolean {
+  for (member in declaredProperties) {
+    if (member.name == name) {
+      return true
+    }
+  }
+  return false
+}
+
+val PklTypeDefOrModule.declaredMethods: Sequence<PklClassMethod>
+  get() =
+    when (this) {
+      is PklClass -> this.methods
+      is PklModule -> this.methods
+      else -> emptySequence()
+    }
+
+fun PklTypeDefOrModule.hasDeclaredMethod(name: String?): Boolean {
+  if (name == null) return false
+  for (member in declaredMethods) {
+    if (member.name == name) {
+      return true
+    }
+  }
+  return false
 }
 
 val PsiElement.pklReference: PklReference?
