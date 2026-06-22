@@ -186,13 +186,13 @@ class PklExtendsClauseAnnotator : PklAnnotator() {
       val memberEntityName = if (parentMember is PklClassProperty) "property" else "method"
       val message =
         "$entityName $classOrModuleName is not abstract and does not implement $memberEntityName '${parentName}'"
-      val tooltipMessagee =
+      val tooltipMessage =
         "${entityName.escapeXml()} ${classOrModuleName.escapeXml()} is not abstract and does not implement ${memberEntityName.escapeXml()} '${parentName.escapeXml()}'"
       holder
         .newAnnotation(HighlightSeverity.ERROR, message)
         .apply {
           range(element.textRange)
-          tooltip(tooltipMessagee)
+          tooltip(tooltipMessage)
           withFix(PklImplementMembersQuickFix(def))
           def.modifierList?.let { modifierList ->
             withFix(
@@ -231,13 +231,13 @@ class PklExtendsClauseAnnotator : PklAnnotator() {
       val classOrModuleName = def.name.orEmpty()
       val message =
         "$entityName $classOrModuleName is not abstract and does not define a default value for property '${member.name}'"
-      val tooltipMessagee =
+      val tooltipMessage =
         "${entityName.escapeXml()} ${classOrModuleName.escapeXml()} is not abstract and does not define a default value for property '${member.name.escapeXml()}'"
       holder
         .newAnnotation(HighlightSeverity.ERROR, message)
         .apply {
           range(element.textRange)
-          tooltip(tooltipMessagee)
+          tooltip(tooltipMessage)
           withFix(PklImplementMembersQuickFix(def))
           def.modifierList?.let { modifierList ->
             withFix(

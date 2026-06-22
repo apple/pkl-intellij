@@ -267,17 +267,6 @@ object PklPsiFactory {
     return module.typeDefs.first() as PklClass
   }
 
-  fun createClassPropertyWithoutTypeAnnotation(
-    property: PklClassProperty,
-    project: Project
-  ): PklClassProperty {
-    val propertyText = buildString {
-      append("${property.modifierList.text} ${property.nameIdentifier.text} = TODO()\n")
-    }
-    val module = createModule(propertyText, project)
-    return module.properties.first()
-  }
-
   fun createAmendsClause(moduleUri: String, project: Project): PklModuleExtendsAmendsClause {
     val module = createModule("amends \"$moduleUri\"", project)
     return module.extendsAmendsClause!!
@@ -300,22 +289,5 @@ object PklPsiFactory {
     }
     val module = createModule(text, project)
     return module.typeDefs.first() as PklClass
-  }
-
-  fun createModifierListWithoutAbstract(
-    modifierList: PklModifierList,
-    project: Project
-  ): PklModifierList {
-    val text = buildString {
-      for (elem in modifierList.elements) {
-        if (elem.elementType != PklElementTypes.ABSTRACT) {
-          append(elem)
-          append(" ")
-        }
-      }
-      append("module foo")
-    }
-    val module = createModule(text, project)
-    return module.modifierList!!
   }
 }
