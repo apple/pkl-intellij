@@ -426,8 +426,7 @@ private fun PklModuleUri.resolveGlob(context: PklProject?): GlobResolver.GlobRes
  * Creates dependency-notation URIs, or constructs relative path segments if available.
  */
 fun PklImportList.findOrInsertImport(module: PklModule): String? {
-  val canonicalUri = module.canonicalUri
-
+  val canonicalUri = module.canonicalUri ?: return null
   val defaultImportName = inferImportPropertyName(canonicalUri) ?: return null
   var effectiveImportName: String = defaultImportName
 
