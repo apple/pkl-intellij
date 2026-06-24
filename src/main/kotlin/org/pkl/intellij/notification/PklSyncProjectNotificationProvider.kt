@@ -1,5 +1,5 @@
 /**
- * Copyright © 2024 Apple Inc. and the Pkl project authors. All rights reserved.
+ * Copyright © 2024-2026 Apple Inc. and the Pkl project authors. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -53,39 +53,41 @@ class PklSyncProjectNotificationProvider(project: Project) : EditorNotificationP
     }
   }
 
+  private val noComponent: Function<in FileEditor, out JComponent?> = Function { null }
+
   override fun collectNotificationData(
     project: Project,
     file: VirtualFile
   ): Function<in FileEditor, out JComponent?> {
+    if (ScratchUtil.isScratch(file)) return noComponent
+    if (!project.pklCli.isAvailable()) return noComponent
+    val psiFile = PsiManager.getInstance(project).findFile(file)
+    if (psiFile !is PklModule) return noComponent
+    // isInPklProject performs a VFS directory walk — must run off EDT here, not in the Function
+    if (!psiFile.isInPklProject) return noComponent
+    val hasPklProject = psiFile.pklProject != null
+    val isOutOfDate = project.pklProjectService.isOutOfDate()
+    val error = if (!hasPklProject) project.pklProjectService.getError(file) else null
     return Function { _ ->
-      if (ScratchUtil.isScratch(file)) return@Function null
-      if (!project.pklCli.isAvailable()) return@Function null
-      val psiFile = PsiManager.getInstance(project).findFile(file)
-      if (psiFile !is PklModule) return@Function null
-      if (!psiFile.isInPklProject) return@Function null
-      if (psiFile.pklProject == null) {
-        return@Function PklEditorNotificationPanel().apply {
-          val error = project.pklProjectService.getError(file)
-          if (error != null) {
-            text = "Project Sync error"
-
-            createActionLabel("View details", "Pkl.ShowSyncError")
-            createActionLabel("Retry", "Pkl.SyncPklProjects")
-          } else {
+      when {
+        !hasPklProject ->
+          PklEditorNotificationPanel().apply {
+            if (error != null) {
+              text = "Project Sync error"
+              createActionLabel("View details", "Pkl.ShowSyncError")
+              createActionLabel("Retry", "Pkl.SyncPklProjects")
+            } else {
+              text = "Sync Pkl project"
+              createActionLabel("Sync", "Pkl.SyncPklProjects")
+            }
+          }
+        isOutOfDate ->
+          PklEditorNotificationPanel().apply {
             text = "Sync Pkl project"
-
             createActionLabel("Sync", "Pkl.SyncPklProjects")
           }
-        }
+        else -> null
       }
-      if (project.pklProjectService.isOutOfDate()) {
-        return@Function PklEditorNotificationPanel().apply {
-          text = "Sync Pkl project"
-
-          createActionLabel("Sync", "Pkl.SyncPklProjects")
-        }
-      }
-      null
     }
   }
 }
