@@ -39,6 +39,8 @@ class PklReferenceQualifiedAccessProxy(
   val referent: PklType,
   val myProject: Project
 ) : FakePsiElement(), PklElement, PsiNamedElement, Iconable {
+  // `referenceType` guaranteed to exist; PklReferenceQualifiedAccessProxy is only created when
+  // pkl:ref is available.
   val type =
     DeclaredType(project.pklRefModule.referenceType!!, listOf(DeclaredType(domain), referent))
 
@@ -106,7 +108,7 @@ class PklReferenceQualifiedAccessProxy(
     FakePsiElement(), PklDeclaredType {
     override fun <R> accept(visitor: PklVisitor<R>): R? = visitor.visitDeclaredType(this)
 
-    override fun clone(): Any = UnknownType
+    override fun clone(): Any = DeclaredType(type, typeArguments)
 
     override fun getParent(): PsiElement? = null
 

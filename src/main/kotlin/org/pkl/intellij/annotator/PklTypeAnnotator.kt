@@ -48,10 +48,9 @@ class PklTypeAnnotator : PklAnnotator() {
   private fun validateDeclaredType(type: PklDeclaredType, holder: AnnotationHolder) {
     if (type.typeArgumentList?.elements.isNullOrEmpty()) return
     val module = holder.currentModule ?: return
-    val project = module.project
-    val base = project.pklBaseModule
+    val base = module.project.pklBaseModule
     val context = type.enclosingModule?.pklProject
-    val referent = type.toType(module.project.pklBaseModule, emptyMap(), module.pklProject)
+    val referent = type.toType(base, emptyMap(), module.pklProject)
 
     val argCount = type.typeArgumentList!!.elements.size
     val paramCount =
@@ -69,6 +68,7 @@ class PklTypeAnnotator : PklAnnotator() {
           "<tr><td align=\"right\">Found:</td><td>$argCount</td></tr></table>",
         holder
       )
+      return
     }
 
     val unaliased = referent.unaliased(base, context)

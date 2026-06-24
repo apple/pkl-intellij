@@ -30,10 +30,10 @@ val Project.pklRefModule: PklRefModule
         // Invalidate [PklProjectModule] on any change to [rootManager], i.e., any change to a
         // project root.
         // (Is there a better way to track class roots affecting pkl.base?)
-        // Aditionally track changes to the [projectModule] PSI (not sure if this makes a
+        // Additionally, track changes to the [projectModule] PSI (not sure if this makes a
         // difference).
         ProjectRootManager.getInstance(this),
-        stdLib.projectModule.psi
+        stdLib.refModule?.psi
       )
     }
 

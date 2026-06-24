@@ -732,9 +732,7 @@ sealed class Type(val constraints: List<ConstraintExpr> = listOf()) {
         when (root) {
           is Alias -> {
             val aliased = root.aliasedType(base, context)
-            if (root.psi.isInPklBaseModule && (aliased as? Class)?.psi?.displayName == "Int")
-              walkCandidates(root, base, context, visit)
-            else walkCandidates(aliased, base, context, visit)
+            walkCandidates(aliased, base, context, visit)
           }
           is Class -> visit(root, root.psi.properties)
           is Module -> visit(root, root.psi.properties)
