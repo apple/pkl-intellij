@@ -209,6 +209,9 @@ class PklDocumentationProvider : AbstractDocumentationProvider() {
   ): Boolean {
     val context = originalElement?.enclosingModule?.pklProject
     when (element) {
+      is PklReferenceQualifiedAccessProxy -> {
+        renderTypeAnnotation(element, element.name, element.type, originalElement)
+      }
       is PklModule -> {
         renderModifiers(element.modifierList)
         append("module ")
@@ -306,7 +309,7 @@ class PklDocumentationProvider : AbstractDocumentationProvider() {
       when {
         // support flow typing when showing documentation for nodes that navigate to ther nodes
         // (e.g. they aren't param declarations or class properties)
-        originalElement?.isAncestor(element) == false -> {
+        element.isPhysical && originalElement?.isAncestor(element) == false -> {
           val thisType = element.computeThisType(base, mapOf(), context)
           val visitor =
             ResolveVisitors.typeOfFirstElementNamed(

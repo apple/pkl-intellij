@@ -360,7 +360,7 @@ class PklModuleUriReference(uri: PklModuleUri, rangeInElement: TextRange) :
     ): VirtualFile? {
       // `.originalFile` because IntelliJ's code completion mechanism
       // creates PsiFile copy which returns `null` for `.virtualFile`
-      val sourceVirtualFile = sourcePsiFile.originalFile.virtualFile
+      val sourceVirtualFile = sourcePsiFile.originalFile.virtualFile ?: return null
       val sourceUriStr =
         sourceVirtualFile
           .url // don't convert to java.net.URI because not always a valid URI (e.g., may contain

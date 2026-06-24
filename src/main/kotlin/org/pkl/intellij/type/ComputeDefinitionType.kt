@@ -35,7 +35,7 @@ fun PsiElement?.computeResolvedImportType(
   return RecursionManager.doPreventingRecursion(this, false) {
     when (this) {
       is PklModule -> Type.module(this, shortDisplayName, context)
-      is PklClass -> Type.Class(this)
+      is PklClass -> Type.Class.create(this)
       is PklTypeAlias -> Type.alias(this, context)
       is PklMethod ->
         when {

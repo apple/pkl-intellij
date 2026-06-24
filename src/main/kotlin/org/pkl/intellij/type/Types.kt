@@ -1,5 +1,5 @@
 /**
- * Copyright © 2024-2025 Apple Inc. and the Pkl project authors. All rights reserved.
+ * Copyright © 2024-2026 Apple Inc. and the Pkl project authors. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -136,7 +136,8 @@ sealed class Type(val constraints: List<ConstraintExpr> = listOf()) {
       )
 
     fun union(types: List<Type>, base: PklBaseModule, context: PklProject?): Type =
-      types.reduce { t1, t2 -> Union.create(t1, t2, base, context) }
+      if (types.size == 1) types.single()
+      else types.reduce { t1, t2 -> Union.create(t1, t2, base, context) }
 
     fun function1(param1Type: Type, returnType: Type, base: PklBaseModule): Type =
       base.function1Type.withTypeArguments(param1Type, returnType)
@@ -543,11 +544,213 @@ sealed class Type(val constraints: List<ConstraintExpr> = listOf()) {
     override fun hasDefaultImpl(base: PklBaseModule, context: PklProject?): Boolean = true
   }
 
+  class Reference(
+    psi: PklClass,
+    specifiedTypeArguments: List<Type> = listOf(),
+    constraints: List<ConstraintExpr> = listOf(),
+  ) : Class(psi, specifiedTypeArguments, constraints) {
+
+    override fun withConstraints(constraints: List<ConstraintExpr>): Type =
+      Reference(psi, typeArguments, constraints)
+
+    override fun withTypeArguments(argument1: Type) = Reference(psi, listOf(argument1), constraints)
+
+    override fun withTypeArguments(argument1: Type, argument2: Type) =
+      Reference(psi, listOf(argument1, argument2), constraints)
+
+    override fun withTypeArguments(arguments: List<Type>) = Reference(psi, arguments, constraints)
+
+    // enforce restrictions! cannot reference:
+    // - external or local properties
+    // - properties of Listing or Mapping
+    // - Dynamic.default
+    // - properties of any external class
+    // - any Module.output
+    private fun isViable(
+      prop: PklClassProperty,
+      type: Type,
+      base: PklBaseModule,
+      context: PklProject?
+    ): Boolean =
+      !(prop.isExternal ||
+        prop.isLocal ||
+        (type as? Class)?.let {
+          it == base.listingType || it == base.mappingType || it.psi.isExternal
+        }
+          ?: false ||
+        (type.isSubtypeOf(base.moduleType, base, context) && prop.name == "output"))
+
+    override fun visitMembers(
+      isProperty: Boolean,
+      allowClasses: Boolean,
+      base: PklBaseModule,
+      visitor: ResolveVisitor<*>,
+      context: PklProject?
+    ): Boolean {
+      fun visit(name: String, type: PklType): Boolean =
+        visitor.visit(
+          name,
+          PklReferenceQualifiedAccessProxy(name, domain, type, psi.project),
+          bindings,
+          context
+        )
+
+      return when {
+        !isProperty -> super.visitMembers(false, allowClasses, base, visitor, context)
+        referencesUnknown ->
+          visit(visitor.exactName ?: "UNKNOWN", PklReferenceQualifiedAccessProxy.UnknownType)
+        visitor.exactName != null -> {
+          var isUnknown = false
+          val candidates = mutableSetOf<PklType>()
+
+          walkCandidates(referent, base, context) { type, properties ->
+            for (prop in properties) {
+              if (isViable(prop, type, base, context) && prop.name == visitor.exactName) {
+                val propType = prop.type ?: PklReferenceQualifiedAccessProxy.UnknownType
+                if (propType is PklUnknownType) {
+                  isUnknown = true
+                  return@walkCandidates false
+                }
+                candidates.add(propType)
+                return@walkCandidates true
+              }
+            }
+            return@walkCandidates true
+          }
+
+          if (isUnknown) visit(visitor.exactName!!, PklReferenceQualifiedAccessProxy.UnknownType)
+          else if (!candidates.isEmpty())
+            visit(
+              visitor.exactName!!,
+              PklReferenceQualifiedAccessProxy.UnionType.create(candidates.toList())
+            )
+          else true
+        }
+        else -> {
+          val propertyCandidates = mutableMapOf<String, MutableSet<PklType>>()
+          walkCandidates(referent, base, context) { type, properties ->
+            for (prop in properties) {
+              if (isViable(prop, type, base, context)) {
+                propertyCandidates
+                  .getOrPut(prop.name) { mutableSetOf() }
+                  .add(prop.type ?: PklReferenceQualifiedAccessProxy.UnknownType)
+              }
+            }
+            return@walkCandidates true
+          }
+          for ((propName, candidates) in propertyCandidates) {
+            when {
+              candidates.any { it is PklUnknownType } ->
+                visit(propName, PklReferenceQualifiedAccessProxy.UnknownType)
+              else ->
+                visit(
+                  propName,
+                  PklReferenceQualifiedAccessProxy.UnionType.create(candidates.toList())
+                )
+            }
+          }
+          true
+        }
+      }
+    }
+
+    fun valueTypeForSubscriptKeyType(
+      keyType: Type,
+      base: PklBaseModule,
+      context: PklProject?
+    ): Type {
+      if (referencesUnknown) return this
+      val keyClass = keyType.toClassType(base, context)
+      var isUnknown = false
+      val candidates = mutableSetOf<Type>()
+      walkCandidates(referent, base, context) { type, _ ->
+        if (type !is Class) return@walkCandidates true
+        when {
+          type.classEquals(base.dynamicType) -> {
+            isUnknown = true
+            return@walkCandidates false
+          }
+          (type.classEquals(base.listingType) || type.classEquals(base.listType)) &&
+            (keyType is Unknown || keyClass?.classEquals(base.intType) == true) ->
+            if (type.typeArguments.single() is Unknown) {
+              isUnknown = true
+              return@walkCandidates false
+            } else candidates.add(type.typeArguments.single())
+          (type.classEquals(base.mappingType) || type.classEquals(base.mapType)) &&
+            (type.typeArguments.first() is Unknown ||
+              keyClass?.isSubtypeOf(type.typeArguments.first(), base, context) == true) ->
+            if (type.typeArguments.last() is Unknown) {
+              isUnknown = true
+              return@walkCandidates false
+            } else candidates.add(type.typeArguments.last())
+        }
+        return@walkCandidates true
+      }
+
+      if (isUnknown) return withTypeArguments(domain, Unknown)
+      if (candidates.isEmpty()) return Nothing
+      return withTypeArguments(domain, union(candidates.toList(), base, context))
+    }
+
+    fun validSubscriptKeyType(base: PklBaseModule, context: PklProject?): Type {
+      if (referencesUnknown) return Unknown
+      var isUnknown = false
+      val keyCandidates = mutableSetOf<Type>()
+      walkCandidates(referent, base, context) { type, _ ->
+        if (type !is Class) return@walkCandidates true
+        when {
+          type.classEquals(base.dynamicType) -> {
+            isUnknown = true
+            return@walkCandidates false
+          }
+          (type.classEquals(base.listingType) || type.classEquals(base.listType)) ->
+            keyCandidates.add(base.intType)
+          (type.classEquals(base.mappingType) || type.classEquals(base.mapType)) ->
+            keyCandidates.add(type.typeArguments.first())
+        }
+        return@walkCandidates true
+      }
+
+      if (isUnknown) return Unknown
+      if (keyCandidates.isEmpty()) return Nothing
+      return union(keyCandidates.toList(), base, context)
+    }
+
+    private val domain: Type = typeArguments[0]
+
+    private val referent: Type = typeArguments[1]
+
+    private val referencesUnknown = referent is Unknown
+
+    companion object {
+      fun walkCandidates(
+        root: Type,
+        base: PklBaseModule,
+        context: PklProject?,
+        visit: (Type, Sequence<PklClassProperty>) -> Boolean
+      ): Boolean =
+        when (root) {
+          is Alias -> {
+            val aliased = root.aliasedType(base, context)
+            walkCandidates(aliased, base, context, visit)
+          }
+          is Class -> visit(root, root.psi.properties)
+          is Module -> visit(root, root.psi.properties)
+          is Union -> {
+            walkCandidates(root.leftType, base, context, visit) &&
+              walkCandidates(root.rightType, base, context, visit)
+          }
+          else -> true
+        }
+    }
+  }
+
   /**
-   * Note: Function types, sucb as `(String) -> Int`, are normalized to the corresponding class
+   * Note: Function types, such as `(String) -> Int`, are normalized to the corresponding class
    * type, such as `Function1<String, Int>`. All such types are rendered in function type notation.
    */
-  class Class(
+  open class Class
+  protected constructor(
     val psi: PklClass,
     specifiedTypeArguments: List<Type> = listOf(),
     constraints: List<ConstraintExpr> = listOf(),
@@ -555,6 +758,20 @@ sealed class Type(val constraints: List<ConstraintExpr> = listOf()) {
     // have a type parameter even though they currently don't
     val typeParameters: List<PklTypeParameter> = psi.typeParameterList?.elements ?: listOf(),
   ) : Type(constraints) {
+    companion object {
+      fun create(
+        psi: PklClass,
+        specifiedTypeArguments: List<Type> = listOf(),
+        constraints: List<ConstraintExpr> = listOf(),
+        // enables the illusion that pkl.base#Class and pkl.base#TypeAlias
+        // have a type parameter even though they currently don't
+        typeParameters: List<PklTypeParameter> = psi.typeParameterList?.elements ?: listOf(),
+      ): Class =
+        if (psi.name == "Reference" && psi.isInPklRefModule)
+          Reference(psi, specifiedTypeArguments, constraints)
+        else Class(psi, specifiedTypeArguments, constraints, typeParameters)
+    }
+
     val typeArguments: List<Type> =
       when {
         typeParameters.size <= specifiedTypeArguments.size ->
@@ -569,13 +786,13 @@ sealed class Type(val constraints: List<ConstraintExpr> = listOf()) {
     override fun withConstraints(constraints: List<ConstraintExpr>): Type =
       Class(psi, typeArguments, constraints, typeParameters)
 
-    fun withTypeArguments(argument1: Type) =
+    open fun withTypeArguments(argument1: Type) =
       Class(psi, listOf(argument1), constraints, typeParameters)
 
-    fun withTypeArguments(argument1: Type, argument2: Type) =
+    open fun withTypeArguments(argument1: Type, argument2: Type) =
       Class(psi, listOf(argument1, argument2), constraints, typeParameters)
 
-    fun withTypeArguments(arguments: List<Type>) =
+    open fun withTypeArguments(arguments: List<Type>) =
       Class(psi, arguments, constraints, typeParameters)
 
     override fun visitMembers(
@@ -857,8 +1074,7 @@ sealed class Type(val constraints: List<ConstraintExpr> = listOf()) {
       visitor: ResolveVisitor<*>,
       context: PklProject?
     ): Boolean {
-      return psi.body
-        .toType(base, bindings, context)
+      return aliasedType(base, context)
         .visitMembers(isProperty, allowClasses, base, visitor, context)
     }
 
@@ -1019,6 +1235,8 @@ sealed class Type(val constraints: List<ConstraintExpr> = listOf()) {
     override fun hasDefaultImpl(base: PklBaseModule, context: PklProject?): Boolean = true
 
     override fun toString(): String = "\"$value\""
+
+    override fun toClassType(base: PklBaseModule, context: PklProject?): Class? = base.stringType
   }
 
   class Union
@@ -1161,7 +1379,7 @@ sealed class Type(val constraints: List<ConstraintExpr> = listOf()) {
       }
 
       leftType.render(builder, nameRenderer)
-      builder.append('|')
+      builder.append(" | ")
       rightType.render(builder, nameRenderer)
     }
 
@@ -1259,7 +1477,10 @@ fun PklType?.toType(
         is PklModule -> Type.module(resolved, simpleName.identifier.text, context)
         is PklClass -> {
           val typeArguments = typeArgumentList?.elements ?: listOf()
-          Class(resolved, typeArguments.toTypes(base, bindings, preserveUnboundTypeVars, context))
+          Class.create(
+            resolved,
+            typeArguments.toTypes(base, bindings, preserveUnboundTypeVars, context)
+          )
         }
         is PklTypeAlias -> {
           val typeArguments = typeArgumentList?.elements ?: listOf()

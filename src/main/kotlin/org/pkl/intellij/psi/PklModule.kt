@@ -108,5 +108,5 @@ interface PklModule : PsiFile, PklTypeDefOrModule {
   fun dependencies(context: PklProject?): Map<String, Dependency>?
 
   /** The effective in-language URI for this module */
-  val canonicalUri: String
+  val canonicalUri: String?
 }

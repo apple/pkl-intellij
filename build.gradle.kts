@@ -17,6 +17,8 @@ plugins {
 
 repositories {
   mavenCentral()
+  // TODO remove me before publishing next version of pkl-intellij
+  maven("https://central.sonatype.com/repository/maven-snapshots/")
   intellijPlatform {
     defaultRepositories()
   }
