@@ -28,7 +28,7 @@ kotlinx = "1.11.0"
 # fallback if stdlib isn't found in IntelliJ project dependencies
 pkl = "0.32.0-SNAPSHOT"
 pkl-cli = "0.28.2"
-spotless = "8.6.0"
+spotless = "8.7.0"
 intellijTestPlatform = "243.21565.193"
 
 [libraries] # ordered alphabetically
