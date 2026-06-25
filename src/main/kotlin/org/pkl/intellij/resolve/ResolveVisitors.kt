@@ -516,7 +516,8 @@ object ResolveVisitors {
         if (name != expectedName) return true
 
         when {
-          element is PklReferenceQualifiedAccessProxy -> return true
+          element is PklReferenceQualifiedAccessProxy ->
+            resultList.addAll(element.classProperties.map { PklResolveResult(it, true, element) })
           element is PklImport ->
             resultList.addAll(element.resolveModules(context).map(::PklResolveResult))
           element is PklTypeParameter && bindings.contains(element) -> {
@@ -589,7 +590,8 @@ fun <R> ResolveVisitor<R>.withoutShadowedElements(): ResolveVisitor<R> =
 
 class PklResolveResult(
   private val pklElement: PklNavigableElement,
-  private val isValidResult: Boolean = true
+  private val isValidResult: Boolean = true,
+  val proxy: PklReferenceQualifiedAccessProxy? = null,
 ) : ResolveResult {
 
   companion object {
