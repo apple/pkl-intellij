@@ -69,11 +69,11 @@ class PklReferenceQualifiedAccessProxy(
   }
 
   override fun canNavigate(): Boolean {
-    return true
+    return classProperties.firstOrNull()?.canNavigate() ?: false
   }
 
   override fun canNavigateToSource(): Boolean {
-    return true
+    return classProperties.firstOrNull()?.canNavigateToSource() ?: false
   }
 
   override fun getPresentation(): ItemPresentation? {

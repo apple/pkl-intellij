@@ -645,7 +645,7 @@ sealed class Type(val constraints: List<ConstraintExpr> = listOf()) {
           }
           for ((propName, candidates) in propertyCandidates) {
             when {
-              candidates.any { it is PklUnknownType } ->
+              candidates.any { it.type is PklUnknownType } ->
                 visit(propName, PklReferenceQualifiedAccessProxy.UnknownType, candidates)
               else ->
                 visit(
