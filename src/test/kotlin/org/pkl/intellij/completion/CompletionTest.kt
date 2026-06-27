@@ -101,7 +101,6 @@ class CompletionTest : PklTestCase() {
   }
 
   fun `test BaseValueRenderer convertPropertyTransformers entry value object body this resolution`() {
-    return // SKIP until 0.31 stdlib is available
     myFixture.configureByText(
       PklFileType,
       """
@@ -109,9 +108,10 @@ class CompletionTest : PklTestCase() {
         class Foo extends ConvertProperty { 
           /// this is bar
           bar: String = "bar"
+          baz: String
           render = (_, _) -> Pair(bar, bar) 
         }
-        
+
         output {
           renderer {
             convertPropertyTransformers {
@@ -128,7 +128,6 @@ class CompletionTest : PklTestCase() {
   }
 
   fun `test BaseValueRenderer convertPropertyTransformers entry value assign lambda amend this resolution`() {
-    return // SKIP until 0.31 stdlib is available
     myFixture.configureByText(
       PklFileType,
       """
@@ -136,9 +135,10 @@ class CompletionTest : PklTestCase() {
         class Foo extends ConvertProperty { 
           /// this is bar
           bar: String = "bar"
+          baz: String
           render = (_, _) -> Pair(bar, bar) 
         }
-        
+
         output {
           renderer {
             convertPropertyTransformers {
