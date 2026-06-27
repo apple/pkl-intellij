@@ -504,4 +504,26 @@ class PklExtendsClauseAnnotatorTest {
         .trimIndent()
     )
   }
+
+  @Test
+  fun `implement members reference`() {
+    checkQuickFix(
+      before =
+        """
+        import "pkl:ref"
+
+        class Domain extends ref.Domain
+      """
+          .trimIndent(),
+      after =
+        """
+        import "pkl:ref"
+
+        class Domain extends ref.Domain {
+          function renderReference(reference: ref.Reference<ref.Domain, Any>): String = TODO()
+        }
+      """
+          .trimIndent()
+    )
+  }
 }

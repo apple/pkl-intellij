@@ -27,6 +27,7 @@ import com.intellij.psi.PsiElement
 import com.intellij.psi.PsiFile
 import com.intellij.psi.impl.source.tree.PsiWhiteSpaceImpl
 import com.intellij.psi.util.PsiTreeUtil
+import org.pkl.intellij.packages.dto.PklProject
 import org.pkl.intellij.psi.*
 
 class PklImplementMembersQuickFix(element: PklTypeDefOrModule) :
@@ -244,143 +245,149 @@ class PklImplementMembersQuickFix(element: PklTypeDefOrModule) :
     myModule: PklModule,
     imports: PklImportList,
   ) {
-    val context = myModule.pklProject
-    type.accept(
-      object : PklVisitor<Unit>() {
-        private fun renderSimpleTypeName(o: PklDeclaredType) {
-          val module = o.enclosingModule ?: return
-          if (module == myModule) {
-            append(o.typeName.simpleName.identifier.text)
-            return
+    type.accept(TypeNameRenderer(this, type, myModule, imports, myModule.pklProject))
+  }
+
+  class TypeNameRenderer(
+    private val sb: StringBuilder,
+    private val type: PklType,
+    private val myModule: PklModule,
+    private val imports: PklImportList,
+    private val context: PklProject?
+  ) : PklVisitor<Unit>() {
+
+    private fun renderSimpleTypeName(o: PklDeclaredType) {
+      val module = o.enclosingModule ?: return
+      if (module == myModule) {
+        sb.append(o.typeName.simpleName.identifier.text)
+        return
+      }
+      val resolvedType = o.typeName.resolve(context) as? PklTypeDefOrModule
+      when {
+        resolvedType == null -> sb.append(o.typeName.simpleName.identifier.text)
+        resolvedType.isInPklBaseModule || resolvedType.enclosingModule == myModule ->
+          sb.append(resolvedType.nameIdentifier?.text ?: "<>")
+        else -> {
+          val importName = imports.findOrInsertImport(resolvedType.enclosingModule!!)
+          sb.append(importName)
+          if (resolvedType !is PklModule) {
+            sb.append(".")
+            sb.append(resolvedType.nameIdentifier!!.text)
           }
-          val resolvedType = o.typeName.resolve(context) as? PklTypeDefOrModule
-          when {
-            resolvedType == null -> append(o.typeName.simpleName.identifier.text)
-            resolvedType.isInPklBaseModule || resolvedType.enclosingModule == myModule ->
-              append(resolvedType.nameIdentifier?.text ?: "<>")
-            else -> {
-              val importName = imports.findOrInsertImport(resolvedType.enclosingModule!!)
-              append(importName)
-              if (resolvedType !is PklModule) {
-                append(".")
-                append(resolvedType.nameIdentifier!!.text)
-              }
-            }
-          }
-        }
-
-        override fun visitDeclaredType(o: PklDeclaredType) {
-          renderSimpleTypeName(o)
-          val argumentList = o.typeArgumentList
-          if (argumentList != null && argumentList.elements.isNotEmpty()) {
-            append("<")
-            var isFirst = true
-            for (elem in argumentList.elements) {
-              if (isFirst) {
-                isFirst = false
-              } else {
-                append(", ")
-              }
-              visitType(elem)
-            }
-            append(">")
-          }
-        }
-
-        override fun visitUnknownType(o: PklUnknownType) {
-          append("unknown")
-        }
-
-        override fun visitDefaultType(o: PklDefaultType) {
-          append("*")
-          o.type?.accept(this)
-        }
-
-        override fun visitParenthesizedType(o: PklParenthesizedType) {
-          append("(")
-          o.type?.accept(this)
-          append(")")
-        }
-
-        override fun visitUnionType(o: PklUnionType) {
-          o.leftType.accept(this)
-          append(" | ")
-          o.rightType?.accept(this)
-        }
-
-        override fun visitFunctionType(o: PklFunctionType) {
-          @Suppress("DuplicatedCode") append("(")
-          var isFirst = true
-          for (param in o.functionTypeParameterList.elements) {
-            if (isFirst) {
-              isFirst = false
-            } else {
-              append(", ")
-            }
-            param.accept(this)
-          }
-          append(") -> ")
-          o.type?.accept(this)
-        }
-
-        override fun visitModuleType(o: PklModuleType) {
-          val module = type.enclosingModule ?: return
-          if (module == myModule) {
-            append("module")
-          } else {
-            append(imports.findOrInsertImport(module))
-          }
-        }
-
-        override fun visitNothingType(o: PklNothingType) {
-          append("nothing")
-        }
-
-        override fun visitNullableType(o: PklNullableType) {
-          o.type.accept(this)
-          append("?")
-        }
-
-        override fun visitStringLiteralType(o: PklStringLiteralType) {
-          append(o.text)
-        }
-
-        override fun visitConstrainedType(o: PklConstrainedType) {
-          o.type.accept(this)
-          append("(")
-          var isFirst = true
-          for (expr in o.typeConstraintList.elements) {
-            if (isFirst) {
-              isFirst = false
-            } else {
-              append(", ")
-            }
-            expr.accept(this)
-          }
-          append(")")
-        }
-
-        override fun visitExpr(o: PklExpr) {
-          // TODO this doesn't handle member access.
-          append(o.text)
-        }
-
-        override fun visitTypeTestExpr(o: PklTypeTestExpr) {
-          o.expr.accept(this)
-          append(' ')
-          append(o.operator.text)
-          append(' ')
-          o.type.accept(this)
-        }
-
-        override fun visitTypeCastExpr(o: PklTypeCastExpr) {
-          o.expr.accept(this)
-          append(' ')
-          append(o.operator.text)
-          append(' ')
-          o.type.accept(this)
         }
       }
-    )
+    }
+
+    override fun visitDeclaredType(o: PklDeclaredType) {
+      renderSimpleTypeName(o)
+      val argumentList = o.typeArgumentList
+      if (argumentList != null && argumentList.elements.isNotEmpty()) {
+        sb.append("<")
+        var isFirst = true
+        for (elem in argumentList.elements) {
+          if (isFirst) {
+            isFirst = false
+          } else {
+            sb.append(", ")
+          }
+          elem.accept(this)
+        }
+        sb.append(">")
+      }
+    }
+
+    override fun visitUnknownType(o: PklUnknownType) {
+      sb.append("unknown")
+    }
+
+    override fun visitDefaultType(o: PklDefaultType) {
+      sb.append("*")
+      o.type?.accept(this)
+    }
+
+    override fun visitParenthesizedType(o: PklParenthesizedType) {
+      sb.append("(")
+      o.type?.accept(this)
+      sb.append(")")
+    }
+
+    override fun visitUnionType(o: PklUnionType) {
+      o.leftType.accept(this)
+      sb.append(" | ")
+      o.rightType?.accept(this)
+    }
+
+    override fun visitFunctionType(o: PklFunctionType) {
+      @Suppress("DuplicatedCode") sb.append("(")
+      var isFirst = true
+      for (param in o.functionTypeParameterList.elements) {
+        if (isFirst) {
+          isFirst = false
+        } else {
+          sb.append(", ")
+        }
+        param.accept(this)
+      }
+      sb.append(") -> ")
+      o.type?.accept(this)
+    }
+
+    override fun visitModuleType(o: PklModuleType) {
+      val module = type.enclosingModule ?: return
+      if (module == myModule) {
+        sb.append("module")
+      } else {
+        sb.append(imports.findOrInsertImport(module))
+      }
+    }
+
+    override fun visitNothingType(o: PklNothingType) {
+      sb.append("nothing")
+    }
+
+    override fun visitNullableType(o: PklNullableType) {
+      o.type.accept(this)
+      sb.append("?")
+    }
+
+    override fun visitStringLiteralType(o: PklStringLiteralType) {
+      sb.append(o.text)
+    }
+
+    override fun visitConstrainedType(o: PklConstrainedType) {
+      o.type.accept(this)
+      sb.append("(")
+      var isFirst = true
+      for (expr in o.typeConstraintList.elements) {
+        if (isFirst) {
+          isFirst = false
+        } else {
+          sb.append(", ")
+        }
+        expr.accept(this)
+      }
+      sb.append(")")
+    }
+
+    override fun visitExpr(o: PklExpr) {
+      // TODO this doesn't handle member access.
+      sb.append(o.text)
+    }
+
+    override fun visitTypeTestExpr(o: PklTypeTestExpr) {
+      o.expr.accept(this)
+      sb.append(' ')
+      sb.append(o.operator.text)
+      sb.append(' ')
+      o.type.accept(this)
+    }
+
+    override fun visitTypeCastExpr(o: PklTypeCastExpr) {
+      o.expr.accept(this)
+      sb.append(' ')
+      sb.append(o.operator.text)
+      sb.append(' ')
+      o.type.accept(this)
+    }
   }
 }
