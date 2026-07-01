@@ -185,7 +185,7 @@ class PklExtendsClauseAnnotatorTest {
           fixed name: String
         }
         class Child extends Base {
-          fixed name = TODO()
+          fixed name: String = TODO()
         }
         """
     )

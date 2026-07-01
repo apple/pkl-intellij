@@ -16,8 +16,12 @@
 package org.pkl.intellij.util
 
 import com.intellij.codeInsight.intention.impl.BaseIntentionAction
+import com.intellij.codeInsight.template.TemplateBuilderFactory
+import com.intellij.codeInsight.template.TemplateBuilderImpl
 import com.intellij.lang.annotation.AnnotationHolder
+import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.application.runInEdt
+import com.intellij.openapi.editor.Editor
 import com.intellij.openapi.module.ModuleUtil
 import com.intellij.openapi.progress.ProgressIndicator
 import com.intellij.openapi.project.Project
@@ -26,9 +30,11 @@ import com.intellij.openapi.util.ModificationTracker
 import com.intellij.openapi.util.text.StringUtil
 import com.intellij.openapi.vfs.VfsUtil
 import com.intellij.openapi.vfs.VirtualFile
+import com.intellij.psi.PsiDocumentManager
 import com.intellij.psi.PsiElement
 import com.intellij.psi.PsiFile
 import com.intellij.psi.util.CachedValueProvider
+import com.intellij.psi.util.PsiTreeUtil
 import java.io.InputStream
 import java.io.OutputStream
 import java.math.BigInteger
@@ -66,6 +72,7 @@ import org.pkl.intellij.psi.PklTypeTestExpr
 import org.pkl.intellij.psi.PklUnaryMinusExpr
 import org.pkl.intellij.psi.PklUnqualifiedAccessExpr
 import org.pkl.intellij.psi.escapedText
+import org.pkl.parser.Lexer
 
 private const val SIGNIFICAND_MASK = 0x000fffffffffffffL
 
@@ -449,4 +456,29 @@ fun PklExpr.toDisplayText(): String? {
 private fun PklArgumentList?.renderMethodCallArguments(): String {
   if (this == null) return ""
   return elements.joinToString(", ", prefix = "(", postfix = ")") { it.toDisplayText() ?: "…" }
+}
+
+fun StringBuilder.appendIdentifier(identifier: String): StringBuilder =
+  append(Lexer.maybeQuoteIdentifier(identifier))
+
+// Finds the `T_ODO()` expressions, and inserts a template
+fun insertTemplateAtTodoExprs(elems: List<PsiElement>, editor: Editor, file: PsiFile) {
+  require(elems.isNotEmpty())
+
+  val project = elems.first().project
+  PsiDocumentManager.getInstance(project).doPostponedOperationsAndUnblockDocument(editor.document)
+
+  val todoExprs =
+    elems
+      .flatMap { PsiTreeUtil.collectElementsOfType(it, PklUnqualifiedAccessExpr::class.java) }
+      .filter { it.text == "TODO()" }
+
+  val templateBuilderFactory =
+    ApplicationManager.getApplication().getService(TemplateBuilderFactory::class.java)
+  val builder = templateBuilderFactory.createTemplateBuilder(file) as TemplateBuilderImpl
+  for (expr in todoExprs) {
+    builder.replaceElement(expr, "TODO()")
+  }
+  editor.caretModel.moveToOffset(todoExprs.first().textOffset)
+  builder.run(editor, true)
 }

@@ -1,5 +1,5 @@
 /**
- * Copyright © 2024 Apple Inc. and the Pkl project authors. All rights reserved.
+ * Copyright © 2024-2026 Apple Inc. and the Pkl project authors. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -39,6 +39,26 @@ class PklCompletionContributor : CompletionContributor() {
       BASIC,
       psiElement(PklElementTypes.IDENTIFIER).withParent(PklUnqualifiedAccessName::class.java),
       UnqualifiedAccessCompletionProvider()
+    )
+
+    extend(
+      BASIC,
+      psiElement(PklElementTypes.IDENTIFIER)
+        .withParent(PklPropertyName::class.java)
+        .withSuperParent(2, PklClassProperty::class.java),
+      ImplementMemberCompletionProvider()
+    )
+
+    extend(
+      BASIC,
+      psiElement(PklElementTypes.IDENTIFIER).withParent(PklUnqualifiedAccessName::class.java),
+      ImplementMemberCompletionProvider()
+    )
+
+    extend(
+      BASIC,
+      psiElement(PklElementTypes.IDENTIFIER).withParent(PklClassMethod::class.java),
+      ImplementMemberCompletionProvider()
     )
 
     extend(
