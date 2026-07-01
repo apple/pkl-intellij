@@ -1,5 +1,5 @@
 /**
- * Copyright © 2024 Apple Inc. and the Pkl project authors. All rights reserved.
+ * Copyright © 2024-2026 Apple Inc. and the Pkl project authors. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -211,6 +211,17 @@ internal class PklHighlightingAnnotatorTest {
         }
       }
     """
+        .trimIndent()
+    )
+  }
+
+  @Test
+  fun `doc comment member links`() {
+    checkHighlighting(
+      """
+      /// This is a <DOC_COMMENT_REFERENCE>[Foo]</DOC_COMMENT_REFERENCE>
+      module MyModule
+      """
         .trimIndent()
     )
   }

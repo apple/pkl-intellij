@@ -1,5 +1,5 @@
 /**
- * Copyright © 2024 Apple Inc. and the Pkl project authors. All rights reserved.
+ * Copyright © 2024-2026 Apple Inc. and the Pkl project authors. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -57,7 +57,8 @@ enum class PklColor(humanName: String, default: TextAttributesKey) {
   // to be accentuated with default color schemes,
   // which seems undesirable
   PROPERTY("Identifiers//Property", Default.IDENTIFIER),
-  TYPE_ALIAS("Identifiers//Type alias", CLASS.textAttributesKey);
+  TYPE_ALIAS("Identifiers//Type alias", CLASS.textAttributesKey),
+  DOC_COMMENT_REFERENCE("Comments//Member Link", Default.DOC_COMMENT_TAG_VALUE);
   // endregion
 
   val textAttributesKey = TextAttributesKey.createTextAttributesKey("PKL_$name", default)

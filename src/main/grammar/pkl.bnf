@@ -199,7 +199,7 @@ moduleDeclaration ::= docComment? annotationList moduleHeader {
 }
 
 docComment ::= DOC_COMMENT_LINE+ {
-  implements = "com.intellij.psi.PsiDocCommentBase"
+  implements = ["com.intellij.psi.PsiDocCommentBase"; "PklDocCommentEx"]
   mixin = "org.pkl.intellij.psi.PklDocCommentBase"
 }
 
