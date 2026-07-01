@@ -75,20 +75,21 @@ class PklRemoveImportQuickFix(import: PklImport) :
     if (removedImportTexts.isEmpty()) {
       return IntentionPreviewInfo.EMPTY
     }
-    val sb = StringBuilder()
-    for ((index, text) in removedImportTexts.withIndex()) {
-      if (index > 0) sb.append("<br/>")
-      sb.append("<s>")
-      HtmlSyntaxInfoUtil.appendHighlightedByLexerAndEncodedAsHtmlCodeSnippet(
-        sb,
-        project,
-        PklLanguage,
-        text,
-        1.0f
-      )
-      sb.append("</s>")
+    val html = buildString {
+      for ((index, text) in removedImportTexts.withIndex()) {
+        if (index > 0) append("<br/>")
+        append("<s>")
+        HtmlSyntaxInfoUtil.appendHighlightedByLexerAndEncodedAsHtmlCodeSnippet(
+          this,
+          project,
+          PklLanguage,
+          text,
+          1.0f
+        )
+        append("</s>")
+      }
     }
-    return IntentionPreviewInfo.Html(HtmlChunk.raw(sb.toString()))
+    return IntentionPreviewInfo.Html(HtmlChunk.raw(html))
   }
 
   private fun unusedImports(module: PklModule): List<PklImport> {
