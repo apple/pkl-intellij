@@ -1,5 +1,5 @@
 /**
- * Copyright © 2024 Apple Inc. and the Pkl project authors. All rights reserved.
+ * Copyright © 2024-2026 Apple Inc. and the Pkl project authors. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,6 +21,7 @@ import com.intellij.psi.PsiFile
 import com.intellij.psi.util.parentOfType
 import java.util.*
 import org.pkl.intellij.intention.PklMakeBlankIdentifierQuickFix
+import org.pkl.intellij.intention.PklRemoveImportQuickFix
 import org.pkl.intellij.psi.*
 import org.pkl.intellij.resolve.visitLocalDefinitions
 import org.pkl.intellij.resolve.visitUsedLocalDefinitions
@@ -40,13 +41,19 @@ class PklUnusedLocalDefinitionsInspection : LocalInspectionTool() {
     val usedDefinitions: IdentityHashMap<PklElement, PklElement> = IdentityHashMap()
     visitUsedLocalDefinitions(module, base) { usedDefinitions[it] = it }
 
-    fun report(element: PsiElement?, message: String) {
+    fun report(
+      element: PsiElement?,
+      message: String,
+      extraFixes: Array<LocalQuickFix> = arrayOf()
+    ) {
       if (element == null || element.textMatches("_")) return
       val parent = element.parentOfType<PklTypedIdentifier>()
       val fixes =
         if (parent != null) {
           arrayOf(PklMakeBlankIdentifierQuickFix(parent, isIgnore = true))
-        } else arrayOf()
+        } else {
+          extraFixes
+        }
       problems.add(
         manager.createProblemDescriptor(
           element,
@@ -63,7 +70,8 @@ class PklUnusedLocalDefinitionsInspection : LocalInspectionTool() {
       if (!usedDefinitions.contains(definition)) {
         // TODO: quick fixes
         when (definition) {
-          is PklImport -> report(definition, "Unused import")
+          is PklImport ->
+            report(definition, "Unused import", arrayOf(PklRemoveImportQuickFix(definition)))
           is PklClass -> report(definition.identifier, "Unused class")
           is PklTypeAlias -> report(definition.identifier, "Unused type alias")
           is PklMethod -> report(definition.identifier, "Unused method")
