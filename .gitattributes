@@ -5,3 +5,5 @@ PklProject linguist-language=Pkl
 *.bat text eol=crlf
 
 *.jar binary
+*.png binary
+*.gif binary
