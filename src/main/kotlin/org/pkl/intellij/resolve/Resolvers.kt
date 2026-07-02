@@ -190,6 +190,7 @@ object Resolvers {
   fun <R> resolveQualifiedDocCommentMemberLink(
     linkText: String,
     position: PsiElement,
+    isProperty: Boolean,
     base: PklBaseModule,
     visitor: ResolveVisitor<R>,
     context: PklProject?
@@ -205,11 +206,14 @@ object Resolvers {
           enclosingModule?.imports?.find { it.memberName == classOrModuleName }?.resolve(context)
             as? SimpleModuleResolutionResult
         resolveResult?.resolved?.cache(context)?.let { cache ->
-          for ((methodName, method) in cache.methods) {
-            visitor.visit(methodName, method, mapOf(), context)
-          }
-          for ((name, def) in cache.typeDefsAndProperties) {
-            visitor.visit(name, def, mapOf(), context)
+          if (isProperty) {
+            for ((name, def) in cache.typeDefsAndProperties) {
+              visitor.visit(name, def, mapOf(), context)
+            }
+          } else {
+            for ((methodName, method) in cache.methods) {
+              visitor.visit(methodName, method, mapOf(), context)
+            }
           }
           return
         }
@@ -218,12 +222,15 @@ object Resolvers {
         val clazz =
           resolveUnqualifiedTypeName(position, base, mapOf(), typeNameVisitor, context) as? PklClass
             ?: return
-        for (method in clazz.methods) {
-          val name = method.name ?: continue
-          visitor.visit(name, method, mapOf(), context)
-        }
-        for (property in clazz.properties) {
-          visitor.visit(property.name, property, mapOf(), context)
+        if (isProperty) {
+          for (property in clazz.properties) {
+            visitor.visit(property.name, property, mapOf(), context)
+          }
+        } else {
+          for (method in clazz.methods) {
+            val name = method.name ?: continue
+            visitor.visit(name, method, mapOf(), context)
+          }
         }
       }
       3 -> {
@@ -235,12 +242,15 @@ object Resolvers {
             as? SimpleModuleResolutionResult
             ?: return
         val clazz = module.resolved?.cache(context)?.types?.get(className) as? PklClass ?: return
-        for (method in clazz.methods) {
-          val name = method.name ?: continue
-          visitor.visit(name, method, mapOf(), context)
-        }
-        for (property in clazz.properties) {
-          visitor.visit(property.name, property, mapOf(), context)
+        if (isProperty) {
+          for (property in clazz.properties) {
+            visitor.visit(property.name, property, mapOf(), context)
+          }
+        } else {
+          for (method in clazz.methods) {
+            val name = method.name ?: continue
+            visitor.visit(name, method, mapOf(), context)
+          }
         }
       }
     }

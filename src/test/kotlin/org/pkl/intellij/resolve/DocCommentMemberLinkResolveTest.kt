@@ -19,6 +19,7 @@ import org.assertj.core.api.Assertions.assertThat
 import org.pkl.intellij.PklFileType
 import org.pkl.intellij.PklTestCase
 import org.pkl.intellij.psi.PklClass
+import org.pkl.intellij.psi.PklClassMethod
 import org.pkl.intellij.psi.PklClassProperty
 
 class DocCommentMemberLinkResolveTest : PklTestCase() {
@@ -83,5 +84,53 @@ class DocCommentMemberLinkResolveTest : PklTestCase() {
     assertThat(resolved).isInstanceOf(PklClass::class.java)
     resolved as PklClass
     assertThat(resolved.name).isEqualTo("Bar")
+  }
+
+  fun `test resolve qualified same name -- property`() {
+    myFixture.configureByText(
+      PklFileType,
+      """
+        /// This points to [Bar.ba<caret>z]
+        foo: String
+
+        /// This is bar
+        class Bar {
+          baz: Int = 5
+
+          function baz() = 5
+        }
+        """
+        .trimIndent()
+    )
+
+    val element = myFixture.getReferenceAtCaretPosition()!!
+    val resolved = element.resolve()
+    assertThat(resolved).isInstanceOf(PklClassProperty::class.java)
+    resolved as PklClassProperty
+    assertThat(resolved.name).isEqualTo("baz")
+  }
+
+  fun `test resolve qualified same name -- method`() {
+    myFixture.configureByText(
+      PklFileType,
+      """
+        /// This points to [Bar.ba<caret>z()]
+        foo: String
+
+        /// This is bar
+        class Bar {
+          baz: Int = 5
+
+          function baz() = 5
+        }
+        """
+        .trimIndent()
+    )
+
+    val element = myFixture.getReferenceAtCaretPosition()!!
+    val resolved = element.resolve()
+    assertThat(resolved).isInstanceOf(PklClassMethod::class.java)
+    resolved as PklClassMethod
+    assertThat(resolved.name).isEqualTo("baz")
   }
 }

@@ -28,16 +28,15 @@ class PklDocCommentAnnotator : PklAnnotator() {
     for (reference in element.references) {
       if (reference.fullText in PkldocLinkGeneratingProvider.keywords) continue
       val resolved = reference.resolve()
+      if (resolved != null) return
       val text = reference.text
-      if (resolved == null) {
-        createAnnotation(
-          HighlightSeverity.WARNING,
-          reference.absoluteRange,
-          "Unresolved reference: $text",
-          "Unresolved reference: <code>${text.escapeXml()}</code>",
-          holder
-        )
-      }
+      createAnnotation(
+        HighlightSeverity.WARNING,
+        reference.absoluteRange,
+        "Unresolved reference: $text",
+        "Unresolved reference: <code>${text.escapeXml()}</code>",
+        holder
+      )
     }
   }
 }

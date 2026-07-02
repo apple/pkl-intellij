@@ -38,9 +38,18 @@ object DocCommentResolvers {
   ): PsiElement? {
     val parts = link.split('.')
     val base = psiManager.project.pklBaseModule
-    val name = parts.last().let { if (it.endsWith("()")) it.dropLast(2) else it }
-    val visitor = ResolveVisitors.firstElementNamed(name, base, false)
-    Resolvers.resolveQualifiedDocCommentMemberLink(link, position, base, visitor, context)
+    val propertyOrMethod = parts.last()
+    val isProperty = !propertyOrMethod.endsWith("()")
+    val memberName = if (isProperty) propertyOrMethod else propertyOrMethod.dropLast(2)
+    val visitor = ResolveVisitors.firstElementNamed(memberName, base, false)
+    Resolvers.resolveQualifiedDocCommentMemberLink(
+      link,
+      position,
+      isProperty,
+      base,
+      visitor,
+      context
+    )
     return visitor.result
   }
 

@@ -89,6 +89,15 @@ class PklDocCommentMemberLinkCompletionProvider : PklCompletionProvider() {
     Resolvers.resolveQualifiedDocCommentMemberLink(
       reference.fullText,
       docComment,
+      true,
+      project.pklBaseModule,
+      visitor,
+      context
+    )
+    Resolvers.resolveQualifiedDocCommentMemberLink(
+      reference.fullText,
+      docComment,
+      false,
       project.pklBaseModule,
       visitor,
       context
