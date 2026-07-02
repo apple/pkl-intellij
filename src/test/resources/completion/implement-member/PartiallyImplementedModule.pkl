@@ -1,0 +1,5 @@
+extends "AbstractModule.pkl"
+
+function farewell(name: String): String = "Goodbye, \(name)"
+
+function g<caret>

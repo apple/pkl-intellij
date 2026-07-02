@@ -1,0 +1,5 @@
+abstract module AbstractModule
+
+abstract function greet(name: String): String
+
+abstract function farewell(name: String): String
