@@ -3,3 +3,5 @@ PklProject linguist-language=Pkl
 
 * text eol=lf
 *.bat text eol=crlf
+
+*.jar binary
