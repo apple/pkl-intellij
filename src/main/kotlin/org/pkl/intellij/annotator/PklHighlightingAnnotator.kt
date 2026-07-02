@@ -1,5 +1,5 @@
 /**
- * Copyright © 2024 Apple Inc. and the Pkl project authors. All rights reserved.
+ * Copyright © 2024-2026 Apple Inc. and the Pkl project authors. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,6 +17,7 @@ package org.pkl.intellij.annotator
 
 import com.intellij.lang.annotation.AnnotationHolder
 import com.intellij.lang.annotation.HighlightSeverity
+import com.intellij.openapi.util.TextRange
 import com.intellij.psi.PsiElement
 import com.intellij.psi.impl.source.tree.LeafPsiElement
 import org.pkl.intellij.color.PklColor
@@ -25,10 +26,32 @@ import org.pkl.intellij.psi.*
 /** Performs semantic highlighting on Pkl files. */
 class PklHighlightingAnnotator : PklAnnotator() {
   override fun doAnnotate(element: PsiElement, holder: AnnotationHolder) {
+    if (element is PklDocComment) {
+      for (ref in element.references.distinctBy { it.fullAbsoluteRange }) {
+        annotateDocCommentReference(ref, holder)
+      }
+      return
+    }
     if (element !is LeafPsiElement) return
     val color = element.color() ?: return
     val severity = if (isUnitTestMode) color.testSeverity else HighlightSeverity.INFORMATION
     holder.newSilentAnnotation(severity).textAttributes(color.textAttributesKey).create()
+  }
+
+  private fun annotateDocCommentReference(
+    reference: PklDocCommentReference,
+    holder: AnnotationHolder
+  ) {
+    val color = PklColor.DOC_COMMENT_REFERENCE
+    val severity = if (isUnitTestMode) color.testSeverity else HighlightSeverity.INFORMATION
+    // copy Kotlin and include the `[` and `]` in the highlighting
+    val textRange =
+      reference.fullAbsoluteRange.let { TextRange(it.startOffset - 1, it.endOffset + 1) }
+    holder
+      .newSilentAnnotation(severity)
+      .textAttributes(color.textAttributesKey)
+      .range(textRange)
+      .create()
   }
 
   private fun LeafPsiElement.color(): PklColor? =

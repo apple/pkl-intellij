@@ -1,5 +1,5 @@
 /**
- * Copyright © 2024 Apple Inc. and the Pkl project authors. All rights reserved.
+ * Copyright © 2024-2026 Apple Inc. and the Pkl project authors. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -52,8 +52,7 @@ fun visitLocalDefinitions(module: PklModule, visitor: (PklElement) -> Unit) {
   )
 }
 
-// TODO: honor imports used by Pkldoc member links or `Deprecated.replaceWith`
-// (should be automatic once we turn those into IntelliJ references)
+// TODO: honor imports used by `Deprecated.replaceWith`
 fun visitUsedLocalDefinitions(
   module: PklModule,
   base: PklBaseModule,
@@ -89,6 +88,14 @@ fun visitUsedLocalDefinitions(
           else -> {
             module.imports.find { it.memberName == moduleName }?.let { visitor(it) }
           }
+        }
+      }
+
+      override fun visitDocComment(o: PklDocComment) {
+        for (reference in o.references.mapTo(mutableSetOf()) { it.fullText }) {
+          // note: this is not necessarily a module name
+          val simpleName = reference.split(".").first()
+          module.imports.find { it.memberName == simpleName }?.let { visitor(it) }
         }
       }
     }

@@ -29,8 +29,8 @@ import org.intellij.markdown.html.HtmlGenerator
 import org.intellij.markdown.parser.MarkdownParser
 import org.pkl.intellij.documentation.DocumentationTypeNameRenderer.renderModuleName
 import org.pkl.intellij.documentation.DocumentationTypeNameRenderer.renderTypeName
-import org.pkl.intellij.packages.dto.PklProject
 import org.pkl.intellij.psi.*
+import org.pkl.intellij.resolve.DocCommentResolvers
 import org.pkl.intellij.resolve.ResolveVisitors
 import org.pkl.intellij.resolve.Resolvers
 import org.pkl.intellij.type.*
@@ -112,115 +112,13 @@ class PklDocumentationProvider : AbstractDocumentationProvider() {
     link: String,
     position: PsiElement
   ): PsiElement? {
-    val context = position.enclosingModule?.pklProject
-    return when {
-      link.contains('.') -> resolveQualifiedLink(psiManager, link, position, context)
-      else -> resolveUnqualifiedLink(psiManager, link, position, context)
-    }
+    return DocCommentResolvers.resolveLink(psiManager, link, position)
   }
 
   private fun renderDocComment(docComment: PklDocComment): String {
-    val text =
-      docComment.childSeq
-        .filter { it.elementType == PklElementTypes.DOC_COMMENT_LINE }
-        .map { it.text.substring(if (it.text.length > 3 && it.text[3].isWhitespace()) 4 else 3) }
-        .joinToString("\n")
-
-    val tree = MarkdownParser(PkldocFlavorDescriptor).buildMarkdownTreeFromString(text)
-    return HtmlGenerator(text, tree, PkldocFlavorDescriptor).generateHtml()
-  }
-
-  private fun resolveQualifiedLink(
-    psiManager: PsiManager,
-    link: String,
-    position: PsiElement,
-    context: PklProject?
-  ): PsiElement? {
-    val parts = link.split('.')
-    val base by lazy { psiManager.project.pklBaseModule }
-    val enclosingModule = position.enclosingModule
-
-    when (parts.size) {
-      2 -> {
-        // Class.property, Class.method()
-        // module.Class, module.TypeAlias, module.property, module.method()
-        val classOrModuleName = parts[0]
-        val rawMemberName = parts[1]
-        val isMethod = rawMemberName.endsWith("()")
-        val memberName = if (isMethod) rawMemberName.dropLast(2) else rawMemberName
-        val visitor =
-          ResolveVisitors.firstElementNamed(
-            classOrModuleName,
-            base,
-          )
-        val resolveResult =
-          enclosingModule?.imports?.find { it.memberName == classOrModuleName }?.resolve(context)
-            as? SimpleModuleResolutionResult
-        resolveResult?.resolved?.cache(context)?.let { cache ->
-          return if (isMethod) cache.methods[memberName]
-          else cache.typeDefsAndProperties[memberName]
-        }
-
-        val clazz =
-          Resolvers.resolveUnqualifiedTypeName(position, base, mapOf(), visitor, context)
-            as? PklClass
-            ?: return null
-        return if (isMethod) {
-          clazz.methods.find { it.name == memberName }
-        } else {
-          clazz.properties.find { it.name == memberName }
-        }
-      }
-      3 -> {
-        // module.Class.property, module.Class.method()
-        val moduleName = parts[0]
-        val className = parts[1]
-        val rawMemberName = parts[2]
-        val isMethod = rawMemberName.endsWith("()")
-        val memberName = if (isMethod) rawMemberName.dropLast(2) else rawMemberName
-        val module =
-          enclosingModule?.imports?.find { it.memberName == moduleName }?.resolve(context)
-            as? SimpleModuleResolutionResult
-            ?: return null
-        val clazz =
-          module.resolved?.cache(context)?.types?.get(className) as? PklClass ?: return null
-        return if (isMethod) {
-          clazz.methods.find { it.name == memberName }
-        } else {
-          clazz.properties.find { it.name == memberName }
-        }
-      }
-      else -> return null // invalid link
-    }
-  }
-
-  private fun resolveUnqualifiedLink(
-    psiManager: PsiManager,
-    link: String,
-    position: PsiElement,
-    context: PklProject?
-  ): PsiElement? {
-    val isProperty = !link.endsWith("()")
-    val memberName = if (isProperty) link else link.dropLast(2)
-    val base = psiManager.project.pklBaseModule
-    val visitor =
-      ResolveVisitors.firstElementNamed(
-        memberName,
-        base,
-      )
-    return Resolvers.resolveUnqualifiedAccess(
-      position,
-      null,
-      isProperty,
-      base,
-      mapOf(),
-      visitor,
-      context
-    )
-    // search for type in supermodules
-    ?: if (isProperty)
-        Resolvers.resolveUnqualifiedTypeName(position, base, mapOf(), visitor, context)
-      else null
+    val contents = docComment.contents
+    val tree = MarkdownParser(PkldocFlavorDescriptor).buildMarkdownTreeFromString(contents)
+    return HtmlGenerator(contents, tree, PkldocFlavorDescriptor).generateHtml()
   }
 
   private fun Appendable.renderSignature(

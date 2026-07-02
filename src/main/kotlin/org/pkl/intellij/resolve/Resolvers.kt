@@ -1,5 +1,5 @@
 /**
- * Copyright © 2024 Apple Inc. and the Pkl project authors. All rights reserved.
+ * Copyright © 2024-2026 Apple Inc. and the Pkl project authors. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -187,6 +187,75 @@ object Resolvers {
     }
   }
 
+  fun <R> resolveQualifiedDocCommentMemberLink(
+    linkText: String,
+    position: PsiElement,
+    isProperty: Boolean,
+    base: PklBaseModule,
+    visitor: ResolveVisitor<R>,
+    context: PklProject?
+  ) {
+    val parts = linkText.split('.')
+    val enclosingModule = position.enclosingModule
+    when (parts.size) {
+      2 -> {
+        // Class.property, Class.method()
+        // module.Class, module.TypeAlias, module.property, module.method()
+        val classOrModuleName = parts[0]
+        val resolveResult =
+          enclosingModule?.imports?.find { it.memberName == classOrModuleName }?.resolve(context)
+            as? SimpleModuleResolutionResult
+        resolveResult?.resolved?.cache(context)?.let { cache ->
+          if (isProperty) {
+            for ((name, def) in cache.typeDefsAndProperties) {
+              visitor.visit(name, def, mapOf(), context)
+            }
+          } else {
+            for ((methodName, method) in cache.methods) {
+              visitor.visit(methodName, method, mapOf(), context)
+            }
+          }
+          return
+        }
+
+        val typeNameVisitor = ResolveVisitors.firstElementNamed(classOrModuleName, base)
+        val clazz =
+          resolveUnqualifiedTypeName(position, base, mapOf(), typeNameVisitor, context) as? PklClass
+            ?: return
+        if (isProperty) {
+          for (property in clazz.properties) {
+            visitor.visit(property.name, property, mapOf(), context)
+          }
+        } else {
+          for (method in clazz.methods) {
+            val name = method.name ?: continue
+            visitor.visit(name, method, mapOf(), context)
+          }
+        }
+      }
+      3 -> {
+        // module.Class.property, module.Class.method()
+        val moduleName = parts[0]
+        val className = parts[1]
+        val module =
+          enclosingModule?.imports?.find { it.memberName == moduleName }?.resolve(context)
+            as? SimpleModuleResolutionResult
+            ?: return
+        val clazz = module.resolved?.cache(context)?.types?.get(className) as? PklClass ?: return
+        if (isProperty) {
+          for (property in clazz.properties) {
+            visitor.visit(property.name, property, mapOf(), context)
+          }
+        } else {
+          for (method in clazz.methods) {
+            val name = method.name ?: continue
+            visitor.visit(name, method, mapOf(), context)
+          }
+        }
+      }
+    }
+  }
+
   /** Note: For resolving [PklAccessExpr], use [PklAccessExpr.resolve] instead. */
   fun <R> resolveQualifiedAccess(
     receiverType: Type,
@@ -195,7 +264,6 @@ object Resolvers {
     visitor: ResolveVisitor<R>,
     context: PklProject?
   ): R {
-
     receiverType.visitMembers(isProperty, allowClasses = true, base, visitor, context)
     return visitor.result
   }
