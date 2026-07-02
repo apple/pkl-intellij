@@ -34,7 +34,6 @@ import org.pkl.intellij.psi.enclosingModule
 import org.pkl.intellij.psi.hasDeclaredMethod
 import org.pkl.intellij.psi.methods
 import org.pkl.intellij.psi.pklBaseModule
-import org.pkl.intellij.util.appendIdentifier
 import org.pkl.intellij.util.insertTemplateAtTodoExprs
 
 private class MemberInsertHandler(private val parentMember: PklClassMember) :
@@ -59,7 +58,7 @@ class ImplementMemberCompletionProvider : PklCompletionProvider() {
     val position = parameters.position
     val originalFile = parameters.originalFile
     val base = originalFile.project.pklBaseModule
-    val def = position.parentOfTypes(PklClass::class, PklModule::class)!!
+    val def = position.parentOfTypes(PklClass::class, PklModule::class) ?: return
     val context = def.enclosingModule?.pklProject
     // only offer completions for abstract methods for now.
     // completions for other methods might encourage overriding functions that are meant to be
@@ -83,7 +82,7 @@ class ImplementMemberCompletionProvider : PklCompletionProvider() {
     return buildString {
       append("function ")
       // `name` guaranteed to exist (we only provide completions for members that have names)
-      appendIdentifier(prop.name!!)
+      append(prop.name!!)
       append("(")
       prop.parameterList?.elements?.let { params ->
         var isFirst = true

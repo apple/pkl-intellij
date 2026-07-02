@@ -15,7 +15,10 @@
  */
 package org.pkl.intellij.completion
 
+import com.intellij.codeInsight.lookup.Lookup
 import com.intellij.codeInsight.lookup.LookupElementPresentation
+import com.intellij.codeInsight.lookup.LookupManager
+import com.intellij.codeInsight.lookup.impl.LookupImpl
 import java.nio.file.Path
 import org.assertj.core.api.Assertions.assertThat
 import org.pkl.intellij.PklFileType
@@ -227,6 +230,42 @@ class CompletionTest : PklTestCase() {
     assertThat(lookupStrings).hasSize(2)
     assertThat(lookupStrings).contains("function method2(x: Int): Boolean = …")
     assertThat(lookupStrings).contains("function method3(x: Int): Boolean = …")
+  }
+
+  fun `test complete member with quoted identifier`() {
+    myFixture.configureByText(
+      PklFileType,
+      """
+        abstract class Base {
+          abstract function `my fun`(): String
+        }
+
+        class MyClass extends Base {
+          function <caret>
+        }
+        """
+        .trimIndent()
+    )
+    myFixture.completeBasic()
+    val lookupElements = myFixture.lookupElements
+    assertThat(lookupElements).hasSize(1)
+    (LookupManager.getActiveLookup(editor) as LookupImpl).finishLookup(
+      Lookup.NORMAL_SELECT_CHAR,
+      lookupElements!!.first()
+    )
+    assertThat(
+      myFixture.editor.document.text ==
+        """
+        abstract class Base {
+          abstract function `my fun`(): String
+        }
+
+        class MyClass extends Base {
+          function `my fun`() = "TODO()
+        }
+        """
+          .trimIndent()
+    )
   }
 
   fun `test complete implement member in module`() {
