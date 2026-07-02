@@ -15,6 +15,7 @@
  */
 package org.pkl.intellij.completion
 
+import com.intellij.codeInsight.lookup.LookupElementPresentation
 import java.nio.file.Path
 import org.assertj.core.api.Assertions.assertThat
 import org.pkl.intellij.PklFileType
@@ -23,6 +24,15 @@ import org.pkl.intellij.packages.dto.PackageUri
 import org.pkl.intellij.packages.pklPackageService
 
 class CompletionTest : PklTestCase() {
+  private fun lookupPresentableStrings(): List<String> {
+    val presentation = LookupElementPresentation()
+    return myFixture.lookupElements?.map {
+      it.renderElement(presentation)
+      presentation.itemText ?: ""
+    }
+      ?: emptyList()
+  }
+
   fun `test complete from lexical scope`() {
     myFixture.configureByText(
       PklFileType,
@@ -152,6 +162,89 @@ class CompletionTest : PklTestCase() {
     myFixture.completeBasic()
     val lookupStrings = myFixture.lookupElementStrings
     assertThat(lookupStrings).contains("bar = ")
+  }
+
+  fun `test complete implement member`() {
+    myFixture.configureByText(
+      PklFileType,
+      """
+        abstract class Base {
+          abstract function someMethod(elems: Listing<String>)
+        }
+
+        class MyClass extends Base {
+          function some<caret>
+        }
+        """
+        .trimIndent()
+    )
+    myFixture.completeBasic()
+    assertThat(myFixture.editor.document.text)
+      .contains("function someMethod(elems: Listing<String>) = TODO()")
+  }
+
+  fun `test complete implement member shows all unimplemented methods`() {
+    myFixture.configureByText(
+      PklFileType,
+      """
+        abstract class Base {
+          abstract function method1(): String
+          abstract function method2(x: Int): Boolean
+        }
+
+        class MyClass extends Base {
+          function m<caret>
+        }
+        """
+        .trimIndent()
+    )
+    myFixture.completeBasic()
+    val lookupStrings = lookupPresentableStrings()
+    assertThat(lookupStrings)
+      .contains("function method1(): String = …", "function method2(x: Int): Boolean = …")
+  }
+
+  fun `test complete implement member excludes already implemented methods`() {
+    myFixture.configureByText(
+      PklFileType,
+      """
+        abstract class Base {
+          abstract function method1(): String
+          abstract function method2(x: Int): Boolean
+          abstract function method3(x: Int): Boolean
+        }
+
+        class MyClass extends Base {
+          function method1(): String = "done"
+
+          function m<caret>
+        }
+        """
+        .trimIndent()
+    )
+    myFixture.completeBasic()
+    val lookupStrings = lookupPresentableStrings()
+    assertThat(lookupStrings).hasSize(2)
+    assertThat(lookupStrings).contains("function method2(x: Int): Boolean = …")
+    assertThat(lookupStrings).contains("function method3(x: Int): Boolean = …")
+  }
+
+  fun `test complete implement member in module`() {
+    myFixture.configureByFiles(
+      "implement-member/ConcreteModule.pkl",
+      "implement-member/AbstractModule.pkl"
+    )
+    myFixture.completeBasic()
+    assertThat(myFixture.editor.document.text).contains("function greet(name: String): String")
+  }
+
+  fun `test complete implement member in module excludes already implemented methods`() {
+    myFixture.configureByFiles(
+      "implement-member/PartiallyImplementedModule.pkl",
+      "implement-member/AbstractModule.pkl"
+    )
+    myFixture.completeBasic()
+    assertThat(myFixture.editor.document.text).contains("function greet(name: String): String")
   }
 
   override val fixtureDir: Path?

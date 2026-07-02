@@ -1,5 +1,5 @@
 /**
- * Copyright © 2024 Apple Inc. and the Pkl project authors. All rights reserved.
+ * Copyright © 2024-2026 Apple Inc. and the Pkl project authors. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -26,6 +26,9 @@ interface PklModifierListOwner : PklElement {
       TokenSet.create(PklElementTypes.LOCAL, PklElementTypes.CONST, PklElementTypes.FIXED)
 
     private val abstractOrOpen = TokenSet.create(PklElementTypes.ABSTRACT, PklElementTypes.OPEN)
+
+    private val fixedOrConstOrAbstract =
+      TokenSet.create(PklElementTypes.FIXED, PklElementTypes.CONST, PklElementTypes.ABSTRACT)
   }
 
   val modifierList: PklModifierList?
@@ -59,6 +62,9 @@ interface PklModifierListOwner : PklElement {
 
   val isLocalOrConstOrFixed: Boolean
     get() = hasAnyModifier(localOrConstOrFixed)
+
+  val isFixedOrConstOrAbstract: Boolean
+    get() = hasAnyModifier(fixedOrConstOrAbstract)
 
   private fun hasModifier(modifier: IElementType): Boolean {
     val modifiers = modifierList?.elements ?: return false

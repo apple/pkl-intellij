@@ -43,6 +43,26 @@ class PklCompletionContributor : CompletionContributor() {
 
     extend(
       BASIC,
+      psiElement(PklElementTypes.IDENTIFIER)
+        .withParent(PklPropertyName::class.java)
+        .withSuperParent(2, PklClassProperty::class.java),
+      ImplementMemberCompletionProvider()
+    )
+
+    extend(
+      BASIC,
+      psiElement(PklElementTypes.IDENTIFIER).withParent(PklUnqualifiedAccessName::class.java),
+      ImplementMemberCompletionProvider()
+    )
+
+    extend(
+      BASIC,
+      psiElement(PklElementTypes.IDENTIFIER).withParent(PklClassMethod::class.java),
+      ImplementMemberCompletionProvider()
+    )
+
+    extend(
+      BASIC,
       psiElement(PklElementTypes.IDENTIFIER).withParent(PklQualifiedAccessName::class.java),
       QualifiedAccessCompletionProvider()
     )
