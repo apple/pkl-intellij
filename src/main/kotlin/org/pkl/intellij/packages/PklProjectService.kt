@@ -30,6 +30,7 @@ import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.util.messages.Topic
 import com.jetbrains.rd.util.concurrentMapOf
 import java.net.URI
+import java.nio.file.Files
 import java.nio.file.Path
 import java.util.concurrent.atomic.AtomicLong
 import org.jdom.Element
@@ -130,7 +131,20 @@ class PklProjectService(private val project: Project) :
         project.messageBus.syncPublisher(PKL_PROJECTS_TOPIC).pklProjectsUpdated(this, pklProjects)
         return@runBackgroundableTask
       }
-      project.pklCli.resolveProject(pklProjectFiles.map { it.parent.toNioPath() })
+      // Only resolve projects in writable directories.
+      // Read-only paths (e.g. Nix flake inputs under .direnv) cannot receive the generated
+      // PklProject.deps.json file, so we skip them rather than crashing the entire sync.
+      val writableProjectDirs =
+        pklProjectFiles.map { it.parent.toNioPath() }.filter { Files.isWritable(it) }
+      val skippedCount = pklProjectFiles.size - writableProjectDirs.size
+      if (skippedCount > 0) {
+        LOG.warn(
+          "$skippedCount PklProject file(s) skipped during resolve: their parent directories are read-only"
+        )
+      }
+      if (writableProjectDirs.isNotEmpty()) {
+        project.pklCli.resolveProject(writableProjectDirs)
+      }
       val metadatas =
         getProjectMetadatas(pklProjectFiles).map { metadata ->
           val projectFile = localFs.findFileByNioFile(Path.of(URI(metadata.projectFileUri)))!!
