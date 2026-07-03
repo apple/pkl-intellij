@@ -501,7 +501,8 @@ sealed class ModuleResolutionResult {
     base: PklBaseModule,
     bindings: TypeParameterBindings,
     preserveUnboundedVars: Boolean,
-    context: PklProject?
+    context: PklProject?,
+    receiverType: Type? = null,
   ): Type
 }
 
@@ -510,13 +511,15 @@ class SimpleModuleResolutionResult(val resolved: PklModule?) : ModuleResolutionR
     base: PklBaseModule,
     bindings: TypeParameterBindings,
     preserveUnboundedVars: Boolean,
-    context: PklProject?
+    context: PklProject?,
+    receiverType: Type?,
   ): Type {
     return resolved.computeResolvedImportType(
       base,
       bindings,
       context,
       preserveUnboundedVars,
+      receiverType = receiverType,
     )
   }
 }
@@ -530,7 +533,8 @@ class GlobModuleResolutionResult(val resolved: GlobResolver.GlobResult) : Module
     base: PklBaseModule,
     bindings: TypeParameterBindings,
     preserveUnboundedVars: Boolean,
-    context: PklProject?
+    context: PklProject?,
+    receiverType: Type?,
   ): Type {
     if (resolved.exceededMaxElements || resolved.elements.isEmpty())
       return base.mappingType.withTypeArguments(base.stringType, base.moduleType)
@@ -541,6 +545,7 @@ class GlobModuleResolutionResult(val resolved: GlobResolver.GlobResult) : Module
           bindings,
           context,
           preserveUnboundedVars,
+          receiverType = receiverType,
         ) as Type.Module
       }
     val firstType = allTypes.first()
@@ -749,6 +754,7 @@ fun Appendable.renderType(
     is PklStringLiteralType -> append(type.stringConstant.text)
     is PklNothingType -> append("nothing")
     is PklModuleType -> append("module")
+    is PklThisType -> append("this")
     is PklUnknownType -> append("unknown")
     else -> throw AssertionError("Unknown type: ${type::class}")
   }
