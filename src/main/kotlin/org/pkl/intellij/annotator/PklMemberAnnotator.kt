@@ -212,7 +212,19 @@ class PklMemberAnnotator : PklAnnotator() {
         element.isExternal
     )
       return
-    val type = element.type?.toType(base, mapOf(), context) ?: return
+    val type =
+      element.type?.toType(
+        base,
+        mapOf(),
+        context,
+        receiverType =
+          when (enclosingEntity) {
+            is PklClass -> Class.create(enclosingEntity)
+            is PklModule -> Type.module(enclosingEntity, enclosingEntity.shortDisplayName, context)
+            else -> Nothing
+          }
+      )
+        ?: return
     if (type.hasDefault(base, context)) return
     val severity =
       if (enclosingEntity.isOpen) HighlightSeverity.WARNING else HighlightSeverity.ERROR

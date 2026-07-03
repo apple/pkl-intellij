@@ -19,13 +19,21 @@ import com.intellij.lang.annotation.AnnotationHolder
 import com.intellij.lang.annotation.HighlightSeverity
 import com.intellij.psi.PsiElement
 import org.pkl.intellij.intention.PklRemoveDefaultTypeQuickFix
-import org.pkl.intellij.packages.dto.PklProject
-import org.pkl.intellij.psi.PklBaseModule
+import org.pkl.intellij.psi.PklAnnotation
+import org.pkl.intellij.psi.PklClass
+import org.pkl.intellij.psi.PklClassExtendsClause
 import org.pkl.intellij.psi.PklDeclaredType
 import org.pkl.intellij.psi.PklDefaultType
+import org.pkl.intellij.psi.PklMemberPredicate
+import org.pkl.intellij.psi.PklMethod
+import org.pkl.intellij.psi.PklModuleType
+import org.pkl.intellij.psi.PklObjectBody
+import org.pkl.intellij.psi.PklProperty
+import org.pkl.intellij.psi.PklThisType
 import org.pkl.intellij.psi.PklType
+import org.pkl.intellij.psi.PklTypeAlias
+import org.pkl.intellij.psi.PklTypeConstraintList
 import org.pkl.intellij.psi.PklUnionType
-import org.pkl.intellij.psi.enclosingModule
 import org.pkl.intellij.psi.pklBaseModule
 import org.pkl.intellij.type.Type
 import org.pkl.intellij.type.toType
@@ -42,6 +50,8 @@ class PklTypeAnnotator : PklAnnotator() {
       is PklDefaultType -> validateDefaultType(element, holder)
       is PklUnionType -> validateUnionType(element, holder)
       is PklDeclaredType -> validateDeclaredType(element, holder)
+      is PklModuleType -> validateModuleType(element, holder)
+      is PklThisType -> validateThisType(element, holder)
     }
   }
 
@@ -49,7 +59,6 @@ class PklTypeAnnotator : PklAnnotator() {
     if (type.typeArgumentList?.elements.isNullOrEmpty()) return
     val module = holder.currentModule ?: return
     val base = module.project.pklBaseModule
-    val context = type.enclosingModule?.pklProject
     val referent = type.toType(base, emptyMap(), module.pklProject)
 
     val argCount = type.typeArgumentList!!.elements.size
@@ -68,33 +77,8 @@ class PklTypeAnnotator : PklAnnotator() {
           "<tr><td align=\"right\">Found:</td><td>$argCount</td></tr></table>",
         holder
       )
-      return
-    }
-
-    val unaliased = referent.unaliased(base, context)
-    if (unaliased is Type.Reference && referent.containsConstrainedType(base, context)) {
-      createAnnotation(
-        HighlightSeverity.ERROR,
-        type.textRange,
-        "Reference type annotations may not contain type constraints.",
-        "<code>pkl.ref#Reference</code> type annotations may not contain type constraints.",
-        holder
-      )
     }
   }
-
-  private fun Type.containsConstrainedType(base: PklBaseModule, context: PklProject?): Boolean =
-    !constraints.isEmpty() ||
-      when (this) {
-        is Type.Class -> typeArguments.any { it.containsConstrainedType(base, context) }
-        is Type.Alias ->
-          typeArguments.any { it.containsConstrainedType(base, context) } ||
-            aliasedType(base, context).containsConstrainedType(base, context)
-        is Type.Union ->
-          leftType.containsConstrainedType(base, context) ||
-            rightType.containsConstrainedType(base, context)
-        else -> false
-      }
 
   private fun validateDefaultType(type: PklDefaultType, holder: AnnotationHolder) {
     if (type.parent !is PklUnionType) {
@@ -126,6 +110,80 @@ class PklTypeAnnotator : PklAnnotator() {
         .newAnnotation(HighlightSeverity.ERROR, "Union types cannot have more than one default")
         .range(union)
         .create()
+    }
+  }
+
+  private fun validateModuleType(module: PklModuleType, holder: AnnotationHolder) {
+    var annotationLocation: String? = null
+    var parent = module.parent
+    while (parent != null) {
+      when {
+        // allowed in class extends clause
+        parent is PklClassExtendsClause -> break
+        // not allowed in class bodies
+        parent is PklClass -> {
+          annotationLocation = "within a class body"
+          break
+        }
+        // not allowed in typealias bodies
+        parent is PklTypeAlias -> {
+          annotationLocation = "within a type alias body"
+          break
+        }
+        // not allowed in annotation bodies
+        parent is PklAnnotation -> {
+          annotationLocation = "within an annotation body"
+          break
+        }
+        // not allowed in const properties
+        parent is PklProperty && parent.isConst ->
+          annotationLocation = "from const property `${parent.name}`"
+        // not allowed in const methods
+        parent is PklMethod && parent.isConst ->
+          annotationLocation = "from const method `${parent.name}`"
+      }
+      parent = parent.parent
+    }
+
+    if (annotationLocation != null) {
+      holder
+        .newAnnotation(
+          HighlightSeverity.WARNING,
+          "Cannot reference `module` type $annotationLocation; this will be an error in a future release"
+        )
+        .tooltip(
+          "Cannot reference <code>module</code> type $annotationLocation; this will be an error in a future release"
+        )
+        .range(module)
+        .create()
+    }
+  }
+
+  private fun validateThisType(thiz: PklThisType, holder: AnnotationHolder) {
+    var prev: PsiElement = thiz
+    var parent = thiz.parent
+    while (parent != null) {
+      when {
+        // always allowed in object bodies
+        parent is PklObjectBody -> break
+        // always allowed in custom this scopes
+        parent is PklTypeConstraintList -> break
+        parent is PklMemberPredicate && parent.conditionExpr == prev -> break
+        // not allowed in type alias bodies
+        parent is PklTypeAlias -> {
+          holder
+            .newAnnotation(
+              HighlightSeverity.ERROR,
+              "Cannot reference `this` type within a type alias body"
+            )
+            .tooltip("Cannot reference <code>this</code> type within a type alias body")
+            .range(thiz)
+            .create()
+          break
+        }
+      }
+      prev = parent
+      parent = parent.parent
     }
   }
 }
