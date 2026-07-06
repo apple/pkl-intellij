@@ -70,7 +70,7 @@ class PklExtendsClauseAnnotatorTest {
       abstract class Base {
         abstract name: String
       }
-      class Child <error descr="class Child is not abstract and does not implement property 'name'">extends Base</error> {}
+      class Child <warning descr="class Child is not abstract and does not implement property 'name'">extends Base</warning> {}
       """
     )
   }
@@ -82,7 +82,7 @@ class PklExtendsClauseAnnotatorTest {
       abstract class Base {
         abstract function greet(): String
       }
-      class Child <error descr="class Child is not abstract and does not implement method 'greet'">extends Base</error> {}
+      class Child <warning descr="class Child is not abstract and does not implement method 'greet'">extends Base</warning> {}
       """
     )
   }
