@@ -56,15 +56,15 @@ class PklMemberAnnotatorTest {
   fun `abstract member inside non-abstract class`() {
     checkHighlighting(
       """
-      <error descr="Cannot declare an abstract member inside a non-abstract module">abstract</error> bar: Int
+        <warning descr="Abstract member declared inside a non-abstract module. This will be an error in the future.">abstract</warning> bar: Int
 
-      <error descr="Cannot declare an abstract member inside a non-abstract module">abstract</error> function bar(): Int
+        <warning descr="Abstract member declared inside a non-abstract module. This will be an error in the future.">abstract</warning> function bar(): Int
 
-      class Foo {
-        <error descr="Cannot declare an abstract member inside a non-abstract class">abstract</error> bar: Int
+        class Foo {
+          <warning descr="Abstract member declared inside a non-abstract class. This will be an error in the future.">abstract</warning> bar: Int
 
-        <error descr="Cannot declare an abstract member inside a non-abstract class">abstract</error> function bar(): Int
-      }
+          <warning descr="Abstract member declared inside a non-abstract class. This will be an error in the future.">abstract</warning> function bar(): Int
+        }
     """
         .trimIndent()
     )

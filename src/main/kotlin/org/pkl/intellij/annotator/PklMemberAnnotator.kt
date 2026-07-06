@@ -399,18 +399,18 @@ class PklMemberAnnotator : PklAnnotator() {
     if (containingClassOrModule.getAbstractModifier() == null) {
       if (containingClassOrModule is PklModule) {
         createAnnotation(
-          HighlightSeverity.ERROR,
+          HighlightSeverity.WARNING,
           myAbstractModifier.textRange,
-          "Cannot declare an abstract member inside a non-abstract module",
-          "Cannot declare an abstract member inside a non-abstract module",
+          "Abstract member declared inside a non-abstract module. This will be an error in the future.",
+          "Abstract member declared inside a non-abstract module. This will be an error in the future.",
           holder
         )
       } else {
         createAnnotation(
-          HighlightSeverity.ERROR,
+          HighlightSeverity.WARNING,
           myAbstractModifier.textRange,
-          "Cannot declare an abstract member inside a non-abstract class",
-          "Cannot declare an abstract member inside a non-abstract class",
+          "Abstract member declared inside a non-abstract class. This will be an error in the future.",
+          "Abstract member declared inside a non-abstract class. This will be an error in the future.",
           holder
         )
       }

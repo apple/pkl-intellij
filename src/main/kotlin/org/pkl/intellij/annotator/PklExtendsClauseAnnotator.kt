@@ -189,7 +189,7 @@ class PklExtendsClauseAnnotator : PklAnnotator() {
       val tooltipMessage =
         "${entityName.escapeXml()} ${classOrModuleName.escapeXml()} is not abstract and does not implement ${memberEntityName.escapeXml()} '${parentName.escapeXml()}'"
       holder
-        .newAnnotation(HighlightSeverity.ERROR, message)
+        .newAnnotation(HighlightSeverity.WARNING, message)
         .apply {
           range(element.textRange)
           tooltip(tooltipMessage)
