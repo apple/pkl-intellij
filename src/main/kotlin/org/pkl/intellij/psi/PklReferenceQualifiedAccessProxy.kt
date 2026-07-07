@@ -27,6 +27,7 @@ import com.intellij.psi.PsiReference
 import com.intellij.psi.PsiReferenceBase
 import com.intellij.psi.impl.FakePsiElement
 import com.intellij.psi.impl.source.tree.LeafPsiElement
+import com.intellij.psi.tree.IElementType
 import com.intellij.util.containers.headTail
 import javax.swing.Icon
 import org.pkl.intellij.PklIcons
@@ -233,6 +234,65 @@ class PklReferenceQualifiedAccessProxy(
           override fun resolve(): PsiElement = psi
         }
       }
+  }
+
+  class ClassProperty(private val myName: String, private val myType: Type) :
+    FakePsiElement(), PklClassProperty {
+    override fun getName(): String = myName
+
+    override val propertyName: PklPropertyName =
+      object : FakePsiElement(), PklPropertyName {
+        override fun <R> accept(visitor: PklVisitor<R>): R? = visitor.visitPropertyName(this)
+
+        override fun getParent(): PsiElement? = null
+
+        override val identifier: PsiElement = LeafPsiElement(PklElementTypes.IDENTIFIER, myName)
+      }
+    override val type: PklType = DeclaredType(myType)
+
+    override fun <R> accept(visitor: PklVisitor<R>): R? = visitor.visitClassProperty(this)
+
+    override val docComment: PklDocComment? = null
+    override val expr: PklExpr? = null
+    override val objectBodyList: List<PklObjectBody> = emptyList()
+    override val annotationList: PklAnnotationList =
+      object : FakePsiElement(), PklAnnotationList {
+        override fun <R> accept(visitor: PklVisitor<R>): R? = visitor.visitAnnotationList(this)
+
+        override fun getAnnotationList(): List<PklAnnotation?> = emptyList()
+
+        override val elements: Sequence<PklAnnotation> = emptySequence()
+        override val deprecated: Deprecated? = null
+        override val sourceCode: SourceCode? = null
+
+        override fun getParent(): PsiElement? = null
+      }
+    override val modifierList: PklModifierList =
+      object : FakePsiElement(), PklModifierList {
+        override fun <R> accept(visitor: PklVisitor<R>): R? = visitor.visitModifierList(this)
+
+        override fun getParent(): PsiElement? = null
+
+        override val elements: Sequence<PsiElement> = emptySequence()
+
+        override fun addModifier(type: IElementType, project: Project) {}
+      }
+
+    override fun getNameIdentifier(): PsiElement = propertyName.identifier
+
+    override val anchor: PsiElement = nameIdentifier
+
+    override fun getParent(): PsiElement? = null
+
+    override fun setName(name: String): PsiElement = this
+
+    override fun isDefinition(context: PklProject?): Boolean = true
+
+    override fun getLookupElementType(
+      base: PklBaseModule,
+      bindings: TypeParameterBindings,
+      context: PklProject?
+    ): Type = myType
   }
 }
 
