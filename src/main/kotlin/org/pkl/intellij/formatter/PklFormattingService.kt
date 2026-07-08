@@ -1,5 +1,5 @@
 /**
- * Copyright © 2024-2025 Apple Inc. and the Pkl project authors. All rights reserved.
+ * Copyright © 2024-2026 Apple Inc. and the Pkl project authors. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -41,7 +41,7 @@ class PklFormattingService : AsyncDocumentFormattingService() {
       override fun run() {
         try {
           val text = request.documentText
-          val formattedText = Formatter().format(text, grammarVersion)
+          val formattedText = Formatter(grammarVersion).format(text)
           request.onTextReady(formattedText)
         } catch (e: Exception) {
           request.onError("Formatting error", e.message ?: "Unknown error")

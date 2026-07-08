@@ -1,5 +1,40 @@
 = Changelog
 
+[[release-0.37.0]]
+== 0.37.0 (2026-07-08)
+
+=== Additions
+
+* Add support for nested path creation when creating new Pkl files (https://github.com/apple/pkl-intellij/pull/179[#179]).
+* Add support for `pkl.ref#Reference` (https://github.com/apple/pkl-intellij/pull/181[#181], https://github.com/apple/pkl-intellij/pull/221[#221], https://github.com/apple/pkl-intellij/pull/237[#237]).
+* Add support for multi-line string continuations (https://github.com/apple/pkl-intellij/pull/182[#182], https://github.com/apple/pkl-intellij/pull/183[#183]).
+* Add object members to structure view (https://github.com/apple/pkl-intellij/pull/196[#196]).
+* Add diagnostic on elements/entries in a module object body (https://github.com/apple/pkl-intellij/pull/198[#198])
+* Add diagnostic for abstract member inside non-abstract class/method (https://github.com/apple/pkl-intellij/pull/214[#214]).
+* Add diagnostic for missing abstract member implementations (https://github.com/apple/pkl-intellij/pull/217[#217], https://github.com/apple/pkl-intellij/pull/227[#227], https://github.com/apple/pkl-intellij/pull/236[#236]).
+* Add quick fix to remove unused imports (https://github.com/apple/pkl-intellij/pull/229[#229]).
+* Add autocompletion for overriding abstract methods (https://github.com/apple/pkl-intellij/pull/230[#230]).
+* Improve handling of member links in doc comments (https://github.com/apple/pkl-intellij/pull/231[#231]).
+* Add support for Pkl 0.32 fallback standard library (https://github.com/apple/pkl-intellij/pull/FIXME[#FIXME])
+
+=== Fixes
+
+* Skip read-only project dirs during pkl project resolve (https://github.com/apple/pkl-intellij/pull/177[#177]).
+* Properly flow-type `Any.getClass()` calls (https://github.com/apple/pkl-intellij/pull/202[#202]).
+* Fix analysis of string length (https://github.com/apple/pkl-intellij/pull/209[#209]).
+* Gracefully handle glob patterns that match large result sets (https://github.com/apple/pkl-intellij/pull/213[#213]).
+* Fix errors around slow operations in EDT (https://github.com/apple/pkl-intellij/pull/220[#220]).
+
+=== Contributors ❤️
+
+We would like to thank the contributors to this release (in alphabetical order):
+
+* https://github.com/bioball[@bioball]
+* https://github.com/danteay[@danteay]
+* https://github.com/HT154[@HT154]
+* https://github.com/mirkoalicastro[@mirkoalicastro]
+* https://github.com/stackoverflow[@stackoverflow]
+
 [[release-0.36.1]]
 == 0.36.1 (2026-03-26)
 
