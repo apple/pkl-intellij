@@ -21,6 +21,24 @@
     ]]></description>
   <!-- language=html -->
   <change-notes><![CDATA[
+    <b>0.37.0</b>
+    <ul>
+      <li>Add support for nested path creation when creating new Pkl files</li>
+      <li>Add support for <code>pkl.ref#Reference</code></li>
+      <li>Add object members to structure view</li>
+      <li>Add diagnostic on elements/entries in a module object body</li>
+      <li>Add diagnostic for abstract member inside non-abstract class/method</li>
+      <li>Add diagnostic for missing abstract member implementations</li>
+      <li>Add quick fix to remove unused imports</li>
+      <li>Add autocompletion for overriding abstract methods</li>
+      <li>Improve handling of member links in doc comments</li>
+      <li>Add support for Pkl 0.32 fallback standard library</li>
+      <li>Fix: skip read-only project dirs during pkl project resolve</li>
+      <li>Fix: Properly flow-type <code>Any.getClass()</code> calls</li>
+      <li>Fix: Analysis of string length</li>
+      <li>Fix: Gracefully handle glob patterns that match large result sets</li>
+      <li>Fix: Errors around slow operations in EDT</li>
+    </ul>
     <b>0.36.1</b>
     <ul>
       <li>Bump max allowed IntelliJ version to 263.*</li>
