@@ -1,5 +1,5 @@
 /**
- * Copyright © 2024-2025 Apple Inc. and the Pkl project authors. All rights reserved.
+ * Copyright © 2024-2026 Apple Inc. and the Pkl project authors. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,6 +15,8 @@
  */
 package org.pkl.intellij.packages
 
+import com.intellij.codeInsight.daemon.DaemonCodeAnalyzer
+import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.components.*
 import com.intellij.openapi.diagnostic.logger
 import com.intellij.openapi.externalSystem.autoimport.ExternalSystemProjectTracker
@@ -153,6 +155,9 @@ class PklProjectService(private val project: Project) :
       modificationCount.getAndIncrement()
       project.messageBus.syncPublisher(PKL_PROJECTS_SYNC_TOPIC).pklProjectSyncFinished()
       project.messageBus.syncPublisher(PKL_PROJECTS_TOPIC).pklProjectsUpdated(this, pklProjects)
+      ApplicationManager.getApplication().invokeLater {
+        DaemonCodeAnalyzer.getInstance(project).restart()
+      }
     }
 
   fun getPklProject(file: VirtualFile): PklProject? =
