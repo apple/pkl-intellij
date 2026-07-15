@@ -18,12 +18,18 @@ package org.pkl.intellij.annotator
 import com.intellij.lang.annotation.AnnotationHolder
 import com.intellij.lang.annotation.HighlightSeverity
 import com.intellij.psi.PsiElement
+import com.intellij.psi.util.parentOfType
 import org.pkl.intellij.intention.PklRemoveDefaultTypeQuickFix
 import org.pkl.intellij.packages.dto.PklProject
+import org.pkl.intellij.psi.PklAnnotation
 import org.pkl.intellij.psi.PklBaseModule
+import org.pkl.intellij.psi.PklClassBody
 import org.pkl.intellij.psi.PklDeclaredType
 import org.pkl.intellij.psi.PklDefaultType
+import org.pkl.intellij.psi.PklModuleType
+import org.pkl.intellij.psi.PklThisType
 import org.pkl.intellij.psi.PklType
+import org.pkl.intellij.psi.PklTypeAlias
 import org.pkl.intellij.psi.PklUnionType
 import org.pkl.intellij.psi.enclosingModule
 import org.pkl.intellij.psi.pklBaseModule
@@ -42,6 +48,8 @@ class PklTypeAnnotator : PklAnnotator() {
       is PklDefaultType -> validateDefaultType(element, holder)
       is PklUnionType -> validateUnionType(element, holder)
       is PklDeclaredType -> validateDeclaredType(element, holder)
+      is PklModuleType -> validateModuleType(element, holder)
+      is PklThisType -> validateThisType(element, holder)
     }
   }
 
@@ -125,6 +133,41 @@ class PklTypeAnnotator : PklAnnotator() {
       holder
         .newAnnotation(HighlightSeverity.ERROR, "Union types cannot have more than one default")
         .range(union)
+        .create()
+    }
+  }
+
+  private fun validateModuleType(module: PklModuleType, holder: AnnotationHolder) {
+    // allowed in annotations
+    if (module.parentOfType<PklAnnotation>() != null) return
+    if (module.parentOfType<PklTypeAlias>() != null) {
+      // not allowed in typealias bodies
+      holder
+        .newAnnotation(
+          HighlightSeverity.WARNING,
+          "Module types are not allowed in type alias bodies; this will be an error in a future release"
+        )
+        .range(module)
+        .create()
+    } else if (module.parentOfType<PklClassBody>() != null) {
+      // not allowed in class bodies
+      holder
+        .newAnnotation(
+          HighlightSeverity.WARNING,
+          "Module types are not allowed in class bodies; this will be an error in a future release"
+        )
+        .range(module)
+        .create()
+    }
+  }
+
+  private fun validateThisType(thiz: PklThisType, holder: AnnotationHolder) {
+    // allowed in annotations
+    if (thiz.parentOfType<PklAnnotation>() != null) return
+    if (thiz.parentOfType<PklTypeAlias>() != null) {
+      holder
+        .newAnnotation(HighlightSeverity.ERROR, "This types are not allowed in type alias bodies")
+        .range(thiz)
         .create()
     }
   }
