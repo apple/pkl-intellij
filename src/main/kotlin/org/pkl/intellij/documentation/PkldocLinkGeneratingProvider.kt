@@ -23,7 +23,7 @@ import org.intellij.markdown.html.HtmlGenerator
 import org.pkl.intellij.util.escapeXml
 
 object PkldocLinkGeneratingProvider : GeneratingProvider {
-  val keywords = setOf("null", "true", "false", "this", "unknown", "nothing")
+  val keywords = setOf("null", "true", "false", "this", "unknown", "nothing", "module")
 
   override fun processNode(
     visitor: HtmlGenerator.HtmlGeneratingVisitor,

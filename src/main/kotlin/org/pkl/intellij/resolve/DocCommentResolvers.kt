@@ -20,6 +20,8 @@ import com.intellij.psi.PsiManager
 import org.pkl.intellij.packages.dto.PklProject
 import org.pkl.intellij.psi.enclosingModule
 import org.pkl.intellij.psi.pklBaseModule
+import org.pkl.intellij.resolve.Resolvers.resolveDocCommentModuleOrThisKeyword
+import org.pkl.intellij.type.computeThisType
 
 object DocCommentResolvers {
   fun resolveLink(psiManager: PsiManager, link: String, position: PsiElement): PsiElement? {
@@ -62,6 +64,10 @@ object DocCommentResolvers {
     val isProperty = !link.endsWith("()")
     val memberName = if (isProperty) link else link.dropLast(2)
     val base = psiManager.project.pklBaseModule
+    resolveDocCommentModuleOrThisKeyword(link, position)?.let {
+      return it
+    }
+    val thisType = position.computeThisType(base, mapOf(), context)
     val visitor =
       ResolveVisitors.firstElementNamed(
         memberName,
@@ -69,7 +75,7 @@ object DocCommentResolvers {
       )
     return Resolvers.resolveUnqualifiedAccess(
       position,
-      null,
+      thisType,
       isProperty,
       base,
       mapOf(),

@@ -36,7 +36,11 @@ class PklDocCommentReference(
       )
         fullText
       else element.text.substring(fullLabelTextRange.startOffset, rangeInElement.endOffset)
-    if (link in PkldocLinkGeneratingProvider.keywords) {
+    if (
+      fullText in PkldocLinkGeneratingProvider.keywords &&
+        fullText != "module" &&
+        fullText != "this"
+    ) {
       return null
     }
     val project = element.project

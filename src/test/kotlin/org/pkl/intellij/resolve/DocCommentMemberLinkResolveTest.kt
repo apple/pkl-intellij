@@ -21,6 +21,7 @@ import org.pkl.intellij.PklTestCase
 import org.pkl.intellij.psi.PklClass
 import org.pkl.intellij.psi.PklClassMethod
 import org.pkl.intellij.psi.PklClassProperty
+import org.pkl.intellij.psi.PklModule
 
 class DocCommentMemberLinkResolveTest : PklTestCase() {
   fun `test resolve member link`() {
@@ -132,5 +133,141 @@ class DocCommentMemberLinkResolveTest : PklTestCase() {
     assertThat(resolved).isInstanceOf(PklClassMethod::class.java)
     resolved as PklClassMethod
     assertThat(resolved.name).isEqualTo("baz")
+  }
+
+  fun `test resolve member link - this keyword`() {
+    myFixture.configureByText(
+      PklFileType,
+      """
+      module MyModule
+
+      /// This is [this<caret>]
+      prop1: String
+    """
+        .trimIndent()
+    )
+    val element = myFixture.getReferenceAtCaretPosition()!!
+    val resolved = element.resolve()
+    assertThat(resolved).isInstanceOf(PklModule::class.java)
+  }
+
+  fun `test resolve member link - this keyword 2`() {
+    myFixture.configureByText(
+      PklFileType,
+      """
+      /// This is [this<caret>]
+      class MyClass
+    """
+        .trimIndent()
+    )
+    val element = myFixture.getReferenceAtCaretPosition()!!
+    val resolved = element.resolve()
+    assertThat(resolved).isInstanceOf(PklClass::class.java)
+  }
+
+  fun `test resolve member link - module keyword`() {
+    myFixture.configureByText(
+      PklFileType,
+      """
+      module MyModule
+
+      /// This is like [module<caret>]
+      class MyClass
+    """
+        .trimIndent()
+    )
+    val element = myFixture.getReferenceAtCaretPosition()!!
+    val resolved = element.resolve()
+    assertThat(resolved).isInstanceOf(PklModule::class.java)
+  }
+
+  fun `test resolve qualified member link - module keyword`() {
+    myFixture.configureByText(
+      PklFileType,
+      """
+      module MyModule
+
+      /// This is like [module.MyClass<caret>]
+      class MyClass
+    """
+        .trimIndent()
+    )
+    val element = myFixture.getReferenceAtCaretPosition()!!
+    val resolved = element.resolve()
+    assertThat(resolved).isInstanceOf(PklClass::class.java)
+    resolved as PklClass
+    assertThat(resolved.name).isEqualTo("MyClass")
+  }
+
+  fun `test resolve qualified member link - this keyword`() {
+    myFixture.configureByText(
+      PklFileType,
+      """
+      module MyModule
+
+      /// The name on MyModule
+      name: String
+
+      /// This is like [this.name<caret>]
+      class MyClass {
+        /// The name inside MyClass
+        name: String
+      }
+    """
+        .trimIndent()
+    )
+    val element = myFixture.getReferenceAtCaretPosition()!!
+    val resolved = element.resolve()
+    assertThat(resolved).isInstanceOf(PklClassProperty::class.java)
+    resolved as PklClassProperty
+    assertThat(resolved.effectiveDocComment(null)!!.contents).isEqualTo("The name inside MyClass")
+  }
+
+  fun `test resolve qualified member link - three dots starting with module keyword`() {
+    myFixture.configureByText(
+      PklFileType,
+      """
+      module MyModule
+
+      /// This is like [module.MyClass.name<caret>]
+      name: String
+
+      class MyClass {
+        /// The name inside MyClass
+        name: String
+      }
+    """
+        .trimIndent()
+    )
+    val element = myFixture.getReferenceAtCaretPosition()!!
+    val resolved = element.resolve()
+    assertThat(resolved).isInstanceOf(PklClassProperty::class.java)
+    resolved as PklClassProperty
+    assertThat(resolved.effectiveDocComment(null)!!.contents).isEqualTo("The name inside MyClass")
+  }
+
+  fun `test resolve super property`() {
+    myFixture.configureByText(
+      PklFileType,
+      """
+      module MyModule
+
+      /// This is like [module.MyClass.name<caret>]
+      name: String
+
+      open class Base {
+        /// The name inside Base
+        name: String
+      }
+
+      class MyClass extends Base
+    """
+        .trimIndent()
+    )
+    val element = myFixture.getReferenceAtCaretPosition()!!
+    val resolved = element.resolve()
+    assertThat(resolved).isInstanceOf(PklClassProperty::class.java)
+    resolved as PklClassProperty
+    assertThat(resolved.effectiveDocComment(null)!!.contents).isEqualTo("The name inside Base")
   }
 }
