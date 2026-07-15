@@ -460,7 +460,9 @@ fun PklImportList.findOrInsertImport(module: PklModule): String? {
       }
       else -> {
         val myModule = enclosingModule ?: return null
-        VfsUtilCore.findRelativePath(myModule.virtualFile, module.virtualFile, '/') ?: canonicalUri
+        val myVirtualFile = myModule.originalFile.virtualFile ?: return null
+        val otherVirtualFile = module.originalFile.virtualFile ?: return null
+        VfsUtilCore.findRelativePath(myVirtualFile, otherVirtualFile, '/') ?: canonicalUri
       }
     }
 
