@@ -16,6 +16,27 @@ Compatible with **IntelliJ 2023.1** or higher and **Pkl 0.25.0** or higher.
 
 Follow {uri-docs-installation}[installation instructions] and check out the {uri-docs-features}[feature overview].
 
+== Cached packages and editor-support data
+
+The plugin looks up cached Pkl packages and the downloaded `pkl` CLI under the same OS-appropriate locations that the Pkl CLI uses:
+
+[cols="1,2,2,2",options="header"]
+|===
+| Concern | Unix (Linux/macOS) | Windows | Legacy fallback
+
+| Package cache
+| `~/.cache/pkl`
+| `%LOCALAPPDATA%/pkl/cache`
+| `~/.pkl/cache`
+
+| Downloaded CLI (default)
+| `~/.local/share/pkl/editor-support/bin/pkl`
+| `%LOCALAPPDATA%/pkl/editor-support/bin/pkl.exe`
+| `~/.pkl/editor-support/bin/pkl`
+|===
+
+If a legacy `~/.pkl/...` location already exists, the plugin keeps using it so existing setups don't need to migrate. See the link:https://pkl-lang.org/main/current/release-notes/0.32.html[Pkl 0.32 release notes] for the full mapping.
+
 == Community
 
 We'd love to hear from you!
