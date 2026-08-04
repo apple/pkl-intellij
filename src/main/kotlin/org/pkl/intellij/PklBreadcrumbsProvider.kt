@@ -52,7 +52,8 @@ class PklBreadcrumbsProvider : BreadcrumbsProvider {
 
   private val propertyHandler = handler<PklClassProperty> { it.propertyName.identifier.text }
 
-  private val objectMemberHandler = handler<PklObjectMember> { it.presentation!!.presentableText!! }
+  private val objectMemberHandler =
+    handler<PklObjectMember> { it.presentation?.presentableText ?: "<member>" }
 
   private val annotationHandler =
     handler<PklAnnotation> { elem -> elem.typeName?.text?.let { "@$it" } ?: "<annotation>" }
