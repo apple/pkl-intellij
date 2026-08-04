@@ -70,9 +70,8 @@ class PklCreateFileAction :
       properties["PKL_VERSION"] = project.pklBaseModule.pklVersion.toString()
       FileTemplateUtil.createFromTemplate(template, fileName, properties, targetDir) as? PsiFile
     } catch (e: IncorrectOperationException) {
-      val project = dir.project
       ApplicationManager.getApplication().invokeLater {
-        Messages.showErrorDialog(project, e.message, IdeBundle.message("title.cannot.create.file"))
+        Messages.showErrorDialog(dir.project, e.message, IdeBundle.message("title.cannot.create.file"))
       }
       null
     } catch (e: Exception) {
