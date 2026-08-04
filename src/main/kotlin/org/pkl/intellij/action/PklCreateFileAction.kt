@@ -71,7 +71,11 @@ class PklCreateFileAction :
       FileTemplateUtil.createFromTemplate(template, fileName, properties, targetDir) as? PsiFile
     } catch (e: IncorrectOperationException) {
       ApplicationManager.getApplication().invokeLater {
-        Messages.showErrorDialog(dir.project, e.message, IdeBundle.message("title.cannot.create.file"))
+        Messages.showErrorDialog(
+          dir.project,
+          e.message,
+          IdeBundle.message("title.cannot.create.file")
+        )
       }
       null
     } catch (e: Exception) {
