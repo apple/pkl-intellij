@@ -15,16 +15,19 @@
  */
 package org.pkl.intellij.action
 
+import com.intellij.ide.IdeBundle
 import com.intellij.ide.actions.CreateFileFromTemplateAction
 import com.intellij.ide.actions.CreateFileFromTemplateDialog.Builder
 import com.intellij.ide.fileTemplates.FileTemplate
 import com.intellij.ide.fileTemplates.FileTemplateManager
-import com.intellij.ide.fileTemplates.actions.AttributesDefaults
-import com.intellij.ide.fileTemplates.ui.CreateFromTemplateDialog
+import com.intellij.ide.fileTemplates.FileTemplateUtil
+import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.diagnostic.Logger
 import com.intellij.openapi.project.Project
+import com.intellij.openapi.ui.Messages
 import com.intellij.psi.PsiDirectory
 import com.intellij.psi.PsiFile
+import com.intellij.util.IncorrectOperationException
 import org.pkl.intellij.PklFileType
 import org.pkl.intellij.PklIcons
 import org.pkl.intellij.psi.pklBaseModule
@@ -65,15 +68,13 @@ class PklCreateFileAction :
       val templateManager = FileTemplateManager.getInstance(project)
       val properties = templateManager.defaultProperties
       properties["PKL_VERSION"] = project.pklBaseModule.pklVersion.toString()
-      val dialog =
-        CreateFromTemplateDialog(
-          project,
-          targetDir,
-          template,
-          AttributesDefaults(fileName).withFixedName(true),
-          properties
-        )
-      dialog.create().containingFile
+      FileTemplateUtil.createFromTemplate(template, fileName, properties, targetDir) as? PsiFile
+    } catch (e: IncorrectOperationException) {
+      val project = dir.project
+      ApplicationManager.getApplication().invokeLater {
+        Messages.showErrorDialog(project, e.message, IdeBundle.message("title.cannot.create.file"))
+      }
+      null
     } catch (e: Exception) {
       LOG.error("Error creating new Pkl file", e)
       null
