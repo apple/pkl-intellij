@@ -1490,7 +1490,8 @@ fun PklType?.toType(
   base: PklBaseModule,
   bindings: Map<PklTypeParameter, Type>,
   context: PklProject?,
-  preserveUnboundTypeVars: Boolean = false
+  preserveUnboundTypeVars: Boolean = false,
+  getThisType: () -> Type = { this?.computeThisType(base, bindings, context) ?: Nothing },
 ): Type =
   when (this) {
     null -> Unknown
@@ -1503,7 +1504,7 @@ fun PklType?.toType(
           val typeArguments = typeArgumentList?.elements ?: listOf()
           Class.create(
             resolved,
-            typeArguments.toTypes(base, bindings, preserveUnboundTypeVars, context)
+            typeArguments.toTypes(base, bindings, preserveUnboundTypeVars, context, getThisType)
           )
         }
         is PklTypeAlias -> {
@@ -1511,7 +1512,7 @@ fun PklType?.toType(
           Type.alias(
             resolved,
             context,
-            typeArguments.toTypes(base, bindings, preserveUnboundTypeVars, context)
+            typeArguments.toTypes(base, bindings, preserveUnboundTypeVars, context, getThisType)
           )
         }
         is PklTypeParameter -> bindings[resolved]
@@ -1521,15 +1522,21 @@ fun PklType?.toType(
     }
     is PklUnionType ->
       Type.union(
-        leftType.toType(base, bindings, context, preserveUnboundTypeVars),
-        rightType.toType(base, bindings, context, preserveUnboundTypeVars),
+        leftType.toType(base, bindings, context, preserveUnboundTypeVars, getThisType),
+        rightType.toType(base, bindings, context, preserveUnboundTypeVars, getThisType),
         base,
         context
       )
     is PklFunctionType -> {
       val parameterTypes =
-        functionTypeParameterList.elements.toTypes(base, bindings, preserveUnboundTypeVars, context)
-      val returnType = type.toType(base, bindings, context, preserveUnboundTypeVars)
+        functionTypeParameterList.elements.toTypes(
+          base,
+          bindings,
+          preserveUnboundTypeVars,
+          context,
+          getThisType
+        )
+      val returnType = type.toType(base, bindings, context, preserveUnboundTypeVars, getThisType)
       when (parameterTypes.size) {
         0 -> base.function0Type.withTypeArguments(parameterTypes + returnType)
         1 -> base.function1Type.withTypeArguments(parameterTypes + returnType)
@@ -1543,8 +1550,9 @@ fun PklType?.toType(
           ) // approximation (invalid Pkl code)
       }
     }
-    is PklParenthesizedType -> type.toType(base, bindings, context, preserveUnboundTypeVars)
-    is PklDefaultType -> type.toType(base, bindings, context, preserveUnboundTypeVars)
+    is PklParenthesizedType ->
+      type.toType(base, bindings, context, preserveUnboundTypeVars, getThisType)
+    is PklDefaultType -> type.toType(base, bindings, context, preserveUnboundTypeVars, getThisType)
     is PklConstrainedType -> {
       val project = base.project
       val constraintExprs =
@@ -1556,16 +1564,21 @@ fun PklType?.toType(
             false,
             this to context
           )
-      type.toType(base, bindings, context, preserveUnboundTypeVars).withConstraints(constraintExprs)
+      type
+        .toType(base, bindings, context, preserveUnboundTypeVars, getThisType)
+        .withConstraints(constraintExprs)
     }
     is PklNullableType ->
-      type.toType(base, bindings, context, preserveUnboundTypeVars).nullable(base, context)
+      type
+        .toType(base, bindings, context, preserveUnboundTypeVars, getThisType)
+        .nullable(base, context)
     is PklUnknownType -> Unknown
     is PklNothingType -> Nothing
     is PklModuleType -> {
       // TODO: for `open` modules, `module` is a self-type
       enclosingModule?.let { Type.module(it, "module", context) } ?: base.moduleType
     }
+    is PklThisType -> getThisType()
     is PklStringLiteralType -> stringConstant.content.escapedText()?.let { StringLiteral(it) }
         ?: Unknown
     is PklTypeParameter -> bindings[this]
@@ -1577,5 +1590,6 @@ fun List<PklType>.toTypes(
   base: PklBaseModule,
   bindings: Map<PklTypeParameter, Type>,
   preserveTypeVariables: Boolean = false,
-  context: PklProject?
-): List<Type> = map { it.toType(base, bindings, context, preserveTypeVariables) }
+  context: PklProject?,
+  getThisType: () -> Type,
+): List<Type> = map { it.toType(base, bindings, context, preserveTypeVariables, getThisType) }

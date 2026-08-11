@@ -407,6 +407,7 @@ typeArgumentList ::= '<' type (',' type)* ','? '>' {
 type ::= unknownType
   | nothingType
   | moduleType
+  | thisType
   | stringLiteralType
   | declaredType
   | functionType // must come before parenthesizedType
@@ -429,6 +430,8 @@ unknownType ::= unknown
 nothingType ::= nothing
 
 moduleType ::= 'module' { mixin = "PklModuleTypeBase" }
+
+thisType ::= this
 
 stringLiteralType ::= stringConstant
 

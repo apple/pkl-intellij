@@ -749,6 +749,7 @@ fun Appendable.renderType(
     is PklStringLiteralType -> append(type.stringConstant.text)
     is PklNothingType -> append("nothing")
     is PklModuleType -> append("module")
+    is PklThisType -> append("this")
     is PklUnknownType -> append("unknown")
     else -> throw AssertionError("Unknown type: ${type::class}")
   }
