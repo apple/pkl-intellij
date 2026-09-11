@@ -1,5 +1,5 @@
 /**
- * Copyright © 2024 Apple Inc. and the Pkl project authors. All rights reserved.
+ * Copyright © 2024-2026 Apple Inc. and the Pkl project authors. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,7 +24,6 @@ import java.nio.charset.StandardCharsets
 import java.nio.file.Path
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
-import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.json.Json
 import org.pkl.intellij.packages.Dependency
 import org.pkl.intellij.packages.LocalProjectDependency
@@ -102,7 +101,10 @@ data class PklProject(val metadata: DerivedProjectMetadata, val projectDeps: Pro
 
   private val projectDir: Path by lazy { projectFile.parent }
 
-  val projectDirVirtualFile: VirtualFile? by lazy { localFs.findFileByNioFile(projectDir) }
+  // Don't cache this (no `by lazy {}`) because the underlying file can be refreshed/recreated
+  // (e.g. deleted then created again).
+  val projectDirVirtualFile: VirtualFile?
+    get() = localFs.findFileByNioFile(projectDir)
 
   private val localFs: LocalFileSystem = LocalFileSystem.getInstance()
 
