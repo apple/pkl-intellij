@@ -86,10 +86,9 @@ class PklReferenceQualifiedAccessProxy(
     bindings: TypeParameterBindings,
     context: PklProject?
   ): Type =
-    project.pklRefModule!!.referenceType.withTypeArguments(
-      domain,
-      referent.toType(base, bindings, context)
-    )
+    project.pklRefModule!!
+      .referenceType
+      .withTypeArguments(domain, referent.toType(base, bindings, context))
 
   override val docComment: PklDocComment? = classProperties.firstOrNull()?.docComment
 
