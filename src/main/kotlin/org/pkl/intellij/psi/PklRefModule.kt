@@ -21,6 +21,11 @@ import com.intellij.psi.util.CachedValueProvider
 import com.intellij.psi.util.CachedValuesManager
 import org.pkl.intellij.type.Type
 
+/**
+ * The `pkl:ref` module.
+ *
+ * `null` if less than Pkl 0.32
+ */
 val Project.pklRefModule: PklRefModule?
   get() =
     CachedValuesManager.getManager(this).getCachedValue(this) {

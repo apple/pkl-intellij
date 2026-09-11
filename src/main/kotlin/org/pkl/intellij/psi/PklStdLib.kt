@@ -50,7 +50,8 @@ class PklStdLib(val modules: List<PklStdLibModule>) {
 
   val projectModule: PklStdLibModule = modulesByShortName.getValue("Project")
 
-  val refModule: PklStdLibModule? = modulesByShortName.get("ref")
+  // introduced in Pkl 0.32
+  val refModule: PklStdLibModule? = modulesByShortName["ref"]
 
   fun getModuleByName(shortName: String): PklStdLibModule? = modulesByName[shortName]
 
