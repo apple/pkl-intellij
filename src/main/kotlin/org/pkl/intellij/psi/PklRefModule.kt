@@ -21,33 +21,34 @@ import com.intellij.psi.util.CachedValueProvider
 import com.intellij.psi.util.CachedValuesManager
 import org.pkl.intellij.type.Type
 
-val Project.pklRefModule: PklRefModule
+val Project.pklRefModule: PklRefModule?
   get() =
     CachedValuesManager.getManager(this).getCachedValue(this) {
-      val stdLib = pklStdLib
-      CachedValueProvider.Result.create(
-        PklRefModule(stdLib),
-        // Invalidate [PklProjectModule] on any change to [rootManager], i.e., any change to a
-        // project root.
-        // (Is there a better way to track class roots affecting pkl.base?)
-        // Additionally, track changes to the [projectModule] PSI (not sure if this makes a
-        // difference).
-        ProjectRootManager.getInstance(this),
-        stdLib.refModule?.psi
-      )
+      val stdLibModule = pklStdLib.refModule
+      when {
+        stdLibModule == null -> CachedValueProvider.Result.create(null)
+        else -> {
+          // Invalidate [PklRefModule] on any change to [rootManager], i.e., any change to a
+          // project root.
+          val dependencies = listOfNotNull(ProjectRootManager.getInstance(this), stdLibModule.psi)
+          CachedValueProvider.Result.create(
+            PklRefModule(stdLibModule),
+            *dependencies.toTypedArray()
+          )
+        }
+      }
     }
 
-class PklRefModule(stdLib: PklStdLib) {
-  val psi: PklModule? = stdLib.refModule?.psi
+class PklRefModule(refModule: PklStdLibModule) {
+  val psi: PklModule = refModule.psi
 
   val types: Map<String, Type> = buildMap {
-    for (member in psi?.members ?: emptySequence()) {
+    for (member in psi.members) {
       if (member is PklClass) {
         put(member.name!!, Type.Class.create(member))
       }
     }
   }
 
-  // Will be `null` for versions < 0.32
-  val referenceType: Type.Reference? by lazy { types["Reference"] as? Type.Reference }
+  val referenceType: Type.Reference by lazy { types["Reference"] as Type.Reference }
 }

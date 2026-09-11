@@ -195,7 +195,7 @@ class PklBaseModule(private val stdLib: PklStdLib) {
     val types =
       mutableListOf(stringType, collectionType, mapType, listingType, mappingType, dynamicType)
     bytesType?.let(types::add)
-    project.pklRefModule.referenceType?.let(types::add)
+    project.pklRefModule?.referenceType?.let(types::add)
     Type.union(types, this, null)
   }
 

@@ -46,7 +46,7 @@ class PklReferenceQualifiedAccessProxy(
   // `referenceType` guaranteed to exist; PklReferenceQualifiedAccessProxy is only created when
   // pkl:ref is available.
   val type =
-    DeclaredType(project.pklRefModule.referenceType!!, listOf(DeclaredType(domain), referent))
+    DeclaredType(project.pklRefModule!!.referenceType, listOf(DeclaredType(domain), referent))
 
   override fun <R> accept(visitor: PklVisitor<R>): R? = null
 
@@ -86,7 +86,7 @@ class PklReferenceQualifiedAccessProxy(
     bindings: TypeParameterBindings,
     context: PklProject?
   ): Type =
-    project.pklRefModule.referenceType!!.withTypeArguments(
+    project.pklRefModule!!.referenceType.withTypeArguments(
       domain,
       referent.toType(base, bindings, context)
     )
