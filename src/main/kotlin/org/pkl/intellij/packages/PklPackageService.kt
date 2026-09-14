@@ -47,6 +47,8 @@ import org.pkl.intellij.stubs.PklModuleUriIndex
 import org.pkl.intellij.toolchain.pklCli
 import org.pkl.intellij.util.noCacheResult
 import org.pkl.intellij.util.pklCacheDir
+import org.pkl.intellij.util.pklCacheDirPath
+import org.pkl.intellij.util.refreshCacheDir
 
 val Project.pklPackageService: PklPackageService
   get() = service()
@@ -183,7 +185,9 @@ class PklPackageService(val project: Project) : Disposable, UserDataHolderBase()
     return CompletableFuture<Unit>().apply {
       runBackgroundableTask("Download packages") {
         try {
-          project.pklCli.downloadPackage(packages)
+          val cacheDir = pklCacheDirPath()
+          project.pklCli.downloadPackage(packages, cacheDir = cacheDir)
+          cacheDir?.let(::refreshCacheDir)
           complete(Unit)
         } catch (e: Throwable) {
           completeExceptionally(e)
@@ -196,7 +200,9 @@ class PklPackageService(val project: Project) : Disposable, UserDataHolderBase()
     return CompletableFuture<Unit>().apply {
       runBackgroundableTask("download $packageUri") {
         try {
-          project.pklCli.downloadPackage(listOf(packageUri))
+          val cacheDir = pklCacheDirPath()
+          project.pklCli.downloadPackage(listOf(packageUri), cacheDir = cacheDir)
+          cacheDir?.let(::refreshCacheDir)
           complete(Unit)
         } catch (e: Throwable) {
           completeExceptionally(e)

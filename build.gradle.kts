@@ -188,9 +188,11 @@ val configurePklCliExecutable = tasks.register("configurePklCliExecutable") {
 
 tasks.test {
   dependsOn(configurePklCliExecutable)
-  systemProperties["pklExecutable"] = pklCli.singleFile.absolutePath
-  System.getProperty("testReportsDir")?.let { reportsDir ->
-    reports.junitXml.outputLocation.set(file(reportsDir).resolve(project.name).resolve(name))
+  val pklCacheDir = layout.buildDirectory.dir("pklTestCache").get()
+  systemProperties["org.pkl.intellij.pklExecutable"] = pklCli.singleFile.absolutePath
+  systemProperties["org.pkl.intellij.pklCacheDir"] = pklCacheDir.asFile.absolutePath
+  doFirst {
+    pklCacheDir.asFile.deleteRecursively()
   }
 }
 

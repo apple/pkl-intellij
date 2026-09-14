@@ -42,7 +42,8 @@ import org.pkl.intellij.packages.dto.PklProject.Companion.DerivedProjectMetadata
 import org.pkl.intellij.settings.pklSettings
 import org.pkl.intellij.toolchain.PklEvalException
 import org.pkl.intellij.toolchain.pklCli
-import org.pkl.intellij.util.pklCacheDir
+import org.pkl.intellij.util.pklCacheDirPath
+import org.pkl.intellij.util.refreshCacheDir
 
 val Project.pklProjectService: PklProjectService
   get() = service()
@@ -158,7 +159,7 @@ class PklProjectService(private val project: Project) :
           val resolvedDeps = resolvedDepsPath?.let { PklProject.loadProjectDeps(it) }
           val pklProject = PklProject(metadata, resolvedDeps)
           pklProjects[key] = pklProject
-          pklCacheDir?.let { cacheDir -> doDownloadDependencies(pklProject, cacheDir.toNioPath()) }
+          pklCacheDirPath()?.let { cacheDir -> doDownloadDependencies(pklProject, cacheDir) }
         } catch (e: PklEvalException) {
           pklProjectErrors[key] = e
         }
@@ -190,6 +191,7 @@ class PklProjectService(private val project: Project) :
       // All transitive dependencies are already declared in PklProject.deps.json
       noTrasitive = true
     )
+    refreshCacheDir(cacheDir)
   }
 
   fun downloadDependencies(pklProject: PklProject, cacheDir: Path) {
