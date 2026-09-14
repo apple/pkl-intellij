@@ -1,5 +1,27 @@
 = Changelog
 
+[[release-0.37.1]]
+== 0.37.1 (2026-09-14)
+
+=== Fixes
+
+* Fix and issue where read-only project dirs are sync'd (https://github.com/apple/pkl-intellij/pull/254[#177]).
+* Fix create file action (https://github.com/apple/pkl-intellij/pull/252[#252]).
+* Fix thrown `NullPointerException` in PklBreadcrumbsProvider (https://github.com/apple/pkl-intellij/pull/253[#253]).
+* Fix thrown `Throwable` when the loaded stdlib is less than 0.32 (https://github.com/apple/pkl-intellij/pull/254[#254]).
+* Fix thrown `com.intellij.openapi.diagnostic.UnhandledException` (https://github.com/apple/pkl-intellij/pull/256[#256]).
+
+=== Aditions
+
+* Add support for resolving `this` and `module` keywords in member links (https://github.com/apple/pkl-intellij/pull/246[#246]).
+
+=== Contributors ❤️
+
+We would like to thank the contributors to this release (in alphabetical order):
+
+* https://github.com/bioball[@bioball]
+* https://github.com/danteay[@danteay]
+
 [[release-0.37.0]]
 == 0.37.0 (2026-07-08)
 

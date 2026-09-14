@@ -21,6 +21,15 @@
     ]]></description>
   <!-- language=html -->
   <change-notes><![CDATA[
+    <b>0.37.1</b>
+    <ul>
+      <li>Fix and issue where read-only project dirs are sync'd</li>
+      <li>Fix create file action</li>
+      <li>Fix thrown NullPointerException in PklBreadcrumbsProvider</li>
+      <li>Fix thrown `Throwable` when the loaded stdlib is less than 0.32</li>
+      <li>Fix thrown `com.intellij.openapi.diagnostic.UnhandledException`</li>
+      <li>Add support for resolving `this` and `module` keywords in member links</li>
+    </ul>
     <b>0.37.0</b>
     <ul>
       <li>Add support for nested path creation when creating new Pkl files</li>
