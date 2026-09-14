@@ -57,7 +57,7 @@ sourceSets {
   }
 }
 
-val pklCli: Configuration by configurations.creating
+val pklCli: Configuration = configurations.create("pklCli")
 
 dependencies {
   // put stdlib ZIP on plugin class path instead of exploding it into plugin JAR
@@ -142,7 +142,7 @@ tasks.runIde {
   )
 }
 
-val generateLexer by tasks.existing(GenerateLexerTask::class) {
+val generateLexer = tasks.getByName<GenerateLexerTask>("generateLexer") {
   val inputFile = "src/main/grammar/pkl.flex"
   val outputDir = "generated/org/pkl/intellij/lexer"
 
@@ -154,7 +154,7 @@ val generateLexer by tasks.existing(GenerateLexerTask::class) {
   purgeOldFiles.set(true)
 }
 
-val generateParser by tasks.existing(GenerateParserTask::class) {
+val generateParser = tasks.getByName<GenerateParserTask>("generateParser") {
   val inputFile = "src/main/grammar/pkl.bnf"
   val outputDir = "generated/org/pkl/intellij/parser"
 
@@ -180,7 +180,7 @@ tasks.compileKotlin {
   dependsOn(generateLexer, generateParser)
 }
 
-val configurePklCliExecutable by tasks.registering {
+val configurePklCliExecutable = tasks.register("configurePklCliExecutable") {
   doLast {
     pklCli.singleFile.setExecutable(true)
   }
@@ -258,7 +258,7 @@ publishing {
   }
 }
 
-val printVersion by tasks.registering {
+val printVersion = tasks.register("printVersion") {
   doFirst { println(version) }
 }
 
