@@ -1,5 +1,5 @@
 /**
- * Copyright © 2024 Apple Inc. and the Pkl project authors. All rights reserved.
+ * Copyright © 2024-2026 Apple Inc. and the Pkl project authors. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -41,7 +41,9 @@ abstract class PklTestCase : CodeInsightFixtureTestCase<ModuleFixtureBuilder<*>>
       projectDir.toNioPath().apply { parent.createDirectories() },
       followLinks = false
     )
-    System.getProperty("pklExecutable")?.let { project.pklSettings.state.pklPath = it }
+    System.getProperty("org.pkl.intellij.pklExecutable")?.let {
+      project.pklSettings.state.pklPath = it
+    }
   }
 
   override fun getTestRootDisposable(): Disposable {

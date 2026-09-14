@@ -28,6 +28,7 @@ import com.intellij.openapi.project.Project
 import com.intellij.openapi.roots.OrderEnumerator
 import com.intellij.openapi.util.ModificationTracker
 import com.intellij.openapi.util.text.StringUtil
+import com.intellij.openapi.vfs.LocalFileSystem
 import com.intellij.openapi.vfs.VfsUtil
 import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.psi.PsiDocumentManager
@@ -40,6 +41,7 @@ import java.io.OutputStream
 import java.math.BigInteger
 import java.net.URI
 import java.net.URISyntaxException
+import java.nio.file.Path
 import java.util.*
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.CompletionException
@@ -83,8 +85,37 @@ private const val IMPLICIT_BIT: Long = SIGNIFICAND_MASK + 1
 val pklDir: VirtualFile?
   get() = VfsUtil.getUserHomeDir()?.findChild(".pkl")
 
+/**
+ * Overrides the location of [pklCacheDir]. Used by tests to point at an isolated, per-run cache
+ * directory instead of the real `~/.pkl/cache`.
+ */
+val pklCacheDirOverride: String?
+  get() = System.getProperty("org.pkl.intellij.pklCacheDir")
+
 val pklCacheDir: VirtualFile?
-  get() = pklDir?.findChild("cache")
+  get() =
+    pklCacheDirOverride?.let { LocalFileSystem.getInstance().refreshAndFindFileByPath(it) }
+      ?: pklDir?.findChild("cache")
+
+/**
+ * The on-disk location of [pklCacheDir], regardless of whether it currently exists.
+ *
+ * Unlike [pklCacheDir], this does not depend on the directory already having been discovered by the
+ * VFS, so it is safe to use as the target of a fresh `pkl download-package` invocation.
+ */
+fun pklCacheDirPath(): Path? =
+  pklCacheDirOverride?.let(Path::of)
+    ?: VfsUtil.getUserHomeDir()?.toNioPath()?.resolve(".pkl")?.resolve("cache")
+
+/**
+ * Forces the VFS to pick up files written to [path] by an external process (e.g. the `pkl` CLI),
+ * since such writes bypass the VFS entirely and are otherwise not observed until some later,
+ * unrelated refresh occurs.
+ */
+fun refreshCacheDir(path: Path) {
+  val dir = LocalFileSystem.getInstance().refreshAndFindFileByNioFile(path) ?: return
+  VfsUtil.markDirtyAndRefresh(false, true, true, dir)
+}
 
 interface CacheDir {
   val file: VirtualFile

@@ -30,10 +30,7 @@ jobs:
         distribution: temurin
         cache: gradle
     - name: Run tests
-      run: |-
-        # revert GHA's default `set -e` to prevent process exit from the first failure
-        set +e
-        ./gradlew check || ./gradlew check
+      run: ./gradlew check
     - name: Upload test report HTML
       if: '!cancelled()'
       uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4 # v5
