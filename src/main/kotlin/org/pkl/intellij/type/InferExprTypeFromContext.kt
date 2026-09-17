@@ -193,7 +193,8 @@ private fun PklExpr?.doInferExprTypeFromContext(
             ResolveVisitors.paramTypesOfFirstMethodNamed(
               accessExpr.memberNameText,
               base,
-              resolveTypeParamsInParamTypes
+              accessExpr.typeArgumentList,
+              resolveTypeParamsInParamTypes,
             )
           val paramTypes = accessExpr.resolve(base, null, bindings, visitor, context)
           if (paramTypes.isNullOrEmpty()) return Type.Unknown

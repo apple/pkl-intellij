@@ -79,6 +79,7 @@ object ResolveVisitors {
   fun paramTypesOfFirstMethodNamed(
     expectedName: String,
     base: PklBaseModule,
+    typeArgumentList: PklTypeArgumentList?,
     resolveTypeParamsInParamTypes: Boolean = true
   ): ResolveVisitor<List<Type>?> =
     object : ResolveVisitor<List<Type>?> {
@@ -93,7 +94,15 @@ object ResolveVisitors {
         when (element) {
           is PklMethod -> {
             val parameters = element.parameterList?.elements ?: return false
-            val effectiveBindings = if (resolveTypeParamsInParamTypes) bindings else mapOf()
+            val effectiveBindings =
+              if (resolveTypeParamsInParamTypes)
+                bindings.enhanceFromTypeArguments(
+                  base,
+                  context,
+                  typeArgumentList,
+                  element.typeParameterList
+                )
+              else mapOf()
             result =
               parameters.map {
                 it.type.toType(base, effectiveBindings, context, !resolveTypeParamsInParamTypes)
@@ -113,6 +122,7 @@ object ResolveVisitors {
 
   fun typeOfFirstElementNamed(
     elementName: String,
+    typeArgumentList: PklTypeArgumentList?,
     argumentList: PklArgumentList?,
     base: PklBaseModule,
     isNullSafeAccess: Boolean,
@@ -262,6 +272,7 @@ object ResolveVisitors {
             }
           }
           base.anyGetClassMethod -> {
+            // TODO remove after `this` type fully implemented
             base.classType.withTypeArguments(
               receiverType.toClassType(base, context) ?: receiverType
             )
@@ -269,24 +280,33 @@ object ResolveVisitors {
           else -> {
             val typeParameterList = method.typeParameterList
             val allBindings =
-              if (typeParameterList == null || typeParameterList.elements.isEmpty()) {
-                bindings
-              } else {
-                // try to infer method type parameters from method arguments
-                val parameters = method.parameterList?.elements
-                val arguments = argumentList?.elements
-                if (parameters == null || arguments == null) bindings
-                else {
-                  val enhancedBindings = bindings.toMutableMap()
-                  val parameterTypes =
-                    parameters.map {
-                      it.type?.toType(base, bindings, context, true) ?: Type.Unknown
+              when {
+                typeParameterList == null || typeParameterList.elements.isEmpty() -> bindings
+                typeArgumentList != null ->
+                  bindings.enhanceFromTypeArguments(
+                    base,
+                    context,
+                    typeArgumentList,
+                    typeParameterList
+                  )
+                else -> {
+                  // try to infer method type parameters from method arguments
+                  val parameters = method.parameterList?.elements
+                  val arguments = argumentList?.elements
+                  if (parameters == null || arguments == null) bindings
+                  else {
+                    val enhancedBindings = bindings.toMutableMap()
+                    val parameterTypes =
+                      parameters.map {
+                        it.type?.toType(base, bindings, context, true) ?: Type.Unknown
+                      }
+                    val argumentTypes =
+                      arguments.map { it.computeExprType(base, bindings, context) }
+                    for (i in 0 until min(parameterTypes.size, argumentTypes.size)) {
+                      inferBindings(parameterTypes[i], argumentTypes, i, enhancedBindings, context)
                     }
-                  val argumentTypes = arguments.map { it.computeExprType(base, bindings, context) }
-                  for (i in 0 until min(parameterTypes.size, argumentTypes.size)) {
-                    inferBindings(parameterTypes[i], argumentTypes, i, enhancedBindings, context)
+                    enhancedBindings
                   }
-                  enhancedBindings
                 }
               }
             method.computeResolvedImportType(
@@ -469,7 +489,7 @@ object ResolveVisitors {
             }
           }
           is PklNavigableElement -> {
-            var lookupElement =
+            val lookupElement =
               LookupElementBuilder.createWithIcon(element)
                 .bold()
                 .withTypeText(element.getLookupElementType(base, bindings, context).render(), true)
@@ -487,11 +507,27 @@ object ResolveVisitors {
                     true,
                     true
                   )
-                lookupElement =
+                result.add(
                   lookupElement.withTailText(parameterList, true).withInsertHandler(insertHandler)
+                )
+                if (element.typeParameterList?.elements?.isNotEmpty() ?: false) {
+                  val suffix = buildString {
+                    append("::")
+                    renderTypeParameterList(element.typeParameterList)
+                    append(parameterList)
+                  }
+                  result.add(
+                    lookupElement.withTailText(suffix, true).withInsertHandler { context, element ->
+                      val editor = context.editor
+                      val document = editor.document
+                      document.insertString(context.tailOffset, "::<>()")
+                      editor.caretModel.moveToOffset(context.tailOffset - 3)
+                    }
+                  )
+                }
               }
+              else -> result.add(lookupElement)
             }
-            result.add(lookupElement)
           }
           is PklExpr -> {}
           else -> unexpectedType(element)

@@ -233,6 +233,7 @@ class PklDocumentationProvider : AbstractDocumentationProvider() {
             ResolveVisitors.typeOfFirstElementNamed(
               name,
               null,
+              null,
               element.project.pklBaseModule,
               isNullSafeAccess = false,
               preserveUnboundTypeVars = false,
