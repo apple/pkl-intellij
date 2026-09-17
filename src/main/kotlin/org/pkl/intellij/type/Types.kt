@@ -1480,6 +1480,24 @@ sealed class Type(val constraints: List<ConstraintExpr> = listOf()) {
 
 typealias TypeParameterBindings = Map<PklTypeParameter, Type>
 
+fun TypeParameterBindings.enhanceFromTypeArguments(
+  base: PklBaseModule,
+  context: PklProject?,
+  typeArgumentList: PklTypeArgumentList?,
+  typeParameterList: PklTypeParameterList?,
+): TypeParameterBindings =
+  when {
+    typeArgumentList == null || typeParameterList == null -> this
+    else -> {
+      val enhancedBindings = toMutableMap()
+      for (i in 0 until typeParameterList.elements.size) {
+        enhancedBindings[typeParameterList.elements[i]] =
+          typeArgumentList.elements[i].toType(base, this, context, true)
+      }
+      enhancedBindings
+    }
+  }
+
 private val constraintExprProvider:
   ParameterizedCachedValueProvider<List<ConstraintExpr>, Pair<PklConstrainedType, PklProject?>> =
   ParameterizedCachedValueProvider { (elem, context) ->
@@ -1496,7 +1514,7 @@ private val constraintExprProvider:
 
 fun PklType?.toType(
   base: PklBaseModule,
-  bindings: Map<PklTypeParameter, Type>,
+  bindings: TypeParameterBindings,
   context: PklProject?,
   preserveUnboundTypeVars: Boolean = false,
   receiverType: Type? = null,
@@ -1598,7 +1616,7 @@ fun PklType?.toType(
 
 fun List<PklType>.toTypes(
   base: PklBaseModule,
-  bindings: Map<PklTypeParameter, Type>,
+  bindings: TypeParameterBindings,
   preserveTypeVariables: Boolean = false,
   context: PklProject?,
   receiverType: Type?,

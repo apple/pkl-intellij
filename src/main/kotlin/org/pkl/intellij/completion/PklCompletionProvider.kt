@@ -23,7 +23,6 @@ abstract class PklCompletionProvider : CompletionProvider<CompletionParameters>(
   companion object {
     @JvmStatic
     protected val TYPE_KEYWORD_LOOKUP_ELEMENTS =
-      // omit `in` and `out` because user-defined generic types aren't supported
       listOf("module", "nothing", "unknown").map { LookupElementBuilder.create(it).bold() }
     @JvmStatic
     protected val EXPRESSION_LEVEL_KEYWORD_LOOKUP_ELEMENTS =

@@ -26,6 +26,8 @@ interface PklAccessExpr : PklElement {
   val memberNameText: String
     get() = memberName.identifierName
 
+  val typeArgumentList: PklTypeArgumentList?
+
   val argumentList: PklArgumentList?
 
   /**

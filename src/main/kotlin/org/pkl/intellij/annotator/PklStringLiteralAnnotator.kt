@@ -56,6 +56,7 @@ class PklStringLiteralAnnotator : PklAnnotator() {
               ResolveVisitors.typeOfFirstElementNamed(
                 expr.memberName.identifier.text,
                 null,
+                null,
                 base,
                 expr.isNullSafeAccess,
                 false,
