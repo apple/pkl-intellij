@@ -60,6 +60,7 @@ fun PsiElement?.computeResolvedImportType(
                   ResolveVisitors.typeOfFirstElementNamed(
                     name,
                     null,
+                    null,
                     base,
                     false,
                     preserveUnboundTypeVars,
@@ -84,6 +85,7 @@ fun PsiElement?.computeResolvedImportType(
         val visitor =
           ResolveVisitors.typeOfFirstElementNamed(
             "this",
+            null,
             null,
             base,
             isNullSafeAccess = false,

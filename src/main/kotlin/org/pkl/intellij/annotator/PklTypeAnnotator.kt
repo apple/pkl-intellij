@@ -19,13 +19,10 @@ import com.intellij.lang.annotation.AnnotationHolder
 import com.intellij.lang.annotation.HighlightSeverity
 import com.intellij.psi.PsiElement
 import org.pkl.intellij.intention.PklRemoveDefaultTypeQuickFix
-import org.pkl.intellij.packages.dto.PklProject
-import org.pkl.intellij.psi.PklBaseModule
 import org.pkl.intellij.psi.PklDeclaredType
 import org.pkl.intellij.psi.PklDefaultType
 import org.pkl.intellij.psi.PklType
 import org.pkl.intellij.psi.PklUnionType
-import org.pkl.intellij.psi.enclosingModule
 import org.pkl.intellij.psi.pklBaseModule
 import org.pkl.intellij.type.Type
 import org.pkl.intellij.type.toType
@@ -49,7 +46,6 @@ class PklTypeAnnotator : PklAnnotator() {
     if (type.typeArgumentList?.elements.isNullOrEmpty()) return
     val module = holder.currentModule ?: return
     val base = module.project.pklBaseModule
-    val context = type.enclosingModule?.pklProject
     val referent = type.toType(base, emptyMap(), module.pklProject)
 
     val argCount = type.typeArgumentList!!.elements.size
@@ -70,31 +66,7 @@ class PklTypeAnnotator : PklAnnotator() {
       )
       return
     }
-
-    val unaliased = referent.unaliased(base, context)
-    if (unaliased is Type.Reference && referent.containsConstrainedType(base, context)) {
-      createAnnotation(
-        HighlightSeverity.ERROR,
-        type.textRange,
-        "Reference type annotations may not contain type constraints.",
-        "<code>pkl.ref#Reference</code> type annotations may not contain type constraints.",
-        holder
-      )
-    }
   }
-
-  private fun Type.containsConstrainedType(base: PklBaseModule, context: PklProject?): Boolean =
-    !constraints.isEmpty() ||
-      when (this) {
-        is Type.Class -> typeArguments.any { it.containsConstrainedType(base, context) }
-        is Type.Alias ->
-          typeArguments.any { it.containsConstrainedType(base, context) } ||
-            aliasedType(base, context).containsConstrainedType(base, context)
-        is Type.Union ->
-          leftType.containsConstrainedType(base, context) ||
-            rightType.containsConstrainedType(base, context)
-        else -> false
-      }
 
   private fun validateDefaultType(type: PklDefaultType, holder: AnnotationHolder) {
     if (type.parent !is PklUnionType) {
