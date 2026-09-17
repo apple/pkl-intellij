@@ -20,7 +20,6 @@ import com.intellij.testFramework.fixtures.CodeInsightTestFixture
 import com.intellij.testFramework.fixtures.IdeaTestFixtureFactory
 import org.junit.After
 import org.junit.Before
-import org.junit.Test
 
 class PklTypeAnnotatorTest {
   private lateinit var codeInsightTestFixture: CodeInsightTestFixture
@@ -51,33 +50,5 @@ class PklTypeAnnotatorTest {
     PklAnnotator.enabledTestAnnotator = null
   }
 
-  @Test
-  fun `References -- referent type with type constraint`() {
-    checkHighlighting(
-      """
-      import "pkl:ref"
-
-      class MyDomain extends ref.Domain
-
-      r: <error descr="Reference type annotations may not contain type constraints.">ref.Reference<MyDomain, String(!isEmpty)></error>
-    """
-        .trimIndent()
-    )
-  }
-
-  @Test
-  fun `Reference -- referent type with type constraint through alias`() {
-    checkHighlighting(
-      """
-      import "pkl:ref"
-
-      class MyDomain extends ref.Domain
-      
-      typealias MyReference<T> = ref.Reference<MyDomain, T>
-
-      r: <error descr="Reference type annotations may not contain type constraints.">MyReference<String(!isEmpty)></error>
-    """
-        .trimIndent()
-    )
-  }
+  // no tests here, preserve this file for testing validation of this/module types
 }

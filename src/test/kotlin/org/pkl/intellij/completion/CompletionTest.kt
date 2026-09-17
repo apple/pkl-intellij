@@ -16,6 +16,7 @@
 package org.pkl.intellij.completion
 
 import com.intellij.codeInsight.lookup.Lookup
+import com.intellij.codeInsight.lookup.LookupElement
 import com.intellij.codeInsight.lookup.LookupElementPresentation
 import com.intellij.codeInsight.lookup.LookupManager
 import com.intellij.codeInsight.lookup.impl.LookupImpl
@@ -284,6 +285,33 @@ class CompletionTest : PklTestCase() {
     )
     myFixture.completeBasic()
     assertThat(myFixture.editor.document.text).contains("function greet(name: String): String")
+  }
+
+  fun `test complete options offer arg-less and arg'd method calls`() {
+    myFixture.configureByText(
+      PklFileType,
+      """
+        function x<T>(y: T): String = y.toString()
+        
+        res = x<caret>
+        """
+        .trimIndent()
+    )
+    val completions = myFixture.completeBasic()
+    assertThat(completions).hasSize(2)
+    assertThat(completions[0].plainString()).isEqualTo("x(T): String")
+    assertThat(completions[1].plainString()).isEqualTo("x::<T>(T): String")
+  }
+
+  fun LookupElement.plainString(): String = buildString {
+    val p = LookupElementPresentation()
+    renderElement(p)
+    p.itemText?.let { append(it) }
+    p.tailText?.let { append(it) }
+    p.typeText?.let {
+      append(": ")
+      append(it)
+    }
   }
 
   override val fixtureDir: Path?
