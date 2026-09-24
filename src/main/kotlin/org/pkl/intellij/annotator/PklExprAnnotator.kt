@@ -48,11 +48,7 @@ class PklExprAnnotator : PklAnnotator() {
         override fun visitUnqualifiedAccessExpr(element: PklUnqualifiedAccessExpr) {
           // don't resolve imports because whether import resolves is a separate issue/check
           val visitor =
-            ResolveVisitors.firstElementNamed(
-              element.memberNameText,
-              base,
-              resolveImports = false,
-            )
+            ResolveVisitors.firstElementNamed(element.memberNameText, base, resolveImports = false)
           // resolving unqualified access may not require `this` type so don't compute/pass it
           // upfront
           val (target, lookupMode) =
@@ -77,6 +73,7 @@ class PklExprAnnotator : PklAnnotator() {
             is PklMethod -> {
               checkConstAccess(element, target, holder, lookupMode)
               checkArgumentCount(element, target, base, holder)
+              checkTypeArgumentCount(element, target, base, holder)
             }
             is PklProperty -> {
               checkConstAccess(element, target, holder, lookupMode)
@@ -102,11 +99,7 @@ class PklExprAnnotator : PklAnnotator() {
             return // don't flag
           }
 
-          val visitor =
-            ResolveVisitors.firstElementNamed(
-              element.memberNameText,
-              base,
-            )
+          val visitor = ResolveVisitors.firstElementNamed(element.memberNameText, base)
           when (val target = element.resolve(base, receiverType, mapOf(), visitor, context)) {
             null -> {
               reportUnresolvedAccess(element, receiverType, base, holder, context)
@@ -114,6 +107,7 @@ class PklExprAnnotator : PklAnnotator() {
             is PklMethod -> {
               checkConstQualifiedAccess(element, target, holder)
               checkArgumentCount(element, target, base, holder)
+              checkTypeArgumentCount(element, target, base, holder)
               when (receiverType) {
                 base.listType -> {
                   when {
@@ -200,11 +194,7 @@ class PklExprAnnotator : PklAnnotator() {
           )
             return // don't flag
 
-          val visitor =
-            ResolveVisitors.firstElementNamed(
-              element.memberNameText,
-              base,
-            )
+          val visitor = ResolveVisitors.firstElementNamed(element.memberNameText, base)
           val target = element.resolve(base, thisType, mapOf(), visitor, context)
           if (target == null) reportUnresolvedAccess(element, thisType, base, holder, context)
           when (target) {
@@ -558,11 +548,7 @@ class PklExprAnnotator : PklAnnotator() {
     if (expr !is PklQualifiedAccessExpr) return
 
     val methodName = expr.memberNameText
-    val visitor =
-      ResolveVisitors.firstElementNamed(
-        methodName,
-        base,
-      )
+    val visitor = ResolveVisitors.firstElementNamed(methodName, base)
     val target = expr.resolve(base, null, mapOf(), visitor, context)
     if (target == conversionMethod) {
       val annotation =
@@ -574,6 +560,65 @@ class PklExprAnnotator : PklAnnotator() {
         annotation.withFix(PklRedundantConversionQuickFix(expr, methodName))
       }
       annotation.create()
+    }
+  }
+
+  private fun checkTypeArgumentCount(
+    expr: PklAccessExpr,
+    method: PklMethod,
+    base: PklBaseModule,
+    holder: AnnotationHolder,
+  ) {
+    val typeArgList = expr.typeArgumentList ?: return
+    val typeArgs = typeArgList.elements
+    val typeArgCount = typeArgs.size
+    val typeParamList = method.typeParameterList
+    val typeParams = typeParamList?.elements ?: emptyList()
+    val typeParamCount = typeParams.size
+    when {
+      typeArgCount < typeParamCount -> {
+        val closingParen = typeArgList.lastChildOfType(PklElementTypes.GT) ?: return
+
+        for (idx in typeArgCount until typeParamCount) {
+          val message = buildString {
+            append("Missing type argument for ")
+            append(typeParams[idx].identifier.text)
+          }
+          val htmlMessage = buildString {
+            append("Missing type argument for ")
+            code { append(typeParams[idx].identifier.text) }
+          }
+
+          holder
+            .newAnnotation(HighlightSeverity.ERROR, message)
+            .range(closingParen.textRange)
+            .tooltip(htmlMessage)
+            .create()
+        }
+      }
+      typeArgCount > typeParamCount -> {
+        if (method.isVarArgs(base)) return
+
+        val message = buildString {
+          append("Too many type arguments for method ")
+          append(method.name)
+          typeParamList?.let { renderTypeParameterList(it) }
+          renderParameterList(method.parameterList, mapOf())
+        }
+        val htmlMessage = buildString {
+          append("Too many type arguments for method ")
+          code {
+            append(method.name)
+            typeParamList?.let { escapeXml { renderTypeParameterList(it) } }
+            renderParameterList(method.parameterList, mapOf())
+          }
+        }
+        holder
+          .newAnnotation(HighlightSeverity.ERROR, message)
+          .range(typeArgList.elements[typeParamCount].textRange)
+          .tooltip(htmlMessage)
+          .create()
+      }
     }
   }
 
@@ -621,9 +666,8 @@ class PklExprAnnotator : PklAnnotator() {
           renderParameterList(method.parameterList, mapOf())
         }
         val htmlMessage = buildString {
-          append("Too many arguments for ")
+          append("Too many arguments for method ")
           code {
-            append("method ")
             append(method.name)
             renderParameterList(method.parameterList, mapOf())
           }

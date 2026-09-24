@@ -431,7 +431,7 @@ fun PklAccessExpr.inferReceiverType(
   context: PklProject?,
 ): Type? =
   when (this) {
-    is PklQualifiedAccessExpr -> computeExprType(base, bindings, context)
+    is PklQualifiedAccessExpr -> receiverExpr.computeExprType(base, bindings, context)
     is PklSuperAccessExprBase -> computeThisType(base, bindings, context)
     is PklUnqualifiedAccessExprBase -> {
       val visitor = ResolveVisitors.firstElementNamed(memberNameText, base, resolveImports = false)
