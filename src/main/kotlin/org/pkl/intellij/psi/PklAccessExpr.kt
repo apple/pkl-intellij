@@ -57,6 +57,6 @@ interface PklAccessExpr : PklElement {
     receiverType: Type?,
     bindings: TypeParameterBindings,
     visitor: ResolveVisitor<R>,
-    context: PklProject?
+    context: PklProject?,
   ): R
 }

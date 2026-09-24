@@ -62,7 +62,7 @@ class PklTypeAnnotator : PklAnnotator() {
         "Type argument count mismatch. Required: 0 or $paramCount Found: $argCount",
         "Type argument count mismatch.<table><tr><td>Required:</td><td>0 or $paramCount</td></tr>" +
           "<tr><td align=\"right\">Found:</td><td>$argCount</td></tr></table>",
-        holder
+        holder,
       )
       return
     }

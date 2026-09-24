@@ -41,14 +41,13 @@ class PklDocumentationProvider : AbstractDocumentationProvider() {
     editor: Editor,
     file: PsiFile,
     contextElement: PsiElement?,
-    targetOffset: Int
+    targetOffset: Int,
   ): PsiElement? {
     val qualifiedAccessName =
       contextElement?.parentOfTypes(
         PklQualifiedAccessNameBase::class, /* stop class */
-        PklObjectBody::class
-      ) as? PklQualifiedAccessNameBase
-        ?: return null
+        PklObjectBody::class,
+      ) as? PklQualifiedAccessNameBase ?: return null
     val ref = qualifiedAccessName.reference
     val results = ref.multiResolve(false)
     if (results.isEmpty()) return null
@@ -110,7 +109,7 @@ class PklDocumentationProvider : AbstractDocumentationProvider() {
   override fun getDocumentationElementForLink(
     psiManager: PsiManager,
     link: String,
-    position: PsiElement
+    position: PsiElement,
   ): PsiElement? {
     return DocCommentResolvers.resolveLink(psiManager, link, position)
   }
@@ -123,7 +122,7 @@ class PklDocumentationProvider : AbstractDocumentationProvider() {
 
   private fun Appendable.renderSignature(
     element: PsiElement,
-    originalElement: PsiElement?
+    originalElement: PsiElement?,
   ): Boolean {
     val context = originalElement?.enclosingModule?.pklProject
     when (element) {
@@ -217,7 +216,7 @@ class PklDocumentationProvider : AbstractDocumentationProvider() {
     element: PklElement,
     name: String?,
     type: PklType?,
-    originalElement: PsiElement?
+    originalElement: PsiElement?,
   ) {
     if (name == null) return
     val base = element.project.pklBaseModule
@@ -247,7 +246,7 @@ class PklDocumentationProvider : AbstractDocumentationProvider() {
               element.project.pklBaseModule,
               mapOf(),
               visitor,
-              context
+              context,
             )
           renderTypeAnnotation(computedType, DocumentationTypeNameRenderer)
         }
