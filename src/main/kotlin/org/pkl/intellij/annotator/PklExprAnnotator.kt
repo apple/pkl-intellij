@@ -1,5 +1,5 @@
 /**
- * Copyright © 2024-2025 Apple Inc. and the Pkl project authors. All rights reserved.
+ * Copyright © 2024-2026 Apple Inc. and the Pkl project authors. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -48,11 +48,7 @@ class PklExprAnnotator : PklAnnotator() {
         override fun visitUnqualifiedAccessExpr(element: PklUnqualifiedAccessExpr) {
           // don't resolve imports because whether import resolves is a separate issue/check
           val visitor =
-            ResolveVisitors.firstElementNamed(
-              element.memberNameText,
-              base,
-              resolveImports = false,
-            )
+            ResolveVisitors.firstElementNamed(element.memberNameText, base, resolveImports = false)
           // resolving unqualified access may not require `this` type so don't compute/pass it
           // upfront
           val (target, lookupMode) =
@@ -61,7 +57,7 @@ class PklExprAnnotator : PklAnnotator() {
               null,
               mapOf(),
               visitor,
-              context
+              context,
             )
           when (target) {
             null -> {
@@ -77,6 +73,7 @@ class PklExprAnnotator : PklAnnotator() {
             is PklMethod -> {
               checkConstAccess(element, target, holder, lookupMode)
               checkArgumentCount(element, target, base, holder)
+              checkTypeArgumentCount(element, target, base, holder)
             }
             is PklProperty -> {
               checkConstAccess(element, target, holder, lookupMode)
@@ -102,11 +99,7 @@ class PklExprAnnotator : PklAnnotator() {
             return // don't flag
           }
 
-          val visitor =
-            ResolveVisitors.firstElementNamed(
-              element.memberNameText,
-              base,
-            )
+          val visitor = ResolveVisitors.firstElementNamed(element.memberNameText, base)
           when (val target = element.resolve(base, receiverType, mapOf(), visitor, context)) {
             null -> {
               reportUnresolvedAccess(element, receiverType, base, holder, context)
@@ -114,6 +107,7 @@ class PklExprAnnotator : PklAnnotator() {
             is PklMethod -> {
               checkConstQualifiedAccess(element, target, holder)
               checkArgumentCount(element, target, base, holder)
+              checkTypeArgumentCount(element, target, base, holder)
               when (receiverType) {
                 base.listType -> {
                   when {
@@ -126,7 +120,7 @@ class PklExprAnnotator : PklAnnotator() {
                         base.listingToListMethod,
                         base,
                         holder,
-                        context
+                        context,
                       )
                     }
                   }
@@ -141,7 +135,7 @@ class PklExprAnnotator : PklAnnotator() {
                         base.mappingToMapMethod,
                         base,
                         holder,
-                        context
+                        context,
                       )
                     }
                   }
@@ -167,7 +161,7 @@ class PklExprAnnotator : PklAnnotator() {
                         base.listingToListMethod,
                         base,
                         holder,
-                        context
+                        context,
                       )
                     }
                   }
@@ -182,7 +176,7 @@ class PklExprAnnotator : PklAnnotator() {
                         base.mappingToMapMethod,
                         base,
                         holder,
-                        context
+                        context,
                       )
                     }
                   }
@@ -200,11 +194,7 @@ class PklExprAnnotator : PklAnnotator() {
           )
             return // don't flag
 
-          val visitor =
-            ResolveVisitors.firstElementNamed(
-              element.memberNameText,
-              base,
-            )
+          val visitor = ResolveVisitors.firstElementNamed(element.memberNameText, base)
           val target = element.resolve(base, thisType, mapOf(), visitor, context)
           if (target == null) reportUnresolvedAccess(element, thisType, base, holder, context)
           when (target) {
@@ -230,7 +220,7 @@ class PklExprAnnotator : PklAnnotator() {
               holder
                 .newAnnotation(
                   HighlightSeverity.WARNING,
-                  "Amends expression can be replaced with `new`"
+                  "Amends expression can be replaced with `new`",
                 )
                 .range(element.parentExpr)
             if (holder.currentFile.canModify()) {
@@ -325,7 +315,7 @@ class PklExprAnnotator : PklAnnotator() {
   private fun checkConstQualifiedAccess(
     element: PklQualifiedAccessExpr,
     target: PklModifierListOwner,
-    holder: AnnotationHolder
+    holder: AnnotationHolder,
   ) {
     // only need to check for const-ness if the receiver is `module` or `this`.
     if (element.receiverExpr !is PklModuleExpr && element.receiverExpr !is PklThisExpr) return
@@ -335,7 +325,7 @@ class PklExprAnnotator : PklAnnotator() {
       holder,
       // pretend this is an implicit this lookup so that [checkConstAccess] can vet whether this
       // lookup is allowed.
-      if (element.receiverExpr is PklThisExpr) Resolvers.LookupMode.IMPLICIT_THIS else null
+      if (element.receiverExpr is PklThisExpr) Resolvers.LookupMode.IMPLICIT_THIS else null,
     )
   }
 
@@ -360,7 +350,7 @@ class PklExprAnnotator : PklAnnotator() {
           .trimIndent(),
         holder,
         null,
-        null
+        null,
       )
     }
   }
@@ -371,7 +361,7 @@ class PklExprAnnotator : PklAnnotator() {
         PklConstrainedType::class,
         PklMemberPredicate::class,
         // stop class
-        PklObjectBody::class
+        PklObjectBody::class,
       )
     ) {
       is PklConstrainedType,
@@ -427,7 +417,7 @@ class PklExprAnnotator : PklAnnotator() {
           .trimIndent(),
         holder,
         null,
-        null
+        null,
       )
     }
   }
@@ -436,7 +426,7 @@ class PklExprAnnotator : PklAnnotator() {
     element: PklElement,
     target: PklModifierListOwner,
     holder: AnnotationHolder,
-    lookupMode: Resolvers.LookupMode?
+    lookupMode: Resolvers.LookupMode?,
   ) {
     val (isConst, isInConstScope) = element.getConstScope()
     val targetObjectParent = target.parentOfType<PklObjectBodyBase>()
@@ -447,7 +437,7 @@ class PklExprAnnotator : PklAnnotator() {
         .parentOfTypes(
           PklConstrainedType::class,
           PklMemberPredicate::class,
-          /* stop class */ PklClassProperty::class
+          /* stop class */ PklClassProperty::class,
         )
         .let { it != null && it !is PklClassProperty }
     // lookups on `this` is always allowed in custom this scopes.
@@ -477,7 +467,7 @@ class PklExprAnnotator : PklAnnotator() {
           .trimIndent(),
         holder,
         null,
-        null
+        null,
       )
       return
     }
@@ -518,7 +508,7 @@ class PklExprAnnotator : PklAnnotator() {
             .trimIndent(),
           holder,
           null,
-          null
+          null,
         )
       }
     }
@@ -528,7 +518,7 @@ class PklExprAnnotator : PklAnnotator() {
     element: PklElement,
     action: String,
     name: String?,
-    holder: AnnotationHolder
+    holder: AnnotationHolder,
   ) {
     createAnnotation(
       HighlightSeverity.WARNING,
@@ -544,7 +534,7 @@ class PklExprAnnotator : PklAnnotator() {
         .trimIndent(),
       holder,
       null,
-      null
+      null,
     )
   }
 
@@ -553,16 +543,12 @@ class PklExprAnnotator : PklAnnotator() {
     conversionMethod: PklClassMethod,
     base: PklBaseModule,
     holder: AnnotationHolder,
-    context: PklProject?
+    context: PklProject?,
   ) {
     if (expr !is PklQualifiedAccessExpr) return
 
     val methodName = expr.memberNameText
-    val visitor =
-      ResolveVisitors.firstElementNamed(
-        methodName,
-        base,
-      )
+    val visitor = ResolveVisitors.firstElementNamed(methodName, base)
     val target = expr.resolve(base, null, mapOf(), visitor, context)
     if (target == conversionMethod) {
       val annotation =
@@ -574,6 +560,65 @@ class PklExprAnnotator : PklAnnotator() {
         annotation.withFix(PklRedundantConversionQuickFix(expr, methodName))
       }
       annotation.create()
+    }
+  }
+
+  private fun checkTypeArgumentCount(
+    expr: PklAccessExpr,
+    method: PklMethod,
+    base: PklBaseModule,
+    holder: AnnotationHolder,
+  ) {
+    val typeArgList = expr.typeArgumentList ?: return
+    val typeArgs = typeArgList.elements
+    val typeArgCount = typeArgs.size
+    val typeParamList = method.typeParameterList
+    val typeParams = typeParamList?.elements ?: emptyList()
+    val typeParamCount = typeParams.size
+    when {
+      typeArgCount < typeParamCount -> {
+        val closingParen = typeArgList.lastChildOfType(PklElementTypes.GT) ?: return
+
+        for (idx in typeArgCount until typeParamCount) {
+          val message = buildString {
+            append("Missing type argument for ")
+            append(typeParams[idx].identifier.text)
+          }
+          val htmlMessage = buildString {
+            append("Missing type argument for ")
+            code { append(typeParams[idx].identifier.text) }
+          }
+
+          holder
+            .newAnnotation(HighlightSeverity.ERROR, message)
+            .range(closingParen.textRange)
+            .tooltip(htmlMessage)
+            .create()
+        }
+      }
+      typeArgCount > typeParamCount -> {
+        if (method.isVarArgs(base)) return
+
+        val message = buildString {
+          append("Too many type arguments for method ")
+          append(method.name)
+          typeParamList?.let { renderTypeParameterList(it) }
+          renderParameterList(method.parameterList, mapOf())
+        }
+        val htmlMessage = buildString {
+          append("Too many arguments for method ")
+          code {
+            append(method.name)
+            typeParamList?.let { escapeXml { renderTypeParameterList(it) } }
+            renderParameterList(method.parameterList, mapOf())
+          }
+        }
+        holder
+          .newAnnotation(HighlightSeverity.ERROR, message)
+          .range(typeArgList.elements[typeParamCount].textRange)
+          .tooltip(htmlMessage)
+          .create()
+      }
     }
   }
 
@@ -621,9 +666,8 @@ class PklExprAnnotator : PklAnnotator() {
           renderParameterList(method.parameterList, mapOf())
         }
         val htmlMessage = buildString {
-          append("Too many arguments for ")
+          append("Too many arguments for method ")
           code {
-            append("method ")
             append(method.name)
             renderParameterList(method.parameterList, mapOf())
           }
@@ -642,7 +686,7 @@ class PklExprAnnotator : PklAnnotator() {
     receiverType: Type,
     base: PklBaseModule,
     holder: AnnotationHolder,
-    context: PklProject?
+    context: PklProject?,
   ) {
     createAnnotation(
       if (receiverType.isUnresolvedMemberFatal(base, context)) HighlightSeverity.ERROR
@@ -652,20 +696,20 @@ class PklExprAnnotator : PklAnnotator() {
       "Unresolved reference: <code>${expr.memberNameText.escapeXml()}<code>",
       holder,
       PklProblemGroups.unresolvedElement,
-      expr
+      expr,
     )
   }
 
   private fun checkRecursivePropertyReference(
     expr: PklAccessExpr,
     property: PklProperty,
-    holder: AnnotationHolder
+    holder: AnnotationHolder,
   ) {
     val parent =
       expr.parentOfTypes(
         PklObjectMember::class,
         PklModuleMember::class, // includes `PklClassMember`
-        PklFunctionLiteral::class
+        PklFunctionLiteral::class,
       )
 
     if (areElementsEquivalent(parent, property)) {

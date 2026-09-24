@@ -36,7 +36,7 @@ class PklTypeAnnotatorTest {
       fixtureFactory
         .createLightFixtureBuilder(
           LightProjectDescriptor.EMPTY_PROJECT_DESCRIPTOR,
-          "sample pkl project"
+          "sample pkl project",
         )
         .fixture
     codeInsightTestFixture = fixtureFactory.createCodeInsightFixture(fixture)

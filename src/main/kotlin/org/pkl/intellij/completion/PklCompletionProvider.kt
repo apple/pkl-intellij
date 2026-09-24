@@ -46,7 +46,7 @@ abstract class PklCompletionProvider : CompletionProvider<CompletionParameters>(
           "this",
           "throw()",
           "trace()",
-          "true"
+          "true",
         )
         .map { keyword -> LookupElementBuilder.create(keyword).bold().postProcess(keyword) }
     @JvmStatic
@@ -69,7 +69,7 @@ abstract class PklCompletionProvider : CompletionProvider<CompletionParameters>(
           "import ",
           "module ",
           "open ",
-          "typealias "
+          "typealias ",
         )
         .map { LookupElementBuilder.create(it).bold() }
     /** In addition to [DEFINITION_LEVEL_KEYWORD_LOOKUP_ELEMENTS]. */

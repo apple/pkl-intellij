@@ -37,7 +37,7 @@ object Resolvers {
     NONE,
     LEXICAL,
     IMPLICIT_THIS,
-    BASE
+    BASE,
   }
 
   fun <R> resolveQualifiedTypeName(
@@ -45,7 +45,7 @@ object Resolvers {
     moduleName: String,
     // receives elements of type PklTypeDef, PklImport, and PklTypeParameter
     visitor: ResolveVisitor<R>,
-    context: PklProject?
+    context: PklProject?,
   ): R {
 
     val enclosingModule = position.enclosingModule ?: return visitor.result
@@ -68,10 +68,10 @@ object Resolvers {
     bindings: TypeParameterBindings,
     // receives elements of type PklTypeDef, PklImport, and PklTypeParameter
     visitor: ResolveVisitor<R>,
-    context: PklProject?
+    context: PklProject?,
   ): R {
     // search type parameters of enclosing method
-    val method = position.parentOfType<PklClassMethod>()
+    val method = position.parentOfType<PklMethod>()
     if (method != null) {
       if (!method.typeParameterList.visit(mapOf(), visitor, context)) return visitor.result
     }
@@ -117,7 +117,7 @@ object Resolvers {
     base: PklBaseModule,
     bindings: TypeParameterBindings,
     visitor: ResolveVisitor<R>,
-    context: PklProject?
+    context: PklProject?,
   ): R {
     return resolveUnqualifiedAccess(
       position,
@@ -127,7 +127,7 @@ object Resolvers {
       base,
       bindings,
       visitor,
-      context
+      context,
     )
   }
 
@@ -141,7 +141,7 @@ object Resolvers {
     base: PklBaseModule,
     bindings: TypeParameterBindings,
     visitor: ResolveVisitor<R>,
-    context: PklProject?
+    context: PklProject?,
   ): R {
 
     return if (isProperty) {
@@ -152,7 +152,7 @@ object Resolvers {
           bindings,
           allowClasses,
           visitor,
-          context
+          context,
         )
         .first
     } else {
@@ -170,7 +170,7 @@ object Resolvers {
     base: PklBaseModule,
     bindings: TypeParameterBindings,
     visitor: ResolveVisitor<R>,
-    context: PklProject?
+    context: PklProject?,
   ): Pair<R, LookupMode> {
     return if (isProperty) {
       resolveUnqualifiedVariableAccess(
@@ -180,7 +180,7 @@ object Resolvers {
         bindings,
         allowClasses,
         visitor,
-        context
+        context,
       )
     } else {
       resolveUnqualifiedMethodAccess(position, thisType, base, bindings, visitor, context)
@@ -189,7 +189,7 @@ object Resolvers {
 
   fun resolveDocCommentModuleOrThisKeyword(
     link: String,
-    position: PsiElement
+    position: PsiElement,
   ): PklTypeDefOrModule? {
     return when (link) {
       "module" -> position.enclosingModule
@@ -204,7 +204,7 @@ object Resolvers {
     isProperty: Boolean,
     base: PklBaseModule,
     visitor: ResolveVisitor<R>,
-    context: PklProject?
+    context: PklProject?,
   ) {
     val parts = linkText.split('.')
     val enclosingModule = position.enclosingModule
@@ -294,7 +294,7 @@ object Resolvers {
     isProperty: Boolean,
     base: PklBaseModule,
     visitor: ResolveVisitor<R>,
-    context: PklProject?
+    context: PklProject?,
   ): R {
     receiverType.visitMembers(isProperty, allowClasses = true, base, visitor, context)
     return visitor.result
@@ -303,7 +303,7 @@ object Resolvers {
   private fun PklTypeParameterList?.visit(
     bindings: TypeParameterBindings,
     visitor: ResolveVisitor<*>,
-    context: PklProject?
+    context: PklProject?,
   ): Boolean {
     if (this == null) return true
 
@@ -322,7 +322,7 @@ object Resolvers {
     bindings: TypeParameterBindings,
     allowClasses: Boolean,
     visitor: ResolveVisitor<R>,
-    context: PklProject?
+    context: PklProject?,
   ): Pair<R, LookupMode> {
 
     var element: PsiElement? = position
@@ -339,7 +339,7 @@ object Resolvers {
                   parameter.identifier.text,
                   parameter,
                   functionType.bindings,
-                  context
+                  context,
                 )
               )
                 return visitor.result to LookupMode.LEXICAL
@@ -487,7 +487,7 @@ object Resolvers {
     expr: PklExpr,
     bindings: TypeParameterBindings,
     visitor: ResolveVisitor<*>,
-    context: PklProject?
+    context: PklProject?,
   ): Boolean {
     if (visitor !is FlowTypingResolveVisitor<*>) return true
 
@@ -555,7 +555,7 @@ object Resolvers {
     expr: PklExpr,
     bindings: TypeParameterBindings,
     visitor: ResolveVisitor<*>,
-    context: PklProject?
+    context: PklProject?,
   ): Boolean {
     if (visitor !is FlowTypingResolveVisitor<*>) return true
 
@@ -616,7 +616,7 @@ object Resolvers {
     base: PklBaseModule,
     bindings: TypeParameterBindings,
     visitor: ResolveVisitor<R>,
-    context: PklProject?
+    context: PklProject?,
   ): Pair<R, LookupMode> {
 
     var element: PsiElement? = position
