@@ -80,6 +80,7 @@ private fun PsiElement.doComputeExprType(
         val visitor =
           ResolveVisitors.typeOfFirstElementNamed(
             memberNameText,
+            typeArgumentList,
             argumentList,
             base,
             isNullSafeAccess,
@@ -93,6 +94,7 @@ private fun PsiElement.doComputeExprType(
         val visitor =
           ResolveVisitors.typeOfFirstElementNamed(
             memberNameText,
+            typeArgumentList,
             argumentList,
             base,
             isNullSafeAccess,
@@ -106,6 +108,7 @@ private fun PsiElement.doComputeExprType(
         val visitor =
           ResolveVisitors.typeOfFirstElementNamed(
             memberNameText,
+            typeArgumentList,
             argumentList,
             base,
             isNullSafeAccess,

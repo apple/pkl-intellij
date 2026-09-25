@@ -71,7 +71,7 @@ object Resolvers {
     context: PklProject?
   ): R {
     // search type parameters of enclosing method
-    val method = position.parentOfType<PklClassMethod>()
+    val method = position.parentOfType<PklMethod>()
     if (method != null) {
       if (!method.typeParameterList.visit(mapOf(), visitor, context)) return visitor.result
     }
