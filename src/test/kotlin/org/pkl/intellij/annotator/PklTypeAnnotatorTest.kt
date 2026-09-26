@@ -52,30 +52,81 @@ class PklTypeAnnotatorTest {
   }
 
   @Test
-  fun `References -- referent type with type constraint`() {
+  fun `this - not allowed in typealias bodies`() {
     checkHighlighting(
       """
-      import "pkl:ref"
-
-      class MyDomain extends ref.Domain
-
-      r: <error descr="Reference type annotations may not contain type constraints.">ref.Reference<MyDomain, String(!isEmpty)></error>
+       typealias Foo = <error descr="Cannot reference `this` type within a type alias body">this</error>
     """
         .trimIndent()
     )
   }
 
   @Test
-  fun `Reference -- referent type with type constraint through alias`() {
+  fun `module - not allowed in typealias bodies`() {
     checkHighlighting(
       """
-      import "pkl:ref"
+       typealias Foo = <warning descr="Cannot reference `module` type within a type alias body; this will be an error in a future release">module</warning>
+    """
+        .trimIndent()
+    )
+  }
 
-      class MyDomain extends ref.Domain
-      
-      typealias MyReference<T> = ref.Reference<MyDomain, T>
+  @Test
+  fun `module - not allowed in class bodies`() {
+    checkHighlighting(
+      """
+       class Foo {
+         bar: <warning descr="Cannot reference `module` type within a class body; this will be an error in a future release">module</warning>
+         // const properties in class should warn for the class, not the const property
+         baz: <warning descr="Cannot reference `module` type within a class body; this will be an error in a future release">module</warning>
+       }
+    """
+        .trimIndent()
+    )
+  }
 
-      r: <error descr="Reference type annotations may not contain type constraints.">MyReference<String(!isEmpty)></error>
+  @Test
+  fun `module - not allowed in annotation bodies`() {
+    checkHighlighting(
+      """
+       @Foo{ bar = baz is <warning descr="Cannot reference `module` type within an annotation body; this will be an error in a future release">module</warning> }
+       module test
+    """
+        .trimIndent()
+    )
+  }
+
+  @Test
+  fun `module - not allowed in const properties`() {
+    checkHighlighting(
+      """
+      const res1 = foo is <warning descr="Cannot reference `module` type from const property `res1`; this will be an error in a future release">module</warning>
+      const res2: <warning descr="Cannot reference `module` type from const property `res2`; this will be an error in a future release">module</warning> = foo
+      const res3 = new { foo is <warning descr="Cannot reference `module` type from const property `res3`; this will be an error in a future release">module</warning> }
+    """
+        .trimIndent()
+    )
+  }
+
+  @Test
+  fun `module - not allowed in const methods`() {
+    checkHighlighting(
+      """
+      const function res1() = foo is <warning descr="Cannot reference `module` type from const method `res1`; this will be an error in a future release">module</warning>
+      const function res2(): <warning descr="Cannot reference `module` type from const method `res2`; this will be an error in a future release">module</warning> = foo
+      const function res3() = new { foo is <warning descr="Cannot reference `module` type from const method `res3`; this will be an error in a future release">module</warning> }
+      const function res4(foo: <warning descr="Cannot reference `module` type from const method `res4`; this will be an error in a future release">module</warning>) = null
+    """
+        .trimIndent()
+    )
+  }
+
+  @Test
+  fun `module - allowed in class extends clause`() {
+    checkHighlighting(
+      """
+       open module test
+       class Foo extends module
     """
         .trimIndent()
     )

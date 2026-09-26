@@ -719,6 +719,7 @@ sealed class Type(val constraints: List<ConstraintExpr> = listOf()) {
     fun validSubscriptKeyType(base: PklBaseModule, context: PklProject?): Type {
       if (referencesUnknown) return Unknown
       var isUnknown = false
+      var foundNull = false
       val keyCandidates = mutableSetOf<Type>()
       walkCandidates(referent, base, context) { type, _ ->
         if (type !is Class) return@walkCandidates true
@@ -731,12 +732,15 @@ sealed class Type(val constraints: List<ConstraintExpr> = listOf()) {
             keyCandidates.add(base.intType)
           (type.classEquals(base.mappingType) || type.classEquals(base.mapType)) ->
             keyCandidates.add(type.typeArguments.first())
+          type.classEquals(base.nullType) -> foundNull = true
         }
         return@walkCandidates true
       }
 
       if (isUnknown) return Unknown
-      if (keyCandidates.isEmpty()) return Nothing
+      if (keyCandidates.isEmpty()) {
+        return if (foundNull) Unknown else Nothing
+      }
       return union(keyCandidates.toList(), base, context)
     }
 
@@ -1490,7 +1494,8 @@ fun PklType?.toType(
   base: PklBaseModule,
   bindings: Map<PklTypeParameter, Type>,
   context: PklProject?,
-  preserveUnboundTypeVars: Boolean = false
+  preserveUnboundTypeVars: Boolean = false,
+  receiverType: Type? = null,
 ): Type =
   when (this) {
     null -> Unknown
@@ -1503,7 +1508,7 @@ fun PklType?.toType(
           val typeArguments = typeArgumentList?.elements ?: listOf()
           Class.create(
             resolved,
-            typeArguments.toTypes(base, bindings, preserveUnboundTypeVars, context)
+            typeArguments.toTypes(base, bindings, preserveUnboundTypeVars, context, receiverType)
           )
         }
         is PklTypeAlias -> {
@@ -1511,7 +1516,7 @@ fun PklType?.toType(
           Type.alias(
             resolved,
             context,
-            typeArguments.toTypes(base, bindings, preserveUnboundTypeVars, context)
+            typeArguments.toTypes(base, bindings, preserveUnboundTypeVars, context, receiverType)
           )
         }
         is PklTypeParameter -> bindings[resolved]
@@ -1521,15 +1526,21 @@ fun PklType?.toType(
     }
     is PklUnionType ->
       Type.union(
-        leftType.toType(base, bindings, context, preserveUnboundTypeVars),
-        rightType.toType(base, bindings, context, preserveUnboundTypeVars),
+        leftType.toType(base, bindings, context, preserveUnboundTypeVars, receiverType),
+        rightType.toType(base, bindings, context, preserveUnboundTypeVars, receiverType),
         base,
         context
       )
     is PklFunctionType -> {
       val parameterTypes =
-        functionTypeParameterList.elements.toTypes(base, bindings, preserveUnboundTypeVars, context)
-      val returnType = type.toType(base, bindings, context, preserveUnboundTypeVars)
+        functionTypeParameterList.elements.toTypes(
+          base,
+          bindings,
+          preserveUnboundTypeVars,
+          context,
+          receiverType
+        )
+      val returnType = type.toType(base, bindings, context, preserveUnboundTypeVars, receiverType)
       when (parameterTypes.size) {
         0 -> base.function0Type.withTypeArguments(parameterTypes + returnType)
         1 -> base.function1Type.withTypeArguments(parameterTypes + returnType)
@@ -1543,8 +1554,9 @@ fun PklType?.toType(
           ) // approximation (invalid Pkl code)
       }
     }
-    is PklParenthesizedType -> type.toType(base, bindings, context, preserveUnboundTypeVars)
-    is PklDefaultType -> type.toType(base, bindings, context, preserveUnboundTypeVars)
+    is PklParenthesizedType ->
+      type.toType(base, bindings, context, preserveUnboundTypeVars, receiverType)
+    is PklDefaultType -> type.toType(base, bindings, context, preserveUnboundTypeVars, receiverType)
     is PklConstrainedType -> {
       val project = base.project
       val constraintExprs =
@@ -1556,16 +1568,21 @@ fun PklType?.toType(
             false,
             this to context
           )
-      type.toType(base, bindings, context, preserveUnboundTypeVars).withConstraints(constraintExprs)
+      type
+        .toType(base, bindings, context, preserveUnboundTypeVars, receiverType)
+        .withConstraints(constraintExprs)
     }
     is PklNullableType ->
-      type.toType(base, bindings, context, preserveUnboundTypeVars).nullable(base, context)
+      type
+        .toType(base, bindings, context, preserveUnboundTypeVars, receiverType)
+        .nullable(base, context)
     is PklUnknownType -> Unknown
     is PklNothingType -> Nothing
     is PklModuleType -> {
       // TODO: for `open` modules, `module` is a self-type
       enclosingModule?.let { Type.module(it, "module", context) } ?: base.moduleType
     }
+    is PklThisType -> receiverType ?: computeThisType(base, bindings, context)
     is PklStringLiteralType -> stringConstant.content.escapedText()?.let { StringLiteral(it) }
         ?: Unknown
     is PklTypeParameter -> bindings[this]
@@ -1577,5 +1594,6 @@ fun List<PklType>.toTypes(
   base: PklBaseModule,
   bindings: Map<PklTypeParameter, Type>,
   preserveTypeVariables: Boolean = false,
-  context: PklProject?
-): List<Type> = map { it.toType(base, bindings, context, preserveTypeVariables) }
+  context: PklProject?,
+  receiverType: Type?,
+): List<Type> = map { it.toType(base, bindings, context, preserveTypeVariables, receiverType) }
