@@ -750,6 +750,10 @@ sealed class Type(val constraints: List<ConstraintExpr> = listOf()) {
 
     private val referencesUnknown = referent is Unknown
 
+    override fun amended(base: PklBaseModule, context: PklProject?): Type = Nothing
+
+    override fun instantiated(base: PklBaseModule, context: PklProject?): Type = Nothing
+
     companion object {
       fun walkCandidates(
         root: Type,
