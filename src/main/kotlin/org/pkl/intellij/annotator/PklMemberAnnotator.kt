@@ -28,6 +28,7 @@ import com.intellij.psi.util.prevLeaf
 import org.pkl.intellij.PklVersion
 import org.pkl.intellij.intention.PklAddDefaultValueQuickFix
 import org.pkl.intellij.intention.PklAddModifierQuickFix
+import org.pkl.intellij.intention.PklRemoveElementQuickFix
 import org.pkl.intellij.intention.PklReplaceWithSpreadQuickFix
 import org.pkl.intellij.packages.dto.PklProject
 import org.pkl.intellij.psi.*
@@ -63,7 +64,7 @@ class PklMemberAnnotator : PklAnnotator() {
         mapOf(),
         context,
         preserveUnboundTypeVars = false,
-        canInferExprBody = false
+        canInferExprBody = false,
       )
     }
 
@@ -75,7 +76,7 @@ class PklMemberAnnotator : PklAnnotator() {
             "object properties",
             ModifierSets.OBJECT_PROPERTY_MODIFIERS,
             module,
-            holder
+            holder,
           )
           checkUnresolvedProperty(element, memberType, base, holder, context)
           checkIsAmendable(element, memberType, base, holder)
@@ -97,7 +98,7 @@ class PklMemberAnnotator : PklAnnotator() {
               element.textRange,
               "Object of type $typeText cannot have elements",
               "Object of type <code>${typeText.escapeXml()}</code> cannot have elements",
-              holder
+              holder,
             )
           }
         }
@@ -119,7 +120,7 @@ class PklMemberAnnotator : PklAnnotator() {
               element.textRange,
               "Object of type $typeText cannot have entries",
               "Object of type <code>${typeText.escapeXml()}</code> cannot have entries",
-              holder
+              holder,
             )
           }
           checkIsAmendable(element, memberType, base, holder)
@@ -139,7 +140,7 @@ class PklMemberAnnotator : PklAnnotator() {
             "object methods",
             ModifierSets.OBJECT_METHOD_MODIFIERS,
             module,
-            holder
+            holder,
           )
         }
 
@@ -149,9 +150,9 @@ class PklMemberAnnotator : PklAnnotator() {
             "properties",
             ModifierSets.CLASS_PROPERTY_MODIFIERS,
             module,
-            holder
+            holder,
           )
-          checkAbstractModifier(element, holder)
+          checkAbstractProperty(element, holder)
           checkUnresolvedProperty(element, memberType, base, holder, context)
           checkIsAmendable(element, memberType, base, holder)
           checkFixedOrConstModifier(element, holder, base, context)
@@ -159,7 +160,7 @@ class PklMemberAnnotator : PklAnnotator() {
 
         override fun visitClassMethod(element: PklClassMethod) {
           checkModifiers(element, "methods", ModifierSets.CLASS_METHOD_MODIFIERS, module, holder)
-          checkAbstractModifier(element, holder)
+          checkAbstractMethod(element, holder)
           checkTypeParameters(element, module, holder)
         }
 
@@ -188,7 +189,7 @@ class PklMemberAnnotator : PklAnnotator() {
                 "amending modules",
                 ModifierSets.AMENDING_MODULE_MODIFIERS,
                 module,
-                holder
+                holder,
               )
             else ->
               checkModifiers(element, "modules", ModifierSets.MODULE_MODIFIERS, module, holder)
@@ -203,7 +204,7 @@ class PklMemberAnnotator : PklAnnotator() {
     holder: AnnotationHolder,
     enclosingEntity: PklTypeDefOrModule,
     base: PklBaseModule,
-    context: PklProject?
+    context: PklProject?,
   ) {
     if (
       !element.isFixedOrConst ||
@@ -249,7 +250,7 @@ class PklMemberAnnotator : PklAnnotator() {
           .trimIndent(),
         holder,
         PklProblemGroups.missingDefaultValue,
-        element
+        element,
       )
       ?.apply {
         if (holder.currentFile.canModify()) {
@@ -263,7 +264,7 @@ class PklMemberAnnotator : PklAnnotator() {
     element: PklClassProperty,
     holder: AnnotationHolder,
     base: PklBaseModule,
-    context: PklProject?
+    context: PklProject?,
   ) {
     val enclosingDef = element.parentOfTypes(PklClass::class, PklModule::class) ?: return
     checkFixedOrConstWithoutDefaultValue(element, holder, enclosingDef, base, context)
@@ -288,7 +289,7 @@ class PklMemberAnnotator : PklAnnotator() {
             <p>Property ${element.name.escapeXml()} must be declared $modifier because it overrides a parent property that is declared $modifier.</p>
           """
             .trimIndent(),
-          holder
+          holder,
         )
         ?.apply {
           if (holder.currentFile.canModify()) {
@@ -296,7 +297,7 @@ class PklMemberAnnotator : PklAnnotator() {
               PklAddModifierQuickFix(
                 "Make '${element.name}' $modifier",
                 element.modifierList,
-                modifier
+                modifier,
               )
             )
           }
@@ -317,7 +318,7 @@ class PklMemberAnnotator : PklAnnotator() {
           <p>Property <code>${element.name.escapeXml()}</code> cannot be declared $modifierType because it overrides a parent property that is not declared $modifierType.</p>
           """
             .trimIndent(),
-          holder
+          holder,
         )
         ?.apply {
           if (parentProperty.parentOfType<PsiFile>()?.canModify() == true) {
@@ -325,7 +326,7 @@ class PklMemberAnnotator : PklAnnotator() {
               PklAddModifierQuickFix(
                 "Make parent property $modifierType",
                 parentProperty.modifierList,
-                modifierType
+                modifierType,
               )
             )
           }
@@ -337,7 +338,7 @@ class PklMemberAnnotator : PklAnnotator() {
   private fun checkTypeParameters(
     owner: PklTypeParameterListOwner,
     module: PklModule,
-    holder: AnnotationHolder
+    holder: AnnotationHolder,
   ) {
 
     val typeParameterList = owner.typeParameterList
@@ -345,7 +346,7 @@ class PklMemberAnnotator : PklAnnotator() {
       holder
         .newAnnotation(
           HighlightSeverity.ERROR,
-          "Type parameters are only allowed in standard library"
+          "Type parameters are only allowed in standard library",
         )
         .range(typeParameterList)
         .create()
@@ -357,7 +358,7 @@ class PklMemberAnnotator : PklAnnotator() {
     element: PklProperty,
     base: PklBaseModule,
     holder: AnnotationHolder,
-    context: PklProject?
+    context: PklProject?,
   ) {
     val enclosingParentType = element.computeThisType(base, mapOf(), context)
     val properties =
@@ -375,7 +376,7 @@ class PklMemberAnnotator : PklAnnotator() {
         element.propertyName.textRange,
         "Cannot $action $modifier property '${property.name}'",
         "Cannot $action $modifier property <code>${property.name.escapeXml()}</code>",
-        holder
+        holder,
       )
     }
   }
@@ -390,48 +391,44 @@ class PklMemberAnnotator : PklAnnotator() {
     return null
   }
 
-  private fun checkAbstractModifier(owner: PklModifierListOwner, holder: AnnotationHolder) {
+  private fun checkAbstractProperty(owner: PklClassProperty, holder: AnnotationHolder) {
     val myAbstractModifier = owner.getAbstractModifier() ?: return
+    buildAnnotation(
+        HighlightSeverity.WARNING,
+        myAbstractModifier.textRange,
+        "Abstract modifier is ignored for properties",
+        "Abstract modifier is ignored for properties",
+        holder,
+        highlightType = ProblemHighlightType.LIKE_UNUSED_SYMBOL,
+      )
+      ?.apply { withFix(PklRemoveElementQuickFix("Remove abstract modifier", myAbstractModifier)) }
+      ?.create()
+  }
+
+  private fun checkAbstractMethod(owner: PklClassMethod, holder: AnnotationHolder) {
+    val myAbstractModifier = owner.getAbstractModifier() ?: return
+
     val containingClassOrModule =
       owner.parentOfTypes(PklModule::class, PklClass::class, /* stop class */ PklObjectBody::class)
-        as? PklModifierListOwner
-        ?: return
+        as? PklModifierListOwner ?: return
     if (containingClassOrModule.getAbstractModifier() == null) {
-      if (containingClassOrModule is PklModule) {
-        createAnnotation(
-          HighlightSeverity.WARNING,
-          myAbstractModifier.textRange,
-          "Abstract member declared inside a non-abstract module. This will be an error in the future.",
-          "Abstract member declared inside a non-abstract module. This will be an error in the future.",
-          holder
-        )
-      } else {
-        createAnnotation(
-          HighlightSeverity.WARNING,
-          myAbstractModifier.textRange,
-          "Abstract member declared inside a non-abstract class. This will be an error in the future.",
-          "Abstract member declared inside a non-abstract class. This will be an error in the future.",
-          holder
-        )
-      }
-    }
-    val bodyTextRange =
-      if (owner is PklClassProperty) {
-        owner.expr?.textRangeWithAssign
-          ?: owner.objectBodyList.let { list ->
-            if (list.isEmpty()) null else list.first().textRange.union(list.last().textRange)
-          }
-      } else {
-        owner as PklClassMethod
-        owner.body?.textRangeWithAssign
-      }
-    if (bodyTextRange != null) {
+      val container = if (containingClassOrModule is PklModule) "module" else "class"
       createAnnotation(
         HighlightSeverity.ERROR,
-        bodyTextRange,
-        "Abstract member cannot have a body",
-        "Abstract member cannot have a body",
-        holder
+        myAbstractModifier.textRange,
+        "Abstract method declared inside a non-abstract $container",
+        "Abstract method declared inside a non-abstract $container",
+        holder,
+      )
+    }
+
+    owner.body?.textRangeWithAssign?.let {
+      createAnnotation(
+        HighlightSeverity.ERROR,
+        it,
+        "Abstract method cannot have a body",
+        "Abstract method cannot have a body",
+        holder,
       )
     }
   }
@@ -444,7 +441,7 @@ class PklMemberAnnotator : PklAnnotator() {
     descriptionPlural: String,
     applicableModifiers: TokenSet,
     module: PklModule,
-    holder: AnnotationHolder
+    holder: AnnotationHolder,
   ) {
 
     val modifiers = owner.modifierList?.elements ?: return
@@ -516,7 +513,7 @@ class PklMemberAnnotator : PklAnnotator() {
             holder
               .newAnnotation(
                 HighlightSeverity.ERROR,
-                "Modifier 'const' can only be applied to object members who are also 'local'"
+                "Modifier 'const' can only be applied to object members who are also 'local'",
               )
               .range(constModifier)
           if (holder.currentFile.canModify()) {
@@ -557,7 +554,7 @@ class PklMemberAnnotator : PklAnnotator() {
         holder
           .newAnnotation(
             HighlightSeverity.ERROR,
-            "Modifier '${modifier.text}' is not applicable to local members"
+            "Modifier '${modifier.text}' is not applicable to local members",
           )
           .range(modifier)
           .create()
@@ -565,7 +562,7 @@ class PklMemberAnnotator : PklAnnotator() {
         holder
           .newAnnotation(
             HighlightSeverity.ERROR,
-            "Modifier '${modifier.text}' is not applicable to $descriptionPlural"
+            "Modifier '${modifier.text}' is not applicable to $descriptionPlural",
           )
           .range(modifier)
           .create()
@@ -573,7 +570,7 @@ class PklMemberAnnotator : PklAnnotator() {
         holder
           .newAnnotation(
             HighlightSeverity.ERROR,
-            "Modifier 'external' is only allowed in standard library"
+            "Modifier 'external' is only allowed in standard library",
           )
           .range(modifier)
           .create()
@@ -586,7 +583,7 @@ class PklMemberAnnotator : PklAnnotator() {
     propertyType: Type,
     base: PklBaseModule,
     holder: AnnotationHolder,
-    context: PklProject?
+    context: PklProject?,
   ) {
 
     if (propertyType != Unknown) {
@@ -605,11 +602,7 @@ class PklMemberAnnotator : PklAnnotator() {
       if (thisType.isSubtypeOf(base.dynamicType, base, context)) return
 
       // should be able to find a definition
-      val visitor =
-        ResolveVisitors.firstElementNamed(
-          property.name,
-          base,
-        )
+      val visitor = ResolveVisitors.firstElementNamed(property.name, base)
       if (Resolvers.resolveQualifiedAccess(thisType, true, base, visitor, context) == null) {
         createAnnotation(
           if (thisType.isUnresolvedMemberFatal(base, context)) HighlightSeverity.ERROR
@@ -619,7 +612,7 @@ class PklMemberAnnotator : PklAnnotator() {
           "Unresolved property: <code>${property.name.escapeXml()}</code>",
           holder,
           PklProblemGroups.unresolvedElement,
-          property
+          property,
         )
       }
     }
@@ -629,7 +622,7 @@ class PklMemberAnnotator : PklAnnotator() {
     base: PklBaseModule,
     o: PklForGenerator,
     holder: AnnotationHolder,
-    context: PklProject?
+    context: PklProject?,
   ) {
     if (isSuppressed(o, PklProblemGroups.replaceForGeneratorWithSpread)) return
     val keyIdentifier = if (o.keyValueVars.size > 1) o.keyValueVars[0] else null
@@ -671,7 +664,7 @@ class PklMemberAnnotator : PklAnnotator() {
         for (fix in
           PklProblemGroups.replaceForGeneratorWithSpread.getSuppressQuickFixes(
             o,
-            holder.currentFile
+            holder.currentFile,
           )) {
           withFix(fix)
         }

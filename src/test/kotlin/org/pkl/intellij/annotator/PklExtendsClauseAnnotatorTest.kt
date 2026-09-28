@@ -33,7 +33,7 @@ class PklExtendsClauseAnnotatorTest {
       factory
         .createLightFixtureBuilder(
           LightProjectDescriptor.EMPTY_PROJECT_DESCRIPTOR,
-          "sample pkl project"
+          "sample pkl project",
         )
         .fixture
     fixture = factory.createCodeInsightFixture(base)
@@ -64,25 +64,13 @@ class PklExtendsClauseAnnotatorTest {
   }
 
   @Test
-  fun `missing abstract property`() {
-    checkHighlighting(
-      """
-      abstract class Base {
-        abstract name: String
-      }
-      class Child <warning descr="class Child is not abstract and does not implement property 'name'">extends Base</warning> {}
-      """
-    )
-  }
-
-  @Test
   fun `missing abstract method`() {
     checkHighlighting(
       """
       abstract class Base {
         abstract function greet(): String
       }
-      class Child <warning descr="class Child is not abstract and does not implement method 'greet'">extends Base</warning> {}
+      class Child <error descr="class Child is not abstract and does not implement method 'greet'">extends Base</error> {}
       """
     )
   }
@@ -104,7 +92,7 @@ class PklExtendsClauseAnnotatorTest {
     checkHighlighting(
       """
       abstract class Base {
-        abstract name: String
+        abstract function greet(): String
       }
       abstract class Child extends Base {}
       """
@@ -126,28 +114,6 @@ class PklExtendsClauseAnnotatorTest {
   }
 
   @Test
-  fun `quickfix implements abstract property`() {
-    checkQuickFix(
-      before =
-        """
-        abstract class Base {
-          abstract name: String
-        }
-        class Child extends Base {}
-        """,
-      after =
-        """
-        abstract class Base {
-          abstract name: String
-        }
-        class Child extends Base {
-          name: String = TODO()
-        }
-        """
-    )
-  }
-
-  @Test
   fun `quickfix implements abstract method`() {
     checkQuickFix(
       before =
@@ -165,7 +131,7 @@ class PklExtendsClauseAnnotatorTest {
         class Child extends Base {
           function greet(): String = TODO()
         }
-        """
+        """,
     )
   }
 
@@ -187,7 +153,7 @@ class PklExtendsClauseAnnotatorTest {
         class Child extends Base {
           fixed name: String = TODO()
         }
-        """
+        """,
     )
   }
 
@@ -209,7 +175,7 @@ class PklExtendsClauseAnnotatorTest {
         class Child extends Base {
           fixed name: String = TODO()
         }
-        """
+        """,
     )
   }
 
@@ -235,7 +201,7 @@ class PklExtendsClauseAnnotatorTest {
 
           function greet(): String = TODO()
         }
-        """
+        """,
     )
   }
 
@@ -267,7 +233,7 @@ class PklExtendsClauseAnnotatorTest {
 
           function greet(): String = TODO()
         }
-        """
+        """,
     )
   }
 
@@ -278,23 +244,23 @@ class PklExtendsClauseAnnotatorTest {
       """
       abstract module foo
 
-      abstract bar: Int
+      abstract function bar(): Int
     """
-        .trimIndent()
+        .trimIndent(),
     )
     fixture.configureByText(
       "test.pkl",
       """
       extends "foo.pkl"
     """
-        .trimIndent()
+        .trimIndent(),
     )
     implementMembers()
     fixture.checkResult(
       """
       extends "foo.pkl"
 
-      bar: Int = TODO()
+      function bar(): Int = TODO()
 
     """
         .trimIndent()
@@ -307,7 +273,7 @@ class PklExtendsClauseAnnotatorTest {
       before =
         """
         abstract class Base {
-          abstract myModule: module
+          abstract function myModule(): module
         }
 
         class Child extends Base {}
@@ -315,13 +281,13 @@ class PklExtendsClauseAnnotatorTest {
       after =
         """
         abstract class Base {
-          abstract myModule: module
+          abstract function myModule(): module
         }
 
         class Child extends Base {
-          myModule: module = TODO()
+          function myModule(): module = TODO()
         }
-        """
+        """,
     )
   }
 
@@ -335,10 +301,10 @@ class PklExtendsClauseAnnotatorTest {
       import "Bar.pkl"
 
       abstract class Base {
-        abstract bar: Bar
+        abstract function bar(): Bar
       }
     """
-        .trimIndent()
+        .trimIndent(),
     )
 
     fixture.configureByText("Bar.pkl", "")
@@ -349,7 +315,7 @@ class PklExtendsClauseAnnotatorTest {
       
       class Child extends foo.Base
     """
-        .trimIndent()
+        .trimIndent(),
     )
     implementMembers()
     fixture.checkResult(
@@ -358,7 +324,7 @@ class PklExtendsClauseAnnotatorTest {
       import "foo.pkl"
 
       class Child extends foo.Base {
-        bar: Bar = TODO()
+        function bar(): Bar = TODO()
       }
     """
         .trimIndent()
@@ -375,10 +341,10 @@ class PklExtendsClauseAnnotatorTest {
       import "bar.pkl"
 
       abstract class Base {
-        abstract bar: bar.Qux
+        abstract function bar(): bar.Qux
       }
     """
-        .trimIndent()
+        .trimIndent(),
     )
 
     fixture.configureByText(
@@ -386,7 +352,7 @@ class PklExtendsClauseAnnotatorTest {
       """
       class Qux
     """
-        .trimIndent()
+        .trimIndent(),
     )
     fixture.configureByText(
       "test.pkl",
@@ -395,7 +361,7 @@ class PklExtendsClauseAnnotatorTest {
       
       class Child extends foo.Base
     """
-        .trimIndent()
+        .trimIndent(),
     )
     implementMembers()
     fixture.checkResult(
@@ -404,7 +370,7 @@ class PklExtendsClauseAnnotatorTest {
       import "foo.pkl"
 
       class Child extends foo.Base {
-        bar: bar.Qux = TODO()
+        function bar(): bar.Qux = TODO()
       }
     """
         .trimIndent()
@@ -421,10 +387,10 @@ class PklExtendsClauseAnnotatorTest {
       import "bar.pkl"
 
       abstract class Base {
-        abstract bar: bar.Qux
+        abstract function bar(): bar.Qux
       }
     """
-        .trimIndent()
+        .trimIndent(),
     )
 
     fixture.configureByText(
@@ -432,7 +398,7 @@ class PklExtendsClauseAnnotatorTest {
       """
       class Qux
     """
-        .trimIndent()
+        .trimIndent(),
     )
 
     fixture.configureByText(
@@ -443,7 +409,7 @@ class PklExtendsClauseAnnotatorTest {
 
       class Child extends foo.Base
     """
-        .trimIndent()
+        .trimIndent(),
     )
     implementMembers()
     fixture.checkResult(
@@ -453,7 +419,7 @@ class PklExtendsClauseAnnotatorTest {
       import "other.pkl" as bar
 
       class Child extends foo.Base {
-        bar: bar2.Qux = TODO()
+        function bar(): bar2.Qux = TODO()
       }
     """
         .trimIndent()
@@ -471,15 +437,15 @@ class PklExtendsClauseAnnotatorTest {
 
       abstract class Base extends Bar
     """
-        .trimIndent()
+        .trimIndent(),
     )
 
     fixture.configureByText(
       "Bar.pkl",
       """
-      abstract foo: module
+      abstract function foo(): module
     """
-        .trimIndent()
+        .trimIndent(),
     )
 
     fixture.configureByText(
@@ -489,7 +455,7 @@ class PklExtendsClauseAnnotatorTest {
 
       class Child extends foo.Base
     """
-        .trimIndent()
+        .trimIndent(),
     )
     implementMembers()
     fixture.checkResult(
@@ -498,7 +464,7 @@ class PklExtendsClauseAnnotatorTest {
         import "foo.pkl"
 
         class Child extends foo.Base {
-          foo: Bar = TODO()
+          function foo(): Bar = TODO()
         }
         """
         .trimIndent()
@@ -523,7 +489,7 @@ class PklExtendsClauseAnnotatorTest {
           function renderReference(reference: ref.Reference<ref.Domain, Any>): String = TODO()
         }
       """
-          .trimIndent()
+          .trimIndent(),
     )
   }
 }

@@ -38,7 +38,7 @@ class PklMemberAnnotatorTest {
       fixtureFactory
         .createLightFixtureBuilder(
           LightProjectDescriptor.EMPTY_PROJECT_DESCRIPTOR,
-          "sample pkl project"
+          "sample pkl project",
         )
         .fixture
     codeInsightTestFixture = fixtureFactory.createCodeInsightFixture(fixture)
@@ -53,17 +53,27 @@ class PklMemberAnnotatorTest {
   }
 
   @Test
+  fun `abstract property is ignored`() {
+    checkHighlighting(
+      """
+        <warning descr="Abstract modifier is ignored for properties">abstract</warning> foo: Int
+
+        class Foo {
+          <warning descr="Abstract modifier is ignored for properties">abstract</warning> foo: Int
+        }
+    """
+        .trimIndent()
+    )
+  }
+
+  @Test
   fun `abstract member inside non-abstract class`() {
     checkHighlighting(
       """
-        <warning descr="Abstract member declared inside a non-abstract module. This will be an error in the future.">abstract</warning> bar: Int
-
-        <warning descr="Abstract member declared inside a non-abstract module. This will be an error in the future.">abstract</warning> function bar(): Int
+        <error descr="Abstract method declared inside a non-abstract module">abstract</error> function bar(): Int
 
         class Foo {
-          <warning descr="Abstract member declared inside a non-abstract class. This will be an error in the future.">abstract</warning> bar: Int
-
-          <warning descr="Abstract member declared inside a non-abstract class. This will be an error in the future.">abstract</warning> function bar(): Int
+          <error descr="Abstract method declared inside a non-abstract class">abstract</error> function bar(): Int
         }
     """
         .trimIndent()
@@ -76,11 +86,7 @@ class PklMemberAnnotatorTest {
       """
       abstract module Foo
 
-      abstract bar <error descr="Abstract member cannot have a body">= 1</error>
-
-      abstract baz <error descr="Abstract member cannot have a body">{} {}</error>
-
-      abstract function bar() <error descr="Abstract member cannot have a body">= 15</error>
+      abstract function bar() <error descr="Abstract method cannot have a body">= 15</error>
     """
         .trimIndent()
     )
