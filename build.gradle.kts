@@ -1,3 +1,18 @@
+/**
+ * Copyright © 2026 Apple Inc. and the Pkl project authors. All rights reserved.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     https://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 import org.jetbrains.grammarkit.tasks.*
 import org.jetbrains.intellij.platform.gradle.TestFrameworkType
 import org.jetbrains.intellij.platform.gradle.tasks.VerifyPluginTask
@@ -17,29 +32,28 @@ plugins {
 
 repositories {
   mavenCentral()
-  intellijPlatform {
-    defaultRepositories()
-  }
+  intellijPlatform { defaultRepositories() }
 }
 
-configurations {
-  all {
-    resolutionStrategy {
-      failOnDynamicVersions()
-    }
-  }
-}
+configurations { all { resolutionStrategy { failOnDynamicVersions() } } }
 
 val isCiBuild = System.getenv("CI") != null
 val isReleaseBuild = System.getProperty("releaseBuild") != null
+
 if (!isReleaseBuild) {
   version = "$version-SNAPSHOT"
 }
+
 val pluginVersion by lazy {
   if (isReleaseBuild) project.version.toString()
   else {
     val commitId =
-        Runtime.getRuntime().exec(arrayOf("git", "rev-parse", "--short", "HEAD")).inputStream.reader().readText().trim()
+      Runtime.getRuntime()
+        .exec(arrayOf("git", "rev-parse", "--short", "HEAD"))
+        .inputStream
+        .reader()
+        .readText()
+        .trim()
     project.version.toString().replace("-SNAPSHOT", "-dev+$commitId")
   }
 }
@@ -49,13 +63,7 @@ java {
   targetCompatibility = JavaVersion.VERSION_21
 }
 
-sourceSets {
-  main {
-    java {
-      srcDir("generated")
-    }
-  }
-}
+sourceSets { main { java { srcDir("generated") } } }
 
 val pklCli: Configuration = configurations.create("pklCli")
 
@@ -68,7 +76,8 @@ dependencies {
     }
   }
   implementation(libs.kotlinxJson)
-  // needed for kotlin ui dsl: https://plugins.jetbrains.com/docs/intellij/kotlin-ui-dsl-version-2.html
+  // needed for kotlin ui dsl:
+  // https://plugins.jetbrains.com/docs/intellij/kotlin-ui-dsl-version-2.html
   implementation(libs.kotlinReflect)
 
   implementation(libs.pklFormatter)
@@ -114,11 +123,13 @@ intellijPlatform {
       create("GO", libs.versions.goLand.get())
     }
     subsystemsToCheck.set(VerifyPluginTask.Subsystems.WITHOUT_ANDROID)
-    failureLevel.set(setOf(
-      VerifyPluginTask.FailureLevel.COMPATIBILITY_PROBLEMS,
-      VerifyPluginTask.FailureLevel.MISSING_DEPENDENCIES,
-      VerifyPluginTask.FailureLevel.INVALID_PLUGIN
-    ))
+    failureLevel.set(
+      setOf(
+        VerifyPluginTask.FailureLevel.COMPATIBILITY_PROBLEMS,
+        VerifyPluginTask.FailureLevel.MISSING_DEPENDENCIES,
+        VerifyPluginTask.FailureLevel.INVALID_PLUGIN,
+      )
+    )
   }
 }
 
@@ -127,73 +138,58 @@ grammarKit {
   grammarKitRelease.set(libs.versions.grammarKit.get())
 }
 
-idea {
-  module {
-    excludeDirs = excludeDirs + setOf(file("ides"))
-  }
-}
+idea { module { excludeDirs = excludeDirs + setOf(file("ides")) } }
 
 tasks.runIde {
-//  version = libs.versions.intellijRunIde.get()
-//  ideDir.set(file("$projectDir/ides/IC-${libs.versions.intellijRunIde.get()}"))
-  jvmArgs = listOf(
-      "-XX:+UnlockDiagnosticVMOptions",
-      "--add-exports=java.base/jdk.internal.vm=ALL-UNNAMED"
-  )
+  //  version = libs.versions.intellijRunIde.get()
+  //  ideDir.set(file("$projectDir/ides/IC-${libs.versions.intellijRunIde.get()}"))
+  jvmArgs =
+    listOf("-XX:+UnlockDiagnosticVMOptions", "--add-exports=java.base/jdk.internal.vm=ALL-UNNAMED")
 }
 
-val generateLexer = tasks.getByName<GenerateLexerTask>("generateLexer") {
-  val inputFile = "src/main/grammar/pkl.flex"
-  val outputDir = "generated/org/pkl/intellij/lexer"
+val generateLexer =
+  tasks.getByName<GenerateLexerTask>("generateLexer") {
+    val inputFile = "src/main/grammar/pkl.flex"
+    val outputDir = "generated/org/pkl/intellij/lexer"
 
-  inputs.file(inputFile)
-  outputs.dir(outputDir)
+    inputs.file(inputFile)
+    outputs.dir(outputDir)
 
-  sourceFile.set(file(inputFile))
-  targetOutputDir.set(file(outputDir))
-  purgeOldFiles.set(true)
-}
-
-val generateParser = tasks.getByName<GenerateParserTask>("generateParser") {
-  val inputFile = "src/main/grammar/pkl.bnf"
-  val outputDir = "generated/org/pkl/intellij/parser"
-
-  inputs.file(inputFile)
-  outputs.dir(outputDir)
-
-  sourceFile.set(file(inputFile))
-  targetRootOutputDir.set(file("generated"))
-  pathToParser.set("/org/pkl/intellij/parser/PklParser.java")
-  pathToPsiRoot.set("/org/pkl/intellij/psi")
-  purgeOldFiles.set(true)
-}
-
-tasks.check {
-  dependsOn(tasks.named("verifyPlugin"))
-}
-
-tasks.clean {
-  delete("generated")
-}
-
-tasks.compileKotlin {
-  dependsOn(generateLexer, generateParser)
-}
-
-val configurePklCliExecutable = tasks.register("configurePklCliExecutable") {
-  doLast {
-    pklCli.singleFile.setExecutable(true)
+    sourceFile.set(file(inputFile))
+    targetOutputDir.set(file(outputDir))
+    purgeOldFiles.set(true)
   }
-}
+
+val generateParser =
+  tasks.getByName<GenerateParserTask>("generateParser") {
+    val inputFile = "src/main/grammar/pkl.bnf"
+    val outputDir = "generated/org/pkl/intellij/parser"
+
+    inputs.file(inputFile)
+    outputs.dir(outputDir)
+
+    sourceFile.set(file(inputFile))
+    targetRootOutputDir.set(file("generated"))
+    pathToParser.set("/org/pkl/intellij/parser/PklParser.java")
+    pathToPsiRoot.set("/org/pkl/intellij/psi")
+    purgeOldFiles.set(true)
+  }
+
+tasks.check { dependsOn(tasks.named("verifyPlugin")) }
+
+tasks.clean { delete("generated") }
+
+tasks.compileKotlin { dependsOn(generateLexer, generateParser) }
+
+val configurePklCliExecutable =
+  tasks.register("configurePklCliExecutable") { doLast { pklCli.singleFile.setExecutable(true) } }
 
 tasks.test {
   dependsOn(configurePklCliExecutable)
   val pklCacheDir = layout.buildDirectory.dir("pklTestCache").get()
   systemProperties["org.pkl.intellij.pklExecutable"] = pklCli.singleFile.absolutePath
   systemProperties["org.pkl.intellij.pklCacheDir"] = pklCacheDir.asFile.absolutePath
-  doFirst {
-    pklCacheDir.asFile.deleteRecursively()
-  }
+  doFirst { pklCacheDir.asFile.deleteRecursively() }
 }
 
 tasks.withType<KotlinCompile>().configureEach {
@@ -260,11 +256,10 @@ publishing {
   }
 }
 
-val printVersion = tasks.register("printVersion") {
-  doFirst { println(version) }
-}
+val printVersion = tasks.register("printVersion") { doFirst { println(version) } }
 
-private val licenseHeader = """
+private val licenseHeader =
+  """
   /**
    * Copyright © ${'$'}YEAR Apple Inc. and the Pkl project authors. All rights reserved.
    *
@@ -280,14 +275,21 @@ private val licenseHeader = """
    * See the License for the specific language governing permissions and
    * limitations under the License.
    */
-""".trimIndent()
+"""
+    .trimIndent()
 
 val originalRemoteName = System.getenv("PKL_ORIGINAL_REMOTE_NAME") ?: "origin"
 
 spotless {
   ratchetFrom = "$originalRemoteName/main"
+  kotlinGradle {
+    ktfmt(libs.versions.ktfmt.get()).googleStyle()
+    targetExclude("**/generated/**", "**/build/**")
+    licenseHeader(licenseHeader, "([a-zA-Z]|@file|//)")
+    target("*.kts", "buildSrc/**/*.kts")
+  }
   kotlin {
-    ktfmt("0.44").googleStyle()
+    ktfmt(libs.versions.ktfmt.get()).googleStyle()
     licenseHeader(licenseHeader)
   }
 }
