@@ -30,15 +30,16 @@ val Project.pklRefModule: PklRefModule?
   get() =
     CachedValuesManager.getManager(this).getCachedValue(this) {
       val stdLibModule = pklStdLib.refModule
+      val projectRootManager = ProjectRootManager.getInstance(this)
       when {
-        stdLibModule == null -> CachedValueProvider.Result.create(null)
+        stdLibModule == null -> CachedValueProvider.Result.create(null, projectRootManager)
         else -> {
           // Invalidate [PklRefModule] on any change to [rootManager], i.e., any change to a
           // project root.
-          val dependencies = listOfNotNull(ProjectRootManager.getInstance(this), stdLibModule.psi)
+          val dependencies = listOfNotNull(projectRootManager, stdLibModule.psi)
           CachedValueProvider.Result.create(
             PklRefModule(stdLibModule),
-            *dependencies.toTypedArray()
+            *dependencies.toTypedArray(),
           )
         }
       }
