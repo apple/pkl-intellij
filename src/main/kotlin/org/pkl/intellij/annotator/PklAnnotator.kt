@@ -1,5 +1,5 @@
 /**
- * Copyright © 2024 Apple Inc. and the Pkl project authors. All rights reserved.
+ * Copyright © 2024-2026 Apple Inc. and the Pkl project authors. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,6 +16,7 @@
 package org.pkl.intellij.annotator
 
 import com.intellij.codeEditor.printing.HTMLTextPainter
+import com.intellij.codeInspection.ProblemHighlightType
 import com.intellij.codeInspection.SuppressionUtil
 import com.intellij.lang.annotation.AnnotationBuilder
 import com.intellij.lang.annotation.AnnotationHolder
@@ -61,7 +62,7 @@ abstract class PklAnnotator : Annotator {
     element: PklObjectBodyListOwner,
     parentType: Type,
     base: PklBaseModule,
-    holder: AnnotationHolder
+    holder: AnnotationHolder,
   ) {
     for (objectBody in element.objectBodyList ?: return) {
       checkIsAmendableImpl(objectBody, parentType, base, holder)
@@ -72,7 +73,7 @@ abstract class PklAnnotator : Annotator {
     element: PklObjectBodyOwner,
     parentType: Type,
     base: PklBaseModule,
-    holder: AnnotationHolder
+    holder: AnnotationHolder,
   ) {
 
     val objectBody = element.objectBody ?: return
@@ -83,7 +84,7 @@ abstract class PklAnnotator : Annotator {
     objectBody: PklObjectBody,
     parentType: Type,
     base: PklBaseModule,
-    holder: AnnotationHolder
+    holder: AnnotationHolder,
   ) {
 
     if (parentType.isAmendable(base, null)) return
@@ -98,7 +99,7 @@ abstract class PklAnnotator : Annotator {
           brace.textRange,
           "Cannot instantiate class $instantiatedClassText",
           "Cannot instantiate class <code>${instantiatedClassText.escapeXml()}</code>",
-          holder
+          holder,
         )
       }
       else -> {
@@ -108,7 +109,7 @@ abstract class PklAnnotator : Annotator {
           brace.textRange,
           "Cannot amend value of type $elementTypeText",
           "Cannot amend value of type <code>${elementTypeText.escapeXml()}</code>",
-          holder
+          holder,
         )
       }
     }
@@ -118,7 +119,7 @@ abstract class PklAnnotator : Annotator {
     element: PklNewExpr,
     instantiatedType: Type,
     base: PklBaseModule,
-    holder: AnnotationHolder
+    holder: AnnotationHolder,
   ) {
 
     if (instantiatedType.isInstantiable(base, null)) return
@@ -130,7 +131,7 @@ abstract class PklAnnotator : Annotator {
       newKeyword.textRange,
       "Cannot instantiate type $elementTypeText",
       "Cannot instantiate type <code>${elementTypeText.escapeXml()}</code>",
-      holder
+      holder,
     )
   }
 
@@ -138,7 +139,7 @@ abstract class PklAnnotator : Annotator {
     expr: PklExpr?,
     expectedType: Type,
     base: PklBaseModule,
-    holder: AnnotationHolder
+    holder: AnnotationHolder,
   ) {
 
     if (expr == null || expectedType == Type.Unknown) return
@@ -167,7 +168,7 @@ abstract class PklAnnotator : Annotator {
     memberType: Type,
     failedConstraints: MutableList<Pair<Type, Int>>,
     base: PklBaseModule,
-    context: PklProject?
+    context: PklProject?,
   ): Boolean {
 
     return when {
@@ -178,7 +179,7 @@ abstract class PklAnnotator : Annotator {
           memberType,
           failedConstraints,
           base,
-          context
+          context,
         )
       }
       exprType is Type.Union -> {
@@ -194,7 +195,7 @@ abstract class PklAnnotator : Annotator {
           memberType.aliasedType(base, context),
           failedConstraints,
           base,
-          context
+          context,
         ) && isConstraintMatch(exprValue, memberType, failedConstraints, true)
       }
       memberType is Type.Union && !memberType.isUnionOfStringLiterals -> {
@@ -205,7 +206,7 @@ abstract class PklAnnotator : Annotator {
             memberType.rightType,
             failedConstraints,
             base,
-            context
+            context,
           )) && isConstraintMatch(exprValue, memberType, failedConstraints, true)
       }
       else -> {
@@ -219,7 +220,7 @@ abstract class PklAnnotator : Annotator {
     exprValue: Lazy<ConstraintValue>,
     memberType: Type,
     failedConstraints: MutableList<Pair<Type, Int>>,
-    isOverride: Boolean
+    isOverride: Boolean,
   ): Boolean {
 
     var index = 0
@@ -245,7 +246,7 @@ abstract class PklAnnotator : Annotator {
     requiredType: Type,
     base: PklBaseModule,
     holder: AnnotationHolder,
-    context: PklProject?
+    context: PklProject?,
   ) {
     when {
       !actualType.hasCommonSubtypeWith(requiredType, base, context) -> {
@@ -260,7 +261,7 @@ abstract class PklAnnotator : Annotator {
           requiredType.render(),
           actualType.render(),
           holder,
-          PklProblemGroups.typeMismatch
+          PklProblemGroups.typeMismatch,
         )
       }
       actualType.isNullable(base) &&
@@ -277,7 +278,7 @@ abstract class PklAnnotator : Annotator {
           actualType.render(),
           holder,
           PklProblemGroups.typeMismatch,
-          expr
+          expr,
         )
       }
       else -> {
@@ -293,7 +294,7 @@ abstract class PklAnnotator : Annotator {
           actualType.render(),
           holder,
           PklProblemGroups.typeMismatch,
-          expr
+          expr,
         )
       }
     }
@@ -303,7 +304,7 @@ abstract class PklAnnotator : Annotator {
     expr: PklExpr,
     exprValue: Lazy<ConstraintValue>,
     constraints: List<Pair<Type, Int>>,
-    holder: AnnotationHolder
+    holder: AnnotationHolder,
   ) {
 
     val textBuilder = StringBuilder()
@@ -341,7 +342,7 @@ abstract class PklAnnotator : Annotator {
       textBuilder.toString(),
       htmlBuilder.toString(),
       holder,
-      PklProblemGroups.typeMismatch
+      PklProblemGroups.typeMismatch,
     )
   }
 
@@ -362,7 +363,8 @@ abstract class PklAnnotator : Annotator {
     tooltip: String,
     holder: AnnotationHolder,
     group: PklProblemGroup? = null,
-    suppressedElement: PsiElement? = null
+    suppressedElement: PsiElement? = null,
+    highlightType: ProblemHighlightType? = null,
   ): AnnotationBuilder? {
     if (
       severity != HighlightSeverity.ERROR &&
@@ -385,6 +387,7 @@ abstract class PklAnnotator : Annotator {
         }
       }
     }
+    highlightType?.let { result.highlightType(it) }
     return result
   }
 
@@ -396,9 +399,20 @@ abstract class PklAnnotator : Annotator {
     tooltip: String,
     holder: AnnotationHolder,
     group: PklProblemGroup? = null,
-    suppressedElement: PsiElement? = null
+    suppressedElement: PsiElement? = null,
+    highlightType: ProblemHighlightType? = null,
   ) {
-    buildAnnotation(severity, range, message, tooltip, holder, group, suppressedElement)?.create()
+    buildAnnotation(
+        severity,
+        range,
+        message,
+        tooltip,
+        holder,
+        group,
+        suppressedElement,
+        highlightType,
+      )
+      ?.create()
   }
 
   @Suppress("SameParameterValue")
@@ -410,7 +424,7 @@ abstract class PklAnnotator : Annotator {
     found: String,
     holder: AnnotationHolder,
     group: PklProblemGroup? = null,
-    suppressedElement: PsiElement? = null
+    suppressedElement: PsiElement? = null,
   ) {
     createAnnotation(
       severity,
@@ -420,7 +434,7 @@ abstract class PklAnnotator : Annotator {
         "<tr><td align=\"right\">Found:</td><td><code>${found.escapeXml()}</code></td></tr></table>",
       holder,
       group,
-      suppressedElement
+      suppressedElement,
     )
   }
 

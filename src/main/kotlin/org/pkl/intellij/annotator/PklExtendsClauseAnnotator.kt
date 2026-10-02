@@ -40,7 +40,7 @@ class PklExtendsClauseAnnotator : PklAnnotator() {
 
   private fun checkModuleExtendsClause(
     clause: PklModuleExtendsAmendsClause,
-    holder: AnnotationHolder
+    holder: AnnotationHolder,
   ) {
     if (!clause.isExtend) return
     val moduleUri = clause.moduleUri ?: return
@@ -63,7 +63,7 @@ class PklExtendsClauseAnnotator : PklAnnotator() {
           PklAddModifierQuickFix(
             "Make '$moduleName' abstract",
             modifierList,
-            PklElementTypes.ABSTRACT
+            PklElementTypes.ABSTRACT,
           )
         )
       }
@@ -76,7 +76,7 @@ class PklExtendsClauseAnnotator : PklAnnotator() {
   private fun checkClassExtendsClause(
     clause: PklClassExtendsClause,
     holder: AnnotationHolder,
-    supertype: PklType?
+    supertype: PklType?,
   ) {
     val context = clause.enclosingModule?.pklProject
     fun reportError(message: String, fixes: List<IntentionAction> = listOf()) {
@@ -103,10 +103,10 @@ class PklExtendsClauseAnnotator : PklAnnotator() {
               PklAddModifierQuickFix(
                 "Make '$moduleName' abstract",
                 modifierList,
-                PklElementTypes.ABSTRACT
-              )
+                PklElementTypes.ABSTRACT,
+              ),
             )
-          } else listOf()
+          } else listOf(),
         )
       }
     }
@@ -128,15 +128,15 @@ class PklExtendsClauseAnnotator : PklAnnotator() {
                     PklAddModifierQuickFix(
                       "Make '$className' open",
                       resolved.modifierList,
-                      PklElementTypes.OPEN
+                      PklElementTypes.OPEN,
                     ),
                     PklAddModifierQuickFix(
                       "Make '$className' abstract",
                       resolved.modifierList,
-                      PklElementTypes.ABSTRACT
-                    )
+                      PklElementTypes.ABSTRACT,
+                    ),
                   )
-                } else listOf()
+                } else listOf(),
               )
               return
             }
@@ -163,33 +163,27 @@ class PklExtendsClauseAnnotator : PklAnnotator() {
     checkParentClassDef(clause, parent, holder.currentProject.pklBaseModule, holder, context)
   }
 
-  private fun checkAbstractMembers(
+  private fun checkAbstractMethods(
     element: PsiElement,
     def: PklTypeDefOrModule,
-    parentMembers: Collection<PklClassMember>,
-    holder: AnnotationHolder
+    parentMethods: Collection<PklClassMethod>,
+    holder: AnnotationHolder,
   ): Boolean {
-    for (parentMember in parentMembers) {
-      if (!parentMember.isAbstract) continue
-      val parentName = parentMember.name ?: continue
-      val definedMember =
-        when (parentMember) {
-          is PklClassProperty -> def.declaredProperties.find { it.name == parentName }
-          else -> def.declaredMethods.find { it.name == parentName }
-        }
-      if (definedMember != null) continue
+    for (parentMethod in parentMethods) {
+      if (!parentMethod.isAbstract) continue
+      val parentName = parentMethod.name ?: continue
+      if (def.declaredMethods.any { it.name == parentName }) continue
 
       // copy Java/Kotlin error message and provide information about just the first missing
       // method/property.
       val entityName = if (def is PklModule) "module" else "class"
       val classOrModuleName = def.name.orEmpty()
-      val memberEntityName = if (parentMember is PklClassProperty) "property" else "method"
       val message =
-        "$entityName $classOrModuleName is not abstract and does not implement $memberEntityName '${parentName}'"
+        "$entityName $classOrModuleName is not abstract and does not implement method '${parentName}'"
       val tooltipMessage =
-        "${entityName.escapeXml()} ${classOrModuleName.escapeXml()} is not abstract and does not implement ${memberEntityName.escapeXml()} '${parentName.escapeXml()}'"
+        "${entityName.escapeXml()} ${classOrModuleName.escapeXml()} is not abstract and does not implement method '${parentName.escapeXml()}'"
       holder
-        .newAnnotation(HighlightSeverity.WARNING, message)
+        .newAnnotation(HighlightSeverity.ERROR, message)
         .apply {
           range(element.textRange)
           tooltip(tooltipMessage)
@@ -199,7 +193,7 @@ class PklExtendsClauseAnnotator : PklAnnotator() {
               PklAddModifierQuickFix(
                 "Make '${classOrModuleName}' abstract",
                 modifierList,
-                PklElementTypes.ABSTRACT
+                PklElementTypes.ABSTRACT,
               )
             )
           }
@@ -216,7 +210,7 @@ class PklExtendsClauseAnnotator : PklAnnotator() {
     parentMembers: Collection<PklClassMember>,
     holder: AnnotationHolder,
     base: PklBaseModule,
-    context: PklProject?
+    context: PklProject?,
   ) {
     for (member in parentMembers) {
       if (member !is PklClassProperty || !member.isFixedOrConst) continue
@@ -244,7 +238,7 @@ class PklExtendsClauseAnnotator : PklAnnotator() {
               PklAddModifierQuickFix(
                 "Make '${classOrModuleName}' abstract",
                 modifierList,
-                PklElementTypes.ABSTRACT
+                PklElementTypes.ABSTRACT,
               )
             )
           }
@@ -259,14 +253,14 @@ class PklExtendsClauseAnnotator : PklAnnotator() {
     def: PklTypeDefOrModule,
     base: PklBaseModule,
     holder: AnnotationHolder,
-    context: PklProject?
+    context: PklProject?,
   ) {
     if (def.isAbstract) return
     val parentProperties = def.effectiveParentProperties(context)?.values ?: emptyList()
     val parentMethods = def.methods(context)?.values ?: emptyList()
     val parentMembers = parentProperties + parentMethods
     if (parentMembers.isEmpty()) return
-    if (checkAbstractMembers(element, def, parentMembers, holder)) return
+    if (checkAbstractMethods(element, def, parentMethods, holder)) return
     checkFixedOrConstMembers(element, def, parentMembers, holder, base, context)
   }
 }
