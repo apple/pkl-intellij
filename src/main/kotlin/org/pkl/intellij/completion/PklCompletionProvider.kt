@@ -1,5 +1,5 @@
 /**
- * Copyright © 2024 Apple Inc. and the Pkl project authors. All rights reserved.
+ * Copyright © 2024-2026 Apple Inc. and the Pkl project authors. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,7 +23,6 @@ abstract class PklCompletionProvider : CompletionProvider<CompletionParameters>(
   companion object {
     @JvmStatic
     protected val TYPE_KEYWORD_LOOKUP_ELEMENTS =
-      // omit `in` and `out` because user-defined generic types aren't supported
       listOf("module", "nothing", "unknown").map { LookupElementBuilder.create(it).bold() }
     @JvmStatic
     protected val EXPRESSION_LEVEL_KEYWORD_LOOKUP_ELEMENTS =
@@ -47,7 +46,7 @@ abstract class PklCompletionProvider : CompletionProvider<CompletionParameters>(
           "this",
           "throw()",
           "trace()",
-          "true"
+          "true",
         )
         .map { keyword -> LookupElementBuilder.create(keyword).bold().postProcess(keyword) }
     @JvmStatic
@@ -70,7 +69,7 @@ abstract class PklCompletionProvider : CompletionProvider<CompletionParameters>(
           "import ",
           "module ",
           "open ",
-          "typealias "
+          "typealias ",
         )
         .map { LookupElementBuilder.create(it).bold() }
     /** In addition to [DEFINITION_LEVEL_KEYWORD_LOOKUP_ELEMENTS]. */

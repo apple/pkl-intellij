@@ -49,7 +49,7 @@ sealed class Type(val constraints: List<ConstraintExpr> = listOf()) {
       psi: PklTypeAlias,
       context: PklProject?,
       specifiedTypeArguments: List<Type> = listOf(),
-      constraints: List<ConstraintExpr> = listOf()
+      constraints: List<ConstraintExpr> = listOf(),
     ): Type =
       // Note: this is incomplete in that it doesn't detect the case
       // where recursion is introduced via type argument:
@@ -69,7 +69,7 @@ sealed class Type(val constraints: List<ConstraintExpr> = listOf()) {
       type2: Type,
       type3: Type,
       base: PklBaseModule,
-      context: PklProject?
+      context: PklProject?,
     ): Type = Union.create(Union.create(type1, type2, base, context), type3, base, context)
 
     fun union(
@@ -78,13 +78,13 @@ sealed class Type(val constraints: List<ConstraintExpr> = listOf()) {
       type3: Type,
       type4: Type,
       base: PklBaseModule,
-      context: PklProject?
+      context: PklProject?,
     ): Type =
       Union.create(
         Union.create(Union.create(type1, type2, base, context), type3, base, context),
         type4,
         base,
-        context
+        context,
       )
 
     fun union(
@@ -94,18 +94,18 @@ sealed class Type(val constraints: List<ConstraintExpr> = listOf()) {
       type4: Type,
       type5: Type,
       base: PklBaseModule,
-      context: PklProject?
+      context: PklProject?,
     ): Type =
       Union.create(
         Union.create(
           Union.create(Union.create(type1, type2, base, context), type3, base, context),
           type4,
           base,
-          context
+          context,
         ),
         type5,
         base,
-        context
+        context,
       )
 
     fun union(
@@ -116,7 +116,7 @@ sealed class Type(val constraints: List<ConstraintExpr> = listOf()) {
       type5: Type,
       type6: Type,
       base: PklBaseModule,
-      context: PklProject?
+      context: PklProject?,
     ): Type =
       Union.create(
         Union.create(
@@ -124,15 +124,15 @@ sealed class Type(val constraints: List<ConstraintExpr> = listOf()) {
             Union.create(Union.create(type1, type2, base, context), type3, base, context),
             type4,
             base,
-            context
+            context,
           ),
           type5,
           base,
-          context
+          context,
         ),
         type6,
         base,
-        context
+        context,
       )
 
     fun union(types: List<Type>, base: PklBaseModule, context: PklProject?): Type =
@@ -162,7 +162,7 @@ sealed class Type(val constraints: List<ConstraintExpr> = listOf()) {
     classType: Class,
     base: PklBaseModule,
     context: PklProject?,
-    strictConstraints: Boolean = false
+    strictConstraints: Boolean = false,
   ): Boolean
 
   /** Tells whether this type is a (non-strict) subtype of [type]. */
@@ -170,7 +170,7 @@ sealed class Type(val constraints: List<ConstraintExpr> = listOf()) {
     type: Type,
     base: PklBaseModule,
     context: PklProject?,
-    strictConstraints: Boolean = false
+    strictConstraints: Boolean = false,
   ): Boolean
 
   fun hasDefault(base: PklBaseModule, context: PklProject?) =
@@ -183,7 +183,7 @@ sealed class Type(val constraints: List<ConstraintExpr> = listOf()) {
     type: Type,
     base: PklBaseModule,
     context: PklProject?,
-    strictConstraints: Boolean = false
+    strictConstraints: Boolean = false,
   ): Boolean =
     when (type) {
       Unknown -> true
@@ -213,7 +213,7 @@ sealed class Type(val constraints: List<ConstraintExpr> = listOf()) {
   protected fun doHasCommonSubtypeWith(
     type: Type,
     base: PklBaseModule,
-    context: PklProject?
+    context: PklProject?,
   ): Boolean =
     when (type) {
       is Alias -> hasCommonSubtypeWith(type.aliasedType(base, context), base, context)
@@ -282,7 +282,7 @@ sealed class Type(val constraints: List<ConstraintExpr> = listOf()) {
       allowClasses: Boolean,
       base: PklBaseModule,
       visitor: ResolveVisitor<*>,
-      context: PklProject?
+      context: PklProject?,
     ): Boolean = true
 
     // Note: we aren't currently tracking constraints for unknown type (uncommon, would require a
@@ -309,21 +309,21 @@ sealed class Type(val constraints: List<ConstraintExpr> = listOf()) {
       classType: Class,
       base: PklBaseModule,
       context: PklProject?,
-      strictConstraints: Boolean
+      strictConstraints: Boolean,
     ): Boolean = true
 
     override fun isSubtypeOf(
       type: Type,
       base: PklBaseModule,
       context: PklProject?,
-      strictConstraints: Boolean
+      strictConstraints: Boolean,
     ): Boolean = true
 
     // `unknown` is not considered a valid answer
     override fun hasCommonSubtypeWith(
       type: Type,
       base: PklBaseModule,
-      context: PklProject?
+      context: PklProject?,
     ): Boolean = false
 
     override fun isUnresolvedMemberFatal(base: PklBaseModule, context: PklProject?): Boolean = false
@@ -337,7 +337,7 @@ sealed class Type(val constraints: List<ConstraintExpr> = listOf()) {
       allowClasses: Boolean,
       base: PklBaseModule,
       visitor: ResolveVisitor<*>,
-      context: PklProject?
+      context: PklProject?,
     ): Boolean = true
 
     // constraints for bottom type aren't meaningful -> don't track them
@@ -353,21 +353,21 @@ sealed class Type(val constraints: List<ConstraintExpr> = listOf()) {
       classType: Class,
       base: PklBaseModule,
       context: PklProject?,
-      strictConstraints: Boolean
+      strictConstraints: Boolean,
     ): Boolean = true
 
     override fun isSubtypeOf(
       type: Type,
       base: PklBaseModule,
       context: PklProject?,
-      strictConstraints: Boolean
+      strictConstraints: Boolean,
     ): Boolean = true
 
     // `nothing` is not considered a valid answer
     override fun hasCommonSubtypeWith(
       type: Type,
       base: PklBaseModule,
-      context: PklProject?
+      context: PklProject?,
     ): Boolean = false
 
     override fun isUnresolvedMemberFatal(base: PklBaseModule, context: PklProject?): Boolean = true
@@ -385,7 +385,7 @@ sealed class Type(val constraints: List<ConstraintExpr> = listOf()) {
       allowClasses: Boolean,
       base: PklBaseModule,
       visitor: ResolveVisitor<*>,
-      context: PklProject?
+      context: PklProject?,
     ): Boolean = true
 
     override fun resolveToDefinitions(base: PklBaseModule): List<PklNavigableElement> = listOf(psi)
@@ -394,20 +394,20 @@ sealed class Type(val constraints: List<ConstraintExpr> = listOf()) {
       classType: Class,
       base: PklBaseModule,
       context: PklProject?,
-      strictConstraints: Boolean
+      strictConstraints: Boolean,
     ): Boolean = classType.classEquals(base.anyType)
 
     override fun isSubtypeOf(
       type: Type,
       base: PklBaseModule,
       context: PklProject?,
-      strictConstraints: Boolean
+      strictConstraints: Boolean,
     ): Boolean = this == type || doIsSubtypeOf(type, base, context, strictConstraints)
 
     override fun hasCommonSubtypeWith(
       type: Type,
       base: PklBaseModule,
-      context: PklProject?
+      context: PklProject?,
     ): Boolean = type.unaliased(base, context) != Nothing
 
     override fun isUnresolvedMemberFatal(base: PklBaseModule, context: PklProject?): Boolean =
@@ -446,7 +446,7 @@ sealed class Type(val constraints: List<ConstraintExpr> = listOf()) {
         psi: PklModule,
         referenceName: String,
         context: PklProject?,
-        constraints: List<ConstraintExpr> = listOf()
+        constraints: List<ConstraintExpr> = listOf(),
       ): Module {
         var result = psi
         // a module's type is the topmost module in the module hierarchy that doesn't amend another
@@ -468,7 +468,7 @@ sealed class Type(val constraints: List<ConstraintExpr> = listOf()) {
       allowClasses: Boolean,
       base: PklBaseModule,
       visitor: ResolveVisitor<*>,
-      context: PklProject?
+      context: PklProject?,
     ): Boolean {
       return if (allowClasses) {
         psi.cache(context).visitTypeDefsAndPropertiesOrMethods(isProperty, visitor, context)
@@ -483,14 +483,14 @@ sealed class Type(val constraints: List<ConstraintExpr> = listOf()) {
       classType: Class,
       base: PklBaseModule,
       context: PklProject?,
-      strictConstraints: Boolean
+      strictConstraints: Boolean,
     ): Boolean = base.moduleType.isSubtypeOf(classType, base, context, strictConstraints)
 
     override fun isSubtypeOf(
       type: Type,
       base: PklBaseModule,
       context: PklProject?,
-      strictConstraints: Boolean
+      strictConstraints: Boolean,
     ): Boolean =
       when (type) {
         is Module -> isSubtypeOf(type, context)
@@ -514,7 +514,7 @@ sealed class Type(val constraints: List<ConstraintExpr> = listOf()) {
     override fun hasCommonSubtypeWith(
       type: Type,
       base: PklBaseModule,
-      context: PklProject?
+      context: PklProject?,
     ): Boolean =
       when (type) {
         is Module -> type.isSubtypeOf(this, context)
@@ -570,14 +570,13 @@ sealed class Type(val constraints: List<ConstraintExpr> = listOf()) {
       prop: PklClassProperty,
       type: Type,
       base: PklBaseModule,
-      context: PklProject?
+      context: PklProject?,
     ): Boolean =
       !(prop.isExternal ||
         prop.isLocal ||
         (type as? Class)?.let {
           it == base.listingType || it == base.mappingType || it.psi.isExternal
-        }
-          ?: false ||
+        } ?: false ||
         (type.isSubtypeOf(base.moduleType, base, context) && prop.name == "output"))
 
     override fun visitMembers(
@@ -585,7 +584,7 @@ sealed class Type(val constraints: List<ConstraintExpr> = listOf()) {
       allowClasses: Boolean,
       base: PklBaseModule,
       visitor: ResolveVisitor<*>,
-      context: PklProject?
+      context: PklProject?,
     ): Boolean {
       if (!psi.isValid) return true
       fun visit(name: String, type: PklType, classProperties: List<PklClassProperty>): Boolean =
@@ -593,7 +592,7 @@ sealed class Type(val constraints: List<ConstraintExpr> = listOf()) {
           name,
           PklReferenceQualifiedAccessProxy(name, domain, type, psi.project, classProperties),
           bindings,
-          context
+          context,
         )
 
       return when {
@@ -602,7 +601,7 @@ sealed class Type(val constraints: List<ConstraintExpr> = listOf()) {
           visit(
             visitor.exactName ?: "UNKNOWN",
             PklReferenceQualifiedAccessProxy.UnknownType,
-            listOf()
+            listOf(),
           )
         visitor.exactName != null -> {
           var isUnknown = false
@@ -635,7 +634,7 @@ sealed class Type(val constraints: List<ConstraintExpr> = listOf()) {
               visit(
                 visitor.exactName!!,
                 PklReferenceQualifiedAccessProxy.UnionType.create(candidates),
-                candidates
+                candidates,
               )
             else -> true
           }
@@ -667,7 +666,7 @@ sealed class Type(val constraints: List<ConstraintExpr> = listOf()) {
                 visit(
                   propName,
                   PklReferenceQualifiedAccessProxy.UnionType.create(candidates),
-                  candidates
+                  candidates,
                 )
             }
           }
@@ -679,7 +678,7 @@ sealed class Type(val constraints: List<ConstraintExpr> = listOf()) {
     fun valueTypeForSubscriptKeyType(
       keyType: Type,
       base: PklBaseModule,
-      context: PklProject?
+      context: PklProject?,
     ): Type {
       if (referencesUnknown) return this
       val keyClass = keyType.toClassType(base, context)
@@ -751,7 +750,7 @@ sealed class Type(val constraints: List<ConstraintExpr> = listOf()) {
         root: Type,
         base: PklBaseModule,
         context: PklProject?,
-        visit: (Type, Sequence<PklClassProperty>) -> Boolean
+        visit: (Type, Sequence<PklClassProperty>) -> Boolean,
       ): Boolean =
         when (root) {
           is Alias -> {
@@ -824,7 +823,7 @@ sealed class Type(val constraints: List<ConstraintExpr> = listOf()) {
       allowClasses: Boolean,
       base: PklBaseModule,
       visitor: ResolveVisitor<*>,
-      context: PklProject?
+      context: PklProject?,
     ): Boolean {
       return psi.cache(context).visitPropertiesOrMethods(isProperty, bindings, visitor, context)
     }
@@ -859,7 +858,7 @@ sealed class Type(val constraints: List<ConstraintExpr> = listOf()) {
       classType: Class,
       base: PklBaseModule,
       context: PklProject?,
-      strictConstraints: Boolean
+      strictConstraints: Boolean,
     ): Boolean {
       // optimization
       if (classType.psi === base.anyType.psi) return true
@@ -897,7 +896,7 @@ sealed class Type(val constraints: List<ConstraintExpr> = listOf()) {
       type: Type,
       base: PklBaseModule,
       context: PklProject?,
-      strictConstraints: Boolean
+      strictConstraints: Boolean,
     ): Boolean =
       when (type) {
         is Module -> psi.isSubclassOf(type.psi, context)
@@ -908,7 +907,7 @@ sealed class Type(val constraints: List<ConstraintExpr> = listOf()) {
     override fun hasCommonSubtypeWith(
       type: Type,
       base: PklBaseModule,
-      context: PklProject?
+      context: PklProject?,
     ): Boolean =
       when (type) {
         is Class -> hasCommonSubtypeWith(type, base, context)
@@ -923,7 +922,7 @@ sealed class Type(val constraints: List<ConstraintExpr> = listOf()) {
     private fun hasCommonSubtypeWith(
       type: Class,
       base: PklBaseModule,
-      context: PklProject?
+      context: PklProject?,
     ): Boolean {
       // optimization
       if (psi === base.anyType.psi) return true
@@ -1055,14 +1054,14 @@ sealed class Type(val constraints: List<ConstraintExpr> = listOf()) {
   private constructor(
     val psi: PklTypeAlias,
     specifiedTypeArguments: List<Type>,
-    constraints: List<ConstraintExpr>
+    constraints: List<ConstraintExpr>,
   ) : Type(constraints) {
     companion object {
       /** Use [Type.alias] instead except in [PklBaseModule]. */
       internal fun unchecked(
         psi: PklTypeAlias,
         specifiedTypeArguments: List<Type>,
-        constraints: List<ConstraintExpr>
+        constraints: List<ConstraintExpr>,
       ): Alias = Alias(psi, specifiedTypeArguments, constraints)
     }
 
@@ -1096,7 +1095,7 @@ sealed class Type(val constraints: List<ConstraintExpr> = listOf()) {
       allowClasses: Boolean,
       base: PklBaseModule,
       visitor: ResolveVisitor<*>,
-      context: PklProject?
+      context: PklProject?,
     ): Boolean {
       return aliasedType(base, context)
         .visitMembers(isProperty, allowClasses, base, visitor, context)
@@ -1106,20 +1105,20 @@ sealed class Type(val constraints: List<ConstraintExpr> = listOf()) {
       classType: Class,
       base: PklBaseModule,
       context: PklProject?,
-      strictConstraints: Boolean
+      strictConstraints: Boolean,
     ): Boolean = aliasedType(base, context).isSubtypeOf(classType, base, context, strictConstraints)
 
     override fun isSubtypeOf(
       type: Type,
       base: PklBaseModule,
       context: PklProject?,
-      strictConstraints: Boolean
+      strictConstraints: Boolean,
     ): Boolean = aliasedType(base, context).isSubtypeOf(type, base, context, strictConstraints)
 
     override fun hasCommonSubtypeWith(
       type: Type,
       base: PklBaseModule,
-      context: PklProject?
+      context: PklProject?,
     ): Boolean = aliasedType(base, context).hasCommonSubtypeWith(type, base, context)
 
     override fun isUnresolvedMemberFatal(base: PklBaseModule, context: PklProject?): Boolean =
@@ -1203,7 +1202,7 @@ sealed class Type(val constraints: List<ConstraintExpr> = listOf()) {
       allowClasses: Boolean,
       base: PklBaseModule,
       visitor: ResolveVisitor<*>,
-      context: PklProject?
+      context: PklProject?,
     ): Boolean {
       return base.stringType.visitMembers(isProperty, allowClasses, base, visitor, context)
     }
@@ -1212,7 +1211,7 @@ sealed class Type(val constraints: List<ConstraintExpr> = listOf()) {
       classType: Class,
       base: PklBaseModule,
       context: PklProject?,
-      strictConstraints: Boolean
+      strictConstraints: Boolean,
     ): Boolean {
       return classType.classEquals(base.stringType) || classType.classEquals(base.anyType)
     }
@@ -1221,7 +1220,7 @@ sealed class Type(val constraints: List<ConstraintExpr> = listOf()) {
       type: Type,
       base: PklBaseModule,
       context: PklProject?,
-      strictConstraints: Boolean
+      strictConstraints: Boolean,
     ): Boolean =
       when (type) {
         is StringLiteral -> value == type.value
@@ -1232,7 +1231,7 @@ sealed class Type(val constraints: List<ConstraintExpr> = listOf()) {
     override fun hasCommonSubtypeWith(
       type: Type,
       base: PklBaseModule,
-      context: PklProject?
+      context: PklProject?,
     ): Boolean = false
 
     override fun isUnresolvedMemberFatal(base: PklBaseModule, context: PklProject?): Boolean = true
@@ -1268,7 +1267,7 @@ sealed class Type(val constraints: List<ConstraintExpr> = listOf()) {
     val leftType: Type,
     val rightType: Type,
     constraints: List<ConstraintExpr>,
-    private val context: PklProject?
+    private val context: PklProject?,
   ) : Type(constraints) {
     companion object {
       // this method exists because `Type.union(t1, t2)` can't see the private constructor
@@ -1276,7 +1275,7 @@ sealed class Type(val constraints: List<ConstraintExpr> = listOf()) {
         leftType: Type,
         rightType: Type,
         base: PklBaseModule,
-        context: PklProject?
+        context: PklProject?,
       ): Type {
         val atMostOneTypeHasConstraints = !leftType.hasConstraints || !rightType.hasConstraints
         return when {
@@ -1310,7 +1309,7 @@ sealed class Type(val constraints: List<ConstraintExpr> = listOf()) {
       classType: Class,
       base: PklBaseModule,
       context: PklProject?,
-      strictConstraints: Boolean
+      strictConstraints: Boolean,
     ): Boolean =
       leftType.isSubtypeOf(classType, base, context, strictConstraints) &&
         rightType.isSubtypeOf(classType, base, context, strictConstraints)
@@ -1319,7 +1318,7 @@ sealed class Type(val constraints: List<ConstraintExpr> = listOf()) {
       type: Type,
       base: PklBaseModule,
       context: PklProject?,
-      strictConstraints: Boolean
+      strictConstraints: Boolean,
     ): Boolean =
       leftType.isSubtypeOf(type, base, context, strictConstraints) &&
         rightType.isSubtypeOf(type, base, context, strictConstraints)
@@ -1328,7 +1327,7 @@ sealed class Type(val constraints: List<ConstraintExpr> = listOf()) {
     override fun hasCommonSubtypeWith(
       type: Type,
       base: PklBaseModule,
-      context: PklProject?
+      context: PklProject?,
     ): Boolean =
       leftType.isSubtypeOf(type, base, context) ||
         leftType.hasCommonSubtypeWith(type, base, context) ||
@@ -1378,7 +1377,7 @@ sealed class Type(val constraints: List<ConstraintExpr> = listOf()) {
         leftType.instantiated(base, context),
         rightType.instantiated(base, context),
         base,
-        context
+        context,
       )
 
     override fun amending(base: PklBaseModule, context: PklProject?): Type =
@@ -1412,7 +1411,7 @@ sealed class Type(val constraints: List<ConstraintExpr> = listOf()) {
       allowClasses: Boolean,
       base: PklBaseModule,
       visitor: ResolveVisitor<*>,
-      context: PklProject?
+      context: PklProject?,
     ): Boolean {
       if (isUnionOfStringLiterals) {
         // visit pkl.base#String once rather than for every string literal
@@ -1472,6 +1471,24 @@ sealed class Type(val constraints: List<ConstraintExpr> = listOf()) {
 
 typealias TypeParameterBindings = Map<PklTypeParameter, Type>
 
+fun TypeParameterBindings.enhanceFromTypeArguments(
+  base: PklBaseModule,
+  context: PklProject?,
+  typeArgumentList: PklTypeArgumentList?,
+  typeParameterList: PklTypeParameterList?,
+): TypeParameterBindings =
+  when {
+    typeArgumentList == null || typeParameterList == null -> this
+    else -> {
+      val enhancedBindings = toMutableMap()
+      for (i in 0 until typeParameterList.elements.size) {
+        enhancedBindings[typeParameterList.elements[i]] =
+          typeArgumentList.elements[i].toType(base, this, context, true)
+      }
+      enhancedBindings
+    }
+  }
+
 private val constraintExprProvider:
   ParameterizedCachedValueProvider<List<ConstraintExpr>, Pair<PklConstrainedType, PklProject?>> =
   ParameterizedCachedValueProvider { (elem, context) ->
@@ -1488,9 +1505,9 @@ private val constraintExprProvider:
 
 fun PklType?.toType(
   base: PklBaseModule,
-  bindings: Map<PklTypeParameter, Type>,
+  bindings: TypeParameterBindings,
   context: PklProject?,
-  preserveUnboundTypeVars: Boolean = false
+  preserveUnboundTypeVars: Boolean = false,
 ): Type =
   when (this) {
     null -> Unknown
@@ -1503,7 +1520,7 @@ fun PklType?.toType(
           val typeArguments = typeArgumentList?.elements ?: listOf()
           Class.create(
             resolved,
-            typeArguments.toTypes(base, bindings, preserveUnboundTypeVars, context)
+            typeArguments.toTypes(base, bindings, preserveUnboundTypeVars, context),
           )
         }
         is PklTypeAlias -> {
@@ -1511,11 +1528,11 @@ fun PklType?.toType(
           Type.alias(
             resolved,
             context,
-            typeArguments.toTypes(base, bindings, preserveUnboundTypeVars, context)
+            typeArguments.toTypes(base, bindings, preserveUnboundTypeVars, context),
           )
         }
-        is PklTypeParameter -> bindings[resolved]
-            ?: if (preserveUnboundTypeVars) Variable(resolved) else Unknown
+        is PklTypeParameter ->
+          bindings[resolved] ?: if (preserveUnboundTypeVars) Variable(resolved) else Unknown
         else -> unexpectedType(resolved)
       }
     }
@@ -1524,7 +1541,7 @@ fun PklType?.toType(
         leftType.toType(base, bindings, context, preserveUnboundTypeVars),
         rightType.toType(base, bindings, context, preserveUnboundTypeVars),
         base,
-        context
+        context,
       )
     is PklFunctionType -> {
       val parameterTypes =
@@ -1554,7 +1571,7 @@ fun PklType?.toType(
             project.cacheKeyService.getKey("PklType.toType", context),
             constraintExprProvider,
             false,
-            this to context
+            this to context,
           )
       type.toType(base, bindings, context, preserveUnboundTypeVars).withConstraints(constraintExprs)
     }
@@ -1566,16 +1583,16 @@ fun PklType?.toType(
       // TODO: for `open` modules, `module` is a self-type
       enclosingModule?.let { Type.module(it, "module", context) } ?: base.moduleType
     }
-    is PklStringLiteralType -> stringConstant.content.escapedText()?.let { StringLiteral(it) }
-        ?: Unknown
-    is PklTypeParameter -> bindings[this]
-        ?: if (preserveUnboundTypeVars) Variable(this) else Unknown
+    is PklStringLiteralType ->
+      stringConstant.content.escapedText()?.let { StringLiteral(it) } ?: Unknown
+    is PklTypeParameter ->
+      bindings[this] ?: if (preserveUnboundTypeVars) Variable(this) else Unknown
     else -> unexpectedType(this)
   }
 
 fun List<PklType>.toTypes(
   base: PklBaseModule,
-  bindings: Map<PklTypeParameter, Type>,
+  bindings: TypeParameterBindings,
   preserveTypeVariables: Boolean = false,
-  context: PklProject?
+  context: PklProject?,
 ): List<Type> = map { it.toType(base, bindings, context, preserveTypeVariables) }

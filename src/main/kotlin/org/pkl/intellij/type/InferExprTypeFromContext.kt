@@ -33,13 +33,7 @@ private val inferExprTypeProvider:
   ParameterizedCachedValueProvider { (expr, context) ->
     val project = expr.project
     val result =
-      expr.doInferExprTypeFromContext(
-        project.pklBaseModule,
-        mapOf(),
-        expr.parent,
-        context,
-        true,
-      )
+      expr.doInferExprTypeFromContext(project.pklBaseModule, mapOf(), expr.parent, context, true)
     val dependencies = buildList {
       add(PsiManager.getInstance(project).modificationTracker.forLanguage(PklLanguage))
       if (context != null) {
@@ -58,7 +52,7 @@ fun PklExpr?.inferExprTypeFromContext(
   bindings: TypeParameterBindings,
   context: PklProject?,
   resolveTypeParamsInParamTypes: Boolean = true,
-  canInferParentExpr: Boolean = true
+  canInferParentExpr: Boolean = true,
 ): Type =
   when {
     this == null -> Type.Unknown
@@ -69,7 +63,7 @@ fun PklExpr?.inferExprTypeFromContext(
           project.cacheKeyService.getKey("PklExpr.inferExprTypeFromContext", context),
           inferExprTypeProvider,
           false,
-          this to context
+          this to context,
         )
     else ->
       doInferExprTypeFromContext(
@@ -78,7 +72,7 @@ fun PklExpr?.inferExprTypeFromContext(
         parent,
         context,
         resolveTypeParamsInParamTypes,
-        canInferParentExpr
+        canInferParentExpr,
       )
   }
 
@@ -88,7 +82,7 @@ private fun PklExpr?.doInferExprTypeFromContext(
   parent: PsiElement?,
   context: PklProject?,
   resolveTypeParamsInParamTypes: Boolean = true,
-  canInferParentExpr: Boolean = true
+  canInferParentExpr: Boolean = true,
 ): Type {
   if (this == null || parent !is PklElement) return Type.Unknown
 
@@ -133,13 +127,11 @@ private fun PklExpr?.doInferExprTypeFromContext(
                   "converters" ->
                     resolvedKeyClass?.let {
                       base.function1Type.withTypeArguments(Type.Class.create(it), base.anyType)
-                    }
-                      ?: defaultExpectedType
+                    } ?: defaultExpectedType
                   "convertPropertyTransformers" ->
                     resolvedKeyClass?.let {
                       base.mixinType.withTypeArguments(Type.Class.create(it))
-                    }
-                      ?: defaultExpectedType
+                    } ?: defaultExpectedType
                   else -> defaultExpectedType
                 }
               } else {
@@ -193,7 +185,8 @@ private fun PklExpr?.doInferExprTypeFromContext(
             ResolveVisitors.paramTypesOfFirstMethodNamed(
               accessExpr.memberNameText,
               base,
-              resolveTypeParamsInParamTypes
+              accessExpr.typeArgumentList,
+              resolveTypeParamsInParamTypes,
             )
           val paramTypes = accessExpr.resolve(base, null, bindings, visitor, context)
           if (paramTypes.isNullOrEmpty()) return Type.Unknown
@@ -239,7 +232,7 @@ private fun PklExpr?.doInferExprTypeFromContext(
                 doVisitSubscriptExpr(unaliasedType.leftType),
                 doVisitSubscriptExpr(unaliasedType.rightType),
                 base,
-                context
+                context,
               )
             else -> Type.Unknown // unsupported type
           }
@@ -268,7 +261,7 @@ private fun PklExpr?.doInferExprTypeFromContext(
                 doVisitMultiplicativeBinExpr(unaliasedType.leftType),
                 doVisitMultiplicativeBinExpr(unaliasedType.rightType),
                 base,
-                context
+                context,
               )
             // int/float/number/unsupported type
             else -> base.multiplicativeOperandType
@@ -289,7 +282,8 @@ private fun PklExpr?.doInferExprTypeFromContext(
             base.numberType -> base.numberType
             base.durationType -> base.durationType
             base.dataSizeType -> base.dataSizeType
-            base.bytesType -> base.bytesType
+            base.bytesType ->
+              base.bytesType
                 ?:
                 // if we fall through, both bytesType and unaliasedType is [null] (possible when Pkl
                 // < 0.29)
@@ -308,7 +302,7 @@ private fun PklExpr?.doInferExprTypeFromContext(
                 doVisitAdditiveBinExpr(unaliasedType.leftType),
                 doVisitAdditiveBinExpr(unaliasedType.rightType),
                 base,
-                context
+                context,
               )
             // unsupported type
             else -> base.additiveOperandType
@@ -334,7 +328,7 @@ private fun PklExpr?.doInferExprTypeFromContext(
                 doVisitComparisonBinExpr(unaliasedType.leftType),
                 doVisitComparisonBinExpr(unaliasedType.rightType),
                 base,
-                context
+                context,
               )
             else -> base.comparableType // unsupported type
           }
@@ -366,7 +360,7 @@ private fun PklExpr?.doInferExprTypeFromContext(
                 doVisitPipeBinExpr(unaliasedType.leftType),
                 doVisitPipeBinExpr(unaliasedType.rightType),
                 base,
-                context
+                context,
               )
             else -> Type.Unknown // unsupported type
           }
@@ -394,7 +388,7 @@ private fun PklExpr?.doInferExprTypeFromContext(
             parent.parent,
             context,
             resolveTypeParamsInParamTypes,
-            canInferParentExpr
+            canInferParentExpr,
           )
         }
 
@@ -416,7 +410,7 @@ private fun PklExpr?.doInferExprTypeFromContext(
                 parent.parent,
                 context,
                 resolveTypeParamsInParamTypes,
-                true
+                true,
               )
             else -> Type.Unknown
           }
