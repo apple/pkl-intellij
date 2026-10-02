@@ -13,8 +13,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import org.jetbrains.grammarkit.tasks.*
 import org.jetbrains.intellij.platform.gradle.TestFrameworkType
+import org.jetbrains.intellij.platform.gradle.tasks.*
 import org.jetbrains.intellij.platform.gradle.tasks.VerifyPluginTask
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
@@ -25,8 +25,8 @@ plugins {
 
   alias(libs.plugins.kotlin)
   alias(libs.plugins.kotlin.serialization)
-  alias(libs.plugins.grammarKit)
   alias(libs.plugins.intelliJ)
+  alias(libs.plugins.intelliJGrammarKit)
   alias(libs.plugins.spotless)
 }
 
@@ -133,11 +133,6 @@ intellijPlatform {
   }
 }
 
-grammarKit {
-  jflexRelease.set(libs.versions.jflex.get())
-  grammarKitRelease.set(libs.versions.grammarKit.get())
-}
-
 idea { module { excludeDirs = excludeDirs + setOf(file("ides")) } }
 
 tasks.runIde {
@@ -156,7 +151,8 @@ val generateLexer =
     outputs.dir(outputDir)
 
     sourceFile.set(file(inputFile))
-    targetOutputDir.set(file(outputDir))
+    targetRootOutputDir.set(file("generated"))
+    packageName.set("org.pkl.intellij.lexer")
     purgeOldFiles.set(true)
   }
 
