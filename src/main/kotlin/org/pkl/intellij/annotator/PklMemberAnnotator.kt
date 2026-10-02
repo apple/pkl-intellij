@@ -401,7 +401,11 @@ class PklMemberAnnotator : PklAnnotator() {
         holder,
         highlightType = ProblemHighlightType.LIKE_UNUSED_SYMBOL,
       )
-      ?.apply { withFix(PklRemoveElementQuickFix("Remove abstract modifier", myAbstractModifier)) }
+      ?.apply {
+        if (holder.currentFile.canModify()) {
+          withFix(PklRemoveElementQuickFix("Remove abstract modifier", myAbstractModifier))
+        }
+      }
       ?.create()
   }
 

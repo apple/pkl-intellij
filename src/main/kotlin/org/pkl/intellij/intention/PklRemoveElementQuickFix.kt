@@ -23,7 +23,7 @@ import com.intellij.psi.PsiFile
 import com.intellij.psi.PsiWhiteSpace
 import org.pkl.intellij.psi.*
 
-/** Quick fix for that removes an element. */
+/** Quick fix that removes an element. */
 class PklRemoveElementQuickFix(private val text: String, element: PsiElement) :
   LocalQuickFixAndIntentionActionOnPsiElement(element) {
 
