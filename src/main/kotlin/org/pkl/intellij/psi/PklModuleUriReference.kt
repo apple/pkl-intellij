@@ -377,8 +377,9 @@ class PklModuleUriReference(uri: PklModuleUri, rangeInElement: TextRange) :
             ?.file
         "modulepath" ->
           return when {
-            // be on the safe side and only follow modulepath: URIs from local files
-            sourceUriStr.startsWith("file:", ignoreCase = true) ->
+            // Only follow modulepath: URIs from local files and local JARs.
+            sourceUriStr.startsWith("file:", ignoreCase = true) ||
+              sourceVirtualFile.fileSystem is JarFileSystem ->
               targetUri.path?.let { findOnClassPath(sourcePsiFile, null, it.drop(1)) }
             else -> null
           }
