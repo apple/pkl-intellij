@@ -3,9 +3,6 @@ assertj = "3.27.7"
 # GoLand version to verify against. Use latest version.
 # https://www.jetbrains.com/go/download/#section=mac
 goLand = "2024.3.3"
-grammarKit = "2023.3"
-# https://github.com/JetBrains/gradle-grammar-kit-plugin
-grammarKitPlugin = "2023.3.0.4"
 # IntelliJ version to build and verify against. Use latest patch version of `intellijSinceBuild`.
 # https://www.jetbrains.com/idea/download/other.html
 intellij = "2024.3.3"
@@ -16,8 +13,6 @@ intellijPlugin = "2.19.0"
 intellijSinceBuild = "243"
 # set to "999.*" to disable upper bound
 intellijUntilBuild = "263.*"
-# Grammar-Kit isn't compatible with 1.7.0-2
-jflex = "1.7.0-1"
 junit = "4.13.2"
 # use same version that ships with `intellijSinceBuild`
 # https://plugins.jetbrains.com/docs/intellij/kotlin.html#kotlin-standard-library
@@ -42,8 +37,8 @@ pklFormatter = { group = "org.pkl-lang", name = "pkl-formatter", version.ref = "
 pklStdLib = { group = "org.pkl-lang", name = "pkl-stdlib", version.ref = "pkl" }
 
 [plugins] # ordered alphabetically
-grammarKit = { id = "org.jetbrains.grammarkit", version.ref = "grammarKitPlugin" }
 intelliJ = { id = "org.jetbrains.intellij.platform", version.ref = "intellijPlugin" }
+intelliJGrammarKit = { id = "org.jetbrains.intellij.platform.grammarkit", version.ref = "intellijPlugin" }
 kotlin = { id = "org.jetbrains.kotlin.jvm", version.ref = "kotlin" }
 kotlin-serialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlinSerialization" }
 spotless = { id = "com.diffplug.spotless", version.ref = "spotless" }
