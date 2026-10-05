@@ -1,5 +1,5 @@
 /**
- * Copyright © 2025 Apple Inc. and the Pkl project authors. All rights reserved.
+ * Copyright © 2025-2026 Apple Inc. and the Pkl project authors. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -49,12 +49,12 @@ import org.pkl.intellij.util.handleOnEdt
 
 class PklDownloadPklCliAction(
   private val onStart: () -> Unit,
-  private val onEnd: (String?, Throwable?) -> Unit
+  private val onEnd: (String?, Throwable?) -> Unit,
 ) :
   DumbAwareAction(
     "Download Pkl Executable",
     "Downloads Pkl executable",
-    AllIcons.Actions.Download
+    AllIcons.Actions.Download,
   ) {
   companion object {
     @Serializable private data class GithubRelease(val name: String)
@@ -106,7 +106,7 @@ class PklDownloadPklCliAction(
   }
 
   private fun makeExecutableIfNeeded(path: Path) {
-    if (System.getProperty("os.name").lowercase().contains("win")) return
+    if (System.getProperty("os.name").lowercase().startsWith("windows")) return
 
     try {
       val perms =
@@ -124,21 +124,24 @@ class PklDownloadPklCliAction(
   private fun suggestedPklUrl(version: String): String {
     val os = System.getProperty("os.name").lowercase()
     val arch = System.getProperty("os.arch").lowercase()
+    val isWindows = os.startsWith("windows")
 
     val osPart =
       when {
-        os.contains("win") -> "windows"
+        isWindows -> "windows"
         os.contains("mac") || os.contains("darwin") -> "macos"
         else -> "linux"
       }
 
     val archPart =
       when {
+        isWindows -> "amd64"
         arch.contains("aarch64") || arch.contains("arm64") -> "aarch64"
-        else -> "x86_64"
+        else -> "amd64"
       }
+    val extension = if (isWindows) ".exe" else ""
 
-    return "https://github.com/apple/pkl/releases/download/$version/pkl-$osPart-$archPart"
+    return "https://github.com/apple/pkl/releases/download/$version/pkl-$osPart-$archPart$extension"
   }
 
   private class DownloadPklDialog(project: Project) : DialogWrapper(project) {
@@ -197,7 +200,7 @@ class PklDownloadPklCliAction(
       }
 
     private fun defaultExecutableName(): String =
-      if (System.getProperty("os.name").lowercase().contains("win")) "pkl.exe" else "pkl"
+      if (System.getProperty("os.name").lowercase().startsWith("windows")) "pkl.exe" else "pkl"
 
     private fun suggestedDownloadPath(): String =
       Paths.get(
@@ -205,7 +208,7 @@ class PklDownloadPklCliAction(
           ".pkl",
           "editor-support",
           "bin",
-          defaultExecutableName()
+          defaultExecutableName(),
         )
         .toString()
   }
