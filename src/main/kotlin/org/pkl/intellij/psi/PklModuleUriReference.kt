@@ -60,7 +60,7 @@ class PklModuleUriReference(uri: PklModuleUri, rangeInElement: TextRange) :
           element.containingFile,
           element.enclosingModule,
           project,
-          context
+          context,
         )
       isGlobImport -> null
       else ->
@@ -70,7 +70,7 @@ class PklModuleUriReference(uri: PklModuleUri, rangeInElement: TextRange) :
           element.containingFile,
           element.enclosingModule,
           project,
-          context
+          context,
         )
     }
 
@@ -89,10 +89,9 @@ class PklModuleUriReference(uri: PklModuleUri, rangeInElement: TextRange) :
         element.containingFile,
         element.enclosingModule,
         project,
-        null
+        null,
       )
-      ?.let { arrayOf(PsiElementResolveResult(it)) }
-      ?: emptyArray()
+      ?.let { arrayOf(PsiElementResolveResult(it)) } ?: emptyArray()
   }
 
   override fun handleElementRename(newElementName: String): PsiElement {
@@ -104,7 +103,7 @@ class PklModuleUriReference(uri: PklModuleUri, rangeInElement: TextRange) :
       stringContent.text.replaceRange(
         rangeInContent.startOffset,
         rangeInContent.endOffset,
-        newElementName
+        newElementName,
       )
     val newContent = PklPsiFactory.createStringContent(newText, stringStart.text, element.project)
     stringContent.node.replaceAllChildrenToChildrenOf(newContent.node)
@@ -130,7 +129,7 @@ class PklModuleUriReference(uri: PklModuleUri, rangeInElement: TextRange) :
       sourceFile: PsiFile,
       enclosingModule: PklModule?,
       project: Project,
-      context: PklProject?
+      context: PklProject?,
     ): PsiFileSystemItem? {
       // if `targetUri == "..."`, add enough context to make it resolvable on its own
       val effectiveTargetUri =
@@ -162,13 +161,13 @@ class PklModuleUriReference(uri: PklModuleUri, rangeInElement: TextRange) :
     private fun listClassPathChildren(
       file: VirtualFile,
       roots: Array<VirtualFile>,
-      fileIndex: ProjectFileIndex
+      fileIndex: ProjectFileIndex,
     ): Array<VirtualFile> {
       val result = mutableMapOf<String, VirtualFile>()
       val myRoot =
         fileIndex.getSourceRootForFile(file)
           ?: fileIndex.getClassRootForFile(file)
-            ?: throw AssertionError("File $file should be under source or class root but isn't")
+          ?: throw AssertionError("File $file should be under source or class root but isn't")
       val myRelativePath = file.path.substringAfter(myRoot.path)
       for (root in roots) {
         val baseDir =
@@ -185,7 +184,7 @@ class PklModuleUriReference(uri: PklModuleUri, rangeInElement: TextRange) :
       val targetUriString: String,
       val moduleUriString: String,
       val element: PklModuleUri,
-      val context: PklProject?
+      val context: PklProject?,
     )
 
     private val resolvedGlobProvider:
@@ -211,25 +210,25 @@ class PklModuleUriReference(uri: PklModuleUri, rangeInElement: TextRange) :
       targetUriString: String,
       moduleUriString: String,
       element: PklModuleUri,
-      context: PklProject?
+      context: PklProject?,
     ): GlobResolver.GlobResult? =
       CachedValuesManager.getManager(element.project)
         .getParameterizedCachedValue(
           element,
           element.project.cacheKeyService.getKey(
             "PklModuleUriReference.resolveGlob",
-            "${context?.projectFile}-resolveGlob-${targetUriString}-${moduleUriString}"
+            "${context?.projectFile}-resolveGlob-${targetUriString}-${moduleUriString}",
           ),
           resolvedGlobProvider,
           false,
-          ResolveGlobParams(targetUriString, moduleUriString, element, context)
+          ResolveGlobParams(targetUriString, moduleUriString, element, context),
         )
 
     private fun doResolveGlob(
       targetUriString: String,
       moduleUriString: String,
       element: PklModuleUri,
-      context: PklProject?
+      context: PklProject?,
     ): GlobResolver.GlobResult? {
       val sourceFile = element.containingFile
       // triple-dot URI's are not supported
@@ -249,8 +248,9 @@ class PklModuleUriReference(uri: PklModuleUri, rangeInElement: TextRange) :
       val sourceRoot = fileIndex.getSourceRootForFile(virtualFile)
       val effectiveScheme =
         targetUri.scheme
-        // if file is in a source directory, infer enclosing URI as modulepath
-        ?: sourceRoot?.let { "modulepath" } ?: parseUriOrNull(virtualFile.url)?.scheme
+          // if file is in a source directory, infer enclosing URI as modulepath
+          ?: sourceRoot?.let { "modulepath" }
+          ?: parseUriOrNull(virtualFile.url)?.scheme
       return when (effectiveScheme) {
         "file" -> {
           val listChildren = { it: VirtualFile -> it.children }
@@ -264,7 +264,7 @@ class PklModuleUriReference(uri: PklModuleUri, rangeInElement: TextRange) :
                   targetPath,
                   isPartialUri,
                   project,
-                  listChildren
+                  listChildren,
                 )
               }
               targetPath.startsWith('@') -> {
@@ -276,7 +276,7 @@ class PklModuleUriReference(uri: PklModuleUri, rangeInElement: TextRange) :
                     effectiveTargetString,
                     isPartialUri,
                     project,
-                    listChildren
+                    listChildren,
                   )
                 }
               }
@@ -286,7 +286,7 @@ class PklModuleUriReference(uri: PklModuleUri, rangeInElement: TextRange) :
                   targetUriString,
                   isPartialUri,
                   project,
-                  listChildren
+                  listChildren,
                 )
             }
           resolved
@@ -302,7 +302,7 @@ class PklModuleUriReference(uri: PklModuleUri, rangeInElement: TextRange) :
               targetPath,
               isPartialUri,
               project,
-              listChildren
+              listChildren,
             )
           } else {
             GlobResolver.resolveRelativeGlob(
@@ -310,7 +310,7 @@ class PklModuleUriReference(uri: PklModuleUri, rangeInElement: TextRange) :
               targetUriString,
               isPartialUri,
               project,
-              listChildren
+              listChildren,
             )
           }
         }
@@ -328,7 +328,7 @@ class PklModuleUriReference(uri: PklModuleUri, rangeInElement: TextRange) :
             targetPath,
             isPartialUri,
             project,
-            listChildren
+            listChildren,
           )
         }
         else -> null
@@ -339,7 +339,7 @@ class PklModuleUriReference(uri: PklModuleUri, rangeInElement: TextRange) :
       project: Project,
       targetUriStr: String,
       enclosingModule: PklModule?,
-      context: PklProject?
+      context: PklProject?,
     ): VirtualFile? {
       if (targetUriStr.startsWith("package:")) {
         val packageUri = PackageUri.create(targetUriStr) ?: return null
@@ -356,7 +356,7 @@ class PklModuleUriReference(uri: PklModuleUri, rangeInElement: TextRange) :
       targetUriStr: String,
       sourcePsiFile: PsiFile,
       enclosingModule: PklModule?,
-      context: PklProject?
+      context: PklProject?,
     ): VirtualFile? {
       // `.originalFile` because IntelliJ's code completion mechanism
       // creates PsiFile copy which returns `null` for `.virtualFile`
@@ -377,8 +377,9 @@ class PklModuleUriReference(uri: PklModuleUri, rangeInElement: TextRange) :
             ?.file
         "modulepath" ->
           return when {
-            // be on the safe side and only follow modulepath: URIs from local files
-            sourceUriStr.startsWith("file:", ignoreCase = true) ->
+            // Only follow modulepath: URIs from local files and local JARs.
+            sourceUriStr.startsWith("file:", ignoreCase = true) ||
+              sourceVirtualFile.fileSystem is JarFileSystem ->
               targetUri.path?.let { findOnClassPath(sourcePsiFile, null, it.drop(1)) }
             else -> null
           }
@@ -476,7 +477,7 @@ class PklModuleUriReference(uri: PklModuleUri, rangeInElement: TextRange) :
 
     private fun resolveVirtualHttp(
       moduleUrl: String,
-      fileManager: VirtualFileManager
+      fileManager: VirtualFileManager,
     ): VirtualFile? {
       val virtualFile = fileManager.findFileByUrl(moduleUrl) ?: return null
 
@@ -505,7 +506,7 @@ class PklModuleUriReference(uri: PklModuleUri, rangeInElement: TextRange) :
 
     private fun findTripleDotPathOnFileSystem(
       sourceFile: VirtualFile,
-      targetPath: String
+      targetPath: String,
     ): VirtualFile? {
       assert(targetPath.startsWith(".../"))
 
@@ -526,7 +527,7 @@ class PklModuleUriReference(uri: PklModuleUri, rangeInElement: TextRange) :
       // source file's directory path relative to its source or class root
       relativeSourceDirPath: String?,
       // target file path relative to source file's directory path
-      relativeTargetFilePath: String
+      relativeTargetFilePath: String,
     ): VirtualFile? {
 
       val roots = sourceFile.findSourceAndClassesRoots()
@@ -558,7 +559,7 @@ class PklModuleUriReference(uri: PklModuleUri, rangeInElement: TextRange) :
       // source file's directory path relative to its source or class root
       relativeSourceDirPath: String?,
       // target file path relative to source file's directory path
-      relativeTargetFilePath: String
+      relativeTargetFilePath: String,
     ): VirtualFile? {
 
       assert(relativeTargetFilePath.startsWith(".../"))
