@@ -182,7 +182,7 @@ fun PsiElement?.computeResolvedImportType(
                             bindings,
                             context,
                             false,
-                            false
+                            false,
                           )
                         getFunctionParameterType(this, identifierOwner, functionType, base, context)
                       }
@@ -197,8 +197,7 @@ fun PsiElement?.computeResolvedImportType(
       is PklTypeParameter -> Type.Unknown
       else -> Type.Unknown
     }
-  }
-    ?: Type.Unknown
+  } ?: Type.Unknown
 }
 
 private fun getFunctionParameterType(
@@ -206,7 +205,7 @@ private fun getFunctionParameterType(
   parameterList: PklParameterList,
   functionType: Type,
   base: PklBaseModule,
-  context: PklProject?
+  context: PklProject?,
 ): Type {
 
   return when (functionType) {
@@ -227,7 +226,7 @@ private fun getFunctionParameterType(
         parameterList,
         functionType.unaliased(base, context),
         base,
-        context
+        context,
       )
     else -> Type.Unknown
   }

@@ -27,19 +27,14 @@ import org.pkl.intellij.packages.dto.PklProject
 import org.pkl.intellij.packages.pklProjectService
 import org.pkl.intellij.psi.*
 import org.pkl.intellij.resolve.ResolveVisitors
+import org.pkl.intellij.resolve.Resolvers
 
 private val inferExprTypeProvider:
   ParameterizedCachedValueProvider<Type, Pair<PklExpr, PklProject?>> =
   ParameterizedCachedValueProvider { (expr, context) ->
     val project = expr.project
     val result =
-      expr.doInferExprTypeFromContext(
-        project.pklBaseModule,
-        mapOf(),
-        expr.parent,
-        context,
-        true,
-      )
+      expr.doInferExprTypeFromContext(project.pklBaseModule, mapOf(), expr.parent, context, true)
     val dependencies = buildList {
       add(PsiManager.getInstance(project).modificationTracker.forLanguage(PklLanguage))
       if (context != null) {
@@ -58,7 +53,7 @@ fun PklExpr?.inferExprTypeFromContext(
   bindings: TypeParameterBindings,
   context: PklProject?,
   resolveTypeParamsInParamTypes: Boolean = true,
-  canInferParentExpr: Boolean = true
+  canInferParentExpr: Boolean = true,
 ): Type =
   when {
     this == null -> Type.Unknown
@@ -69,7 +64,7 @@ fun PklExpr?.inferExprTypeFromContext(
           project.cacheKeyService.getKey("PklExpr.inferExprTypeFromContext", context),
           inferExprTypeProvider,
           false,
-          this to context
+          this to context,
         )
     else ->
       doInferExprTypeFromContext(
@@ -78,7 +73,7 @@ fun PklExpr?.inferExprTypeFromContext(
         parent,
         context,
         resolveTypeParamsInParamTypes,
-        canInferParentExpr
+        canInferParentExpr,
       )
   }
 
@@ -88,7 +83,7 @@ private fun PklExpr?.doInferExprTypeFromContext(
   parent: PsiElement?,
   context: PklProject?,
   resolveTypeParamsInParamTypes: Boolean = true,
-  canInferParentExpr: Boolean = true
+  canInferParentExpr: Boolean = true,
 ): Type {
   if (this == null || parent !is PklElement) return Type.Unknown
 
@@ -133,13 +128,11 @@ private fun PklExpr?.doInferExprTypeFromContext(
                   "converters" ->
                     resolvedKeyClass?.let {
                       base.function1Type.withTypeArguments(Type.Class.create(it), base.anyType)
-                    }
-                      ?: defaultExpectedType
+                    } ?: defaultExpectedType
                   "convertPropertyTransformers" ->
                     resolvedKeyClass?.let {
                       base.mixinType.withTypeArguments(Type.Class.create(it))
-                    }
-                      ?: defaultExpectedType
+                    } ?: defaultExpectedType
                   else -> defaultExpectedType
                 }
               } else {
@@ -189,13 +182,16 @@ private fun PklExpr?.doInferExprTypeFromContext(
           if (argIndex == -1) return Type.Unknown
 
           val accessExpr = parent.parent as PklAccessExpr
+          val receiverType =
+            accessExpr.inferReceiverType(base, bindings, context) ?: return Type.Unknown
           val visitor =
             ResolveVisitors.paramTypesOfFirstMethodNamed(
               accessExpr.memberNameText,
               base,
-              resolveTypeParamsInParamTypes
+              resolveTypeParamsInParamTypes,
+              receiverType,
             )
-          val paramTypes = accessExpr.resolve(base, null, bindings, visitor, context)
+          val paramTypes = accessExpr.resolve(base, receiverType, bindings, visitor, context)
           if (paramTypes.isNullOrEmpty()) return Type.Unknown
 
           if (argIndex >= paramTypes.lastIndex) {
@@ -239,7 +235,7 @@ private fun PklExpr?.doInferExprTypeFromContext(
                 doVisitSubscriptExpr(unaliasedType.leftType),
                 doVisitSubscriptExpr(unaliasedType.rightType),
                 base,
-                context
+                context,
               )
             else -> Type.Unknown // unsupported type
           }
@@ -268,7 +264,7 @@ private fun PklExpr?.doInferExprTypeFromContext(
                 doVisitMultiplicativeBinExpr(unaliasedType.leftType),
                 doVisitMultiplicativeBinExpr(unaliasedType.rightType),
                 base,
-                context
+                context,
               )
             // int/float/number/unsupported type
             else -> base.multiplicativeOperandType
@@ -289,7 +285,8 @@ private fun PklExpr?.doInferExprTypeFromContext(
             base.numberType -> base.numberType
             base.durationType -> base.durationType
             base.dataSizeType -> base.dataSizeType
-            base.bytesType -> base.bytesType
+            base.bytesType ->
+              base.bytesType
                 ?:
                 // if we fall through, both bytesType and unaliasedType is [null] (possible when Pkl
                 // < 0.29)
@@ -308,7 +305,7 @@ private fun PklExpr?.doInferExprTypeFromContext(
                 doVisitAdditiveBinExpr(unaliasedType.leftType),
                 doVisitAdditiveBinExpr(unaliasedType.rightType),
                 base,
-                context
+                context,
               )
             // unsupported type
             else -> base.additiveOperandType
@@ -334,7 +331,7 @@ private fun PklExpr?.doInferExprTypeFromContext(
                 doVisitComparisonBinExpr(unaliasedType.leftType),
                 doVisitComparisonBinExpr(unaliasedType.rightType),
                 base,
-                context
+                context,
               )
             else -> base.comparableType // unsupported type
           }
@@ -366,7 +363,7 @@ private fun PklExpr?.doInferExprTypeFromContext(
                 doVisitPipeBinExpr(unaliasedType.leftType),
                 doVisitPipeBinExpr(unaliasedType.rightType),
                 base,
-                context
+                context,
               )
             else -> Type.Unknown // unsupported type
           }
@@ -394,7 +391,7 @@ private fun PklExpr?.doInferExprTypeFromContext(
             parent.parent,
             context,
             resolveTypeParamsInParamTypes,
-            canInferParentExpr
+            canInferParentExpr,
           )
         }
 
@@ -416,7 +413,7 @@ private fun PklExpr?.doInferExprTypeFromContext(
                 parent.parent,
                 context,
                 resolveTypeParamsInParamTypes,
-                true
+                true,
               )
             else -> Type.Unknown
           }
@@ -426,3 +423,25 @@ private fun PklExpr?.doInferExprTypeFromContext(
   return result
     ?: parent.computeResolvedImportType(base, bindings, context, canInferExprBody = false)
 }
+
+fun PklAccessExpr.inferReceiverType(
+  base: PklBaseModule,
+  bindings: TypeParameterBindings,
+  context: PklProject?,
+): Type? =
+  when (this) {
+    is PklQualifiedAccessExpr -> computeExprType(base, bindings, context)
+    is PklSuperAccessExprBase -> computeThisType(base, bindings, context)
+    is PklUnqualifiedAccessExprBase -> {
+      val visitor = ResolveVisitors.firstElementNamed(memberNameText, base, resolveImports = false)
+      val result = resolveAndGetLookupMode(base, null, bindings, visitor, context)
+      when (result.second) {
+        Resolvers.LookupMode.NONE -> null
+        Resolvers.LookupMode.LEXICAL ->
+          result.first?.parent?.computeThisType(base, bindings, context)
+        Resolvers.LookupMode.IMPLICIT_THIS -> computeThisType(base, bindings, context)
+        Resolvers.LookupMode.BASE -> Type.Unknown
+      }
+    }
+    else -> throw AssertionError("Unknown PklAccessExpr subclass ${this::class}")
+  }

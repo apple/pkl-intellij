@@ -75,7 +75,7 @@ class PklTypeAnnotator : PklAnnotator() {
         "Type argument count mismatch. Required: 0 or $paramCount Found: $argCount",
         "Type argument count mismatch.<table><tr><td>Required:</td><td>0 or $paramCount</td></tr>" +
           "<tr><td align=\"right\">Found:</td><td>$argCount</td></tr></table>",
-        holder
+        holder,
       )
     }
   }
@@ -135,6 +135,8 @@ class PklTypeAnnotator : PklAnnotator() {
           annotationLocation = "within an annotation body"
           break
         }
+
+        // don't break for these: continue looking to see if we're in a PklClass
         // not allowed in const properties
         parent is PklProperty && parent.isConst ->
           annotationLocation = "from const property `${parent.name}`"
@@ -149,7 +151,7 @@ class PklTypeAnnotator : PklAnnotator() {
       holder
         .newAnnotation(
           HighlightSeverity.WARNING,
-          "Cannot reference `module` type $annotationLocation; this will be an error in a future release"
+          "Cannot reference `module` type $annotationLocation; this will be an error in a future release",
         )
         .tooltip(
           "Cannot reference <code>module</code> type $annotationLocation; this will be an error in a future release"
@@ -174,7 +176,7 @@ class PklTypeAnnotator : PklAnnotator() {
           holder
             .newAnnotation(
               HighlightSeverity.ERROR,
-              "Cannot reference `this` type within a type alias body"
+              "Cannot reference `this` type within a type alias body",
             )
             .tooltip("Cannot reference <code>this</code> type within a type alias body")
             .range(thiz)
