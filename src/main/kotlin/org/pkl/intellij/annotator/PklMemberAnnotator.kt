@@ -223,9 +223,8 @@ class PklMemberAnnotator : PklAnnotator() {
             is PklClass -> Class.create(enclosingEntity)
             is PklModule -> Type.module(enclosingEntity, enclosingEntity.shortDisplayName, context)
             else -> Nothing
-          }
-      )
-        ?: return
+          },
+      ) ?: return
     if (type.hasDefault(base, context)) return
     val severity =
       if (enclosingEntity.isOpen) HighlightSeverity.WARNING else HighlightSeverity.ERROR

@@ -142,7 +142,8 @@ class PklModuleImpl(viewProvider: FileViewProvider) :
   override fun getLookupElementType(
     base: PklBaseModule,
     bindings: TypeParameterBindings,
-    context: PklProject?
+    context: PklProject?,
+    receiverType: Type?,
   ): Type = base.moduleType
 
   override val extendsAmendsClause: PklModuleExtendsAmendsClause?
@@ -228,7 +229,7 @@ class PklModuleImpl(viewProvider: FileViewProvider) :
         project.cacheKeyService.getKey("PklModuleImpl.cache", context),
         moduleMemberCacheValueProvider,
         false,
-        this to context
+        this to context,
       )
 
   private fun doGetPackage(): PackageDependency? {
@@ -250,7 +251,7 @@ class PklModuleImpl(viewProvider: FileViewProvider) :
         this,
         packageCacheKey,
         { CachedValueProvider.Result(doGetPackage(), ModificationTracker.NEVER_CHANGED) },
-        false
+        false,
       )
     }
 
@@ -278,14 +279,14 @@ class PklModuleImpl(viewProvider: FileViewProvider) :
             if (dir.findFile(PKL_PROJECT_FILENAME) != null) {
               return@getCachedValue CachedValueProvider.Result.createSingleDependency(
                 dir.virtualFile,
-                dependency
+                dependency,
               )
             }
             dir = dir.parent
           }
           CachedValueProvider.Result.createSingleDependency(null, dependency)
         },
-        false
+        false,
       )
 
   override val pklProject: PklProject?

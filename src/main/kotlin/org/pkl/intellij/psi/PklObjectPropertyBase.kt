@@ -41,8 +41,9 @@ abstract class PklObjectPropertyBase(node: ASTNode) :
   override fun getLookupElementType(
     base: PklBaseModule,
     bindings: TypeParameterBindings,
-    context: PklProject?
-  ): Type = computeResolvedImportType(base, bindings, context)
+    context: PklProject?,
+    receiverType: Type?,
+  ): Type = computeResolvedImportType(base, bindings, context, receiverType = receiverType)
 
   override fun isDefinition(context: PklProject?): Boolean = type != null || isLocal
 

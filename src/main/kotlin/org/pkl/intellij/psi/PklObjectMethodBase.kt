@@ -43,8 +43,9 @@ abstract class PklObjectMethodBase(node: ASTNode) : PklAstWrapperPsiElement(node
   override fun getLookupElementType(
     base: PklBaseModule,
     bindings: TypeParameterBindings,
-    context: PklProject?
-  ): Type = returnType.toType(base, bindings, context)
+    context: PklProject?,
+    receiverType: Type?,
+  ): Type = returnType.toType(base, bindings, context, receiverType = receiverType)
 
   override val hasParameters: Boolean
     get() = !parameterList?.elements.isNullOrEmpty()
