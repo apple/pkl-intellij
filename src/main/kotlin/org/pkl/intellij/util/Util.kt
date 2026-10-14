@@ -153,14 +153,18 @@ fun isMathematicalInteger(x: Double): Boolean {
       SIGNIFICAND_BITS - java.lang.Long.numberOfTrailingZeros(getSignificand(x)) <= exponent))
 }
 
-fun appendNumericSuffix(name: String): String =
-  when (name.last()) {
-    in '0'..'9' -> {
-      val number = name.takeLastWhile { it in '0'..'9' }
-      name.substring(0, name.length - number.length) + (number.toInt() + 1)
+fun appendNumericSuffix(name: String): String {
+  val identifier = name.removeSurrounding("`")
+  val suffixed =
+    when (identifier.last()) {
+      in '0'..'9' -> {
+        val number = identifier.takeLastWhile { it in '0'..'9' }
+        identifier.substring(0, identifier.length - number.length) + (number.toInt() + 1)
+      }
+      else -> identifier + '2'
     }
-    else -> name + '2'
-  }
+  return Lexer.maybeQuoteIdentifier(suffixed)
+}
 
 fun inferImportPropertyName(moduleUriStr: String): String? {
   val moduleUri =
@@ -170,18 +174,17 @@ fun inferImportPropertyName(moduleUriStr: String): String? {
       return null
     }
 
-  if (moduleUri.isOpaque) {
-    // convention: take last segment of dot-separated name after stripping any colon-separated
-    // version number
-    return takeLastSegment(dropLastSegment(moduleUri.schemeSpecificPart, ':'), '.')
-  }
-  if (moduleUri.scheme == "package") {
-    return moduleUri.fragment?.let(::getNameWithoutExtension)
-  }
-  if (moduleUri.isAbsolute) {
-    return getNameWithoutExtension(moduleUri.path)
-  }
-  return getNameWithoutExtension(moduleUri.schemeSpecificPart)
+  val name =
+    when {
+      // convention: take last segment of dot-separated name after stripping any colon-separated
+      // version number
+      moduleUri.isOpaque -> takeLastSegment(dropLastSegment(moduleUri.schemeSpecificPart, ':'), '.')
+      moduleUri.scheme == "package" ->
+        moduleUri.fragment?.let(::getNameWithoutExtension) ?: return null
+      moduleUri.isAbsolute -> getNameWithoutExtension(moduleUri.path)
+      else -> getNameWithoutExtension(moduleUri.schemeSpecificPart)
+    }
+  return Lexer.maybeQuoteIdentifier(name)
 }
 
 fun unexpectedType(obj: Any?): Nothing {
@@ -422,7 +425,7 @@ private fun extractError(error: Throwable): Throwable {
 fun <T, R> CompletableFuture<T>.handleOnEdt(handler: (T?, Throwable?) -> R): CompletableFuture<R> {
   return handleAsync(
     { result: T?, error: Throwable? -> handler(result, error?.let(::extractError)) },
-    { runnable -> runInEdt(null) { runnable.run() } }
+    { runnable -> runInEdt(null) { runnable.run() } },
   )
 }
 
@@ -431,7 +434,7 @@ fun InputStream.copyToWithIndicator(
   out: OutputStream,
   progressIndicator: ProgressIndicator,
   totalLength: Long,
-  bufferSize: Int = 8 * 1024
+  bufferSize: Int = 8 * 1024,
 ) {
   var bytesCopied: Long = 0
   val buffer = ByteArray(bufferSize)
