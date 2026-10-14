@@ -1,5 +1,5 @@
 /**
- * Copyright © 2024 Apple Inc. and the Pkl project authors. All rights reserved.
+ * Copyright © 2024-2026 Apple Inc. and the Pkl project authors. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,6 +18,7 @@ package org.pkl.intellij.psi
 import com.intellij.openapi.util.TextRange
 import com.intellij.psi.*
 import com.intellij.psi.util.parentOfType
+import com.intellij.util.IncorrectOperationException
 import org.pkl.intellij.packages.dto.PklProject
 import org.pkl.intellij.resolve.ResolveVisitors
 import org.pkl.intellij.resolve.Resolvers
@@ -54,4 +55,6 @@ class PklSimpleTypeNameReference(private val simpleTypeName: PklSimpleTypeName) 
   override fun resolve(): PklElement? {
     return resolveContextual(simpleTypeName.enclosingModule?.pklProject)
   }
+
+  override fun bindToElement(newTarget: PsiElement): PsiElement = element
 }
