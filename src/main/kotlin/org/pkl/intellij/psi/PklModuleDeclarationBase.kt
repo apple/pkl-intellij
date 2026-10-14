@@ -1,5 +1,5 @@
 /**
- * Copyright © 2024 Apple Inc. and the Pkl project authors. All rights reserved.
+ * Copyright © 2024-2026 Apple Inc. and the Pkl project authors. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,14 +17,16 @@ package org.pkl.intellij.psi
 
 import com.intellij.lang.ASTNode
 import com.intellij.psi.PsiElement
-import com.intellij.util.IncorrectOperationException
 
 abstract class PklModuleDeclarationBase(node: ASTNode) :
   PklAstWrapperPsiElement(node), PklModuleDeclaration {
   override fun getName(): String? = nameIdentifier?.text
 
   override fun setName(name: String): PsiElement {
-    throw IncorrectOperationException()
+    val oldIdentifier = nameIdentifier ?: return this
+    val newIdentifier = PklPsiFactory.createIdentifier(name, project)
+    oldIdentifier.node.treeParent.replaceChild(oldIdentifier.node, newIdentifier.node)
+    return this
   }
 
   override fun getQualifiedName(): String? = qualifiedIdentifier?.text
