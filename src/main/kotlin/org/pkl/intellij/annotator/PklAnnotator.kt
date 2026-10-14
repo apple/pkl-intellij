@@ -188,6 +188,11 @@ abstract class PklAnnotator : Annotator {
         isTypeMatch(exprType.leftType, exprValue, memberType, failedConstraints, base, context) &&
           isTypeMatch(exprType.rightType, exprValue, memberType, failedConstraints, base, context)
       }
+      exprType is Type.Class && exprType.classEquals(base.numberType) -> {
+        // Number is sealed: Int and Float together cover all possible values.
+        isTypeMatch(base.intType, exprValue, memberType, failedConstraints, base, context) &&
+          isTypeMatch(base.floatType, exprValue, memberType, failedConstraints, base, context)
+      }
       memberType is Type.Alias -> {
         isTypeMatch(
           exprType,
