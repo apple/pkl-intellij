@@ -1,5 +1,5 @@
 /**
- * Copyright © 2024 Apple Inc. and the Pkl project authors. All rights reserved.
+ * Copyright © 2024-2026 Apple Inc. and the Pkl project authors. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -35,20 +35,21 @@ class PklFindUsagesProvider : FindUsagesProvider {
       TokenSet.create(
         PklElementTypes.LINE_COMMENT,
         PklElementTypes.BLOCK_COMMENT,
-        PklElementTypes.DOC_COMMENT_LINE
+        PklElementTypes.DOC_COMMENT_LINE,
       ),
       TokenSet.create(
         PklElementTypes.STRING_CHARS,
         PklElementTypes.NUMBER,
         PklElementTypes.TRUE,
         PklElementTypes.FALSE,
-        PklElementTypes.NULL
-      )
+        PklElementTypes.NULL,
+      ),
     )
 
   override fun canFindUsagesFor(element: PsiElement): Boolean =
     when (element) {
       is PklModule -> true
+      is PklModuleDeclaration -> true
       is PklClass -> true
       is PklTypeAlias -> true
       is PklMethod -> true
@@ -63,6 +64,7 @@ class PklFindUsagesProvider : FindUsagesProvider {
   override fun getType(element: PsiElement): String =
     when (element) {
       is PklModule -> "module"
+      is PklModuleDeclaration -> "module"
       is PklClass -> "class"
       is PklTypeAlias -> "type alias"
       is PklMethod -> "method"
@@ -83,6 +85,7 @@ class PklFindUsagesProvider : FindUsagesProvider {
   override fun getDescriptiveName(element: PsiElement): String =
     when (element) {
       is PklModule -> element.name
+      is PklModuleDeclaration -> element.qualifiedName ?: "<module>"
       is PklClass -> {
         val moduleName = element.enclosingModule?.displayName ?: "<module>"
         val className = element.name ?: "<class>"
@@ -125,6 +128,7 @@ class PklFindUsagesProvider : FindUsagesProvider {
     } else {
       when (element) {
         is PklModule -> element.name
+        is PklModuleDeclaration -> element.name ?: "<module>"
         is PklClass -> element.name ?: "<class>"
         is PklTypeAlias -> element.name ?: "<class>"
         is PklMethod -> (element.name ?: "<method>") + "()"
