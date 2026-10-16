@@ -20,7 +20,7 @@ import com.intellij.openapi.project.Project
 fun PklAccessExpr.replaceDeprecated(
   module: PklModule,
   isDryRun: Boolean = false,
-  applyIf: (PklAnnotationListOwner, Deprecated) -> Boolean = { _, _ -> true }
+  applyIf: (PklAnnotationListOwner, Deprecated) -> Boolean = { _, _ -> true },
 ): Boolean {
   val target = memberName.reference?.resolve() as? PklAnnotationListOwner ?: return false
   val deprecated = target.annotationList?.deprecated ?: return false
@@ -64,7 +64,7 @@ fun PklAccessExpr.replaceDeprecated(
 fun PklTypeName.replaceDeprecated(
   module: PklModule,
   isDryRun: Boolean = false,
-  applyIf: (PklAnnotationListOwner, Deprecated) -> Boolean = { _, _ -> true }
+  applyIf: (PklAnnotationListOwner, Deprecated) -> Boolean = { _, _ -> true },
 ): Boolean {
   val context = module.pklProject
   val target = simpleName.resolve(context) as? PklAnnotationListOwner ?: return false
@@ -105,7 +105,7 @@ fun PklAmendExpr.updateInstantiationSyntax(
   project: Project,
   // only explicitly set by recursive call
   parentExpr: PklExpr = this.parentExpr,
-  isDryRun: Boolean = false
+  isDryRun: Boolean = false,
 ): Boolean {
   when (parentExpr) {
     is PklUnqualifiedAccessExpr -> {
@@ -136,7 +136,7 @@ fun PklAmendExpr.updateInstantiationSyntax(
                     receiverExpr.memberNameText,
                     parentExpr.memberNameText,
                     objectBody,
-                    project
+                    project,
                   )
                 replace(newExpr)
               }
@@ -170,7 +170,7 @@ fun PklAmendExpr.updateParenthesizedAmendExpression(
     return parentExpr.updateParenthesizedAmendExpression(
       project,
       isDryRun = isDryRun,
-      isParenthesized = isParenthesized
+      isParenthesized = isParenthesized,
     )
   }
 
@@ -180,7 +180,7 @@ fun PklAmendExpr.updateParenthesizedAmendExpression(
     }
   }
 
-  if (!isParenthesized) {
+  if (!isParenthesized && parentExpr !is PklNewExpr) {
     if (!isDryRun) {
       val parenthesizedExpr =
         PklPsiFactory.createParenthesizedAmendExpr(parentExpr, objectBody, project)
@@ -211,7 +211,7 @@ private class ReplacementVisitor(
 
   /** The method arguments of the deprecated element's usage, if any. */
   private val usageArguments: List<PklExpr>?,
-  private val project: Project
+  private val project: Project,
 ) : PklRecursiveVisitor<Unit>() {
   /**
    * Handles referenced method parameters and referenced imports, such as `replaceWith =
@@ -287,7 +287,7 @@ private class ReplacementVisitor(
 
 fun PklTypeDefOrModule.createMember(
   parentMember: PklClassMember,
-  myModule: PklModule
+  myModule: PklModule,
 ): PklClassMember {
   return when (parentMember) {
     is PklClassProperty -> {
@@ -323,10 +323,7 @@ private fun StringBuilder.appendModifiersWithoutAbstractOrExternal(
   return !isFirst
 }
 
-private fun renderProperty(
-  myModule: PklModule,
-  originalProperty: PklClassProperty,
-): String {
+private fun renderProperty(myModule: PklModule, originalProperty: PklClassProperty): String {
   return buildString {
     if (appendModifiersWithoutAbstractOrExternal(originalProperty.modifierList)) {
       append(" ")
@@ -341,10 +338,7 @@ private fun renderProperty(
   }
 }
 
-private fun renderMethod(
-  myModule: PklModule,
-  originalMethod: PklClassMethod,
-): String {
+private fun renderMethod(myModule: PklModule, originalMethod: PklClassMethod): String {
   return buildString {
     if (appendModifiersWithoutAbstractOrExternal(originalMethod.modifierList)) {
       append(' ')
