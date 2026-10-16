@@ -28,7 +28,7 @@ fun PsiElement?.computeResolvedImportType(
   bindings: TypeParameterBindings,
   context: PklProject?,
   preserveUnboundTypeVars: Boolean = false,
-  canInferExprBody: Boolean = true
+  canInferExprBody: Boolean = true,
 ): Type {
   if (this == null) return Type.Unknown
 
@@ -60,6 +60,7 @@ fun PsiElement?.computeResolvedImportType(
                   ResolveVisitors.typeOfFirstElementNamed(
                     name,
                     null,
+                    null,
                     base,
                     false,
                     preserveUnboundTypeVars,
@@ -84,6 +85,7 @@ fun PsiElement?.computeResolvedImportType(
         val visitor =
           ResolveVisitors.typeOfFirstElementNamed(
             "this",
+            null,
             null,
             base,
             isNullSafeAccess = false,
@@ -178,7 +180,7 @@ fun PsiElement?.computeResolvedImportType(
                             bindings,
                             context,
                             false,
-                            false
+                            false,
                           )
                         getFunctionParameterType(this, identifierOwner, functionType, base, context)
                       }
@@ -193,8 +195,7 @@ fun PsiElement?.computeResolvedImportType(
       is PklTypeParameter -> Type.Unknown
       else -> Type.Unknown
     }
-  }
-    ?: Type.Unknown
+  } ?: Type.Unknown
 }
 
 private fun getFunctionParameterType(
@@ -202,7 +203,7 @@ private fun getFunctionParameterType(
   parameterList: PklParameterList,
   functionType: Type,
   base: PklBaseModule,
-  context: PklProject?
+  context: PklProject?,
 ): Type {
 
   return when (functionType) {
@@ -223,7 +224,7 @@ private fun getFunctionParameterType(
         parameterList,
         functionType.unaliased(base, context),
         base,
-        context
+        context,
       )
     else -> Type.Unknown
   }

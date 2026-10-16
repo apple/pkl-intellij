@@ -16,6 +16,7 @@
 package org.pkl.intellij.completion
 
 import com.intellij.codeInsight.lookup.Lookup
+import com.intellij.codeInsight.lookup.LookupElement
 import com.intellij.codeInsight.lookup.LookupElementPresentation
 import com.intellij.codeInsight.lookup.LookupManager
 import com.intellij.codeInsight.lookup.impl.LookupImpl
@@ -32,8 +33,7 @@ class CompletionTest : PklTestCase() {
     return myFixture.lookupElements?.map {
       it.renderElement(presentation)
       presentation.itemText ?: ""
-    }
-      ?: emptyList()
+    } ?: emptyList()
   }
 
   fun `test complete from lexical scope`() {
@@ -44,7 +44,7 @@ class CompletionTest : PklTestCase() {
 
       foo = bar.<caret>
     """
-        .trimIndent()
+        .trimIndent(),
     )
     myFixture.completeBasic()
     val lookupStrings = myFixture.lookupElementStrings
@@ -59,7 +59,7 @@ class CompletionTest : PklTestCase() {
       
       foo = bar.<caret>
     """
-        .trimIndent()
+        .trimIndent(),
     )
     myFixture.completeBasic()
     val lookupStrings = myFixture.lookupElementStrings
@@ -79,7 +79,7 @@ class CompletionTest : PklTestCase() {
         firstName = <caret>
       }
     """
-        .trimIndent()
+        .trimIndent(),
     )
     myFixture.completeBasic()
     val lookupStrings = myFixture.lookupElementStrings
@@ -106,7 +106,7 @@ class CompletionTest : PklTestCase() {
       
       <caret>
     """
-        .trimIndent()
+        .trimIndent(),
     )
     myFixture.completeBasic()
     val lookupStrings = myFixture.lookupElementStrings
@@ -133,7 +133,7 @@ class CompletionTest : PklTestCase() {
           }
         }
         """
-        .trimIndent()
+        .trimIndent(),
     )
     myFixture.completeBasic()
     val lookupStrings = myFixture.lookupElementStrings
@@ -160,7 +160,7 @@ class CompletionTest : PklTestCase() {
           }
         }
         """
-        .trimIndent()
+        .trimIndent(),
     )
     myFixture.completeBasic()
     val lookupStrings = myFixture.lookupElementStrings
@@ -179,7 +179,7 @@ class CompletionTest : PklTestCase() {
           function some<caret>
         }
         """
-        .trimIndent()
+        .trimIndent(),
     )
     myFixture.completeBasic()
     assertThat(myFixture.editor.document.text)
@@ -199,7 +199,7 @@ class CompletionTest : PklTestCase() {
           function m<caret>
         }
         """
-        .trimIndent()
+        .trimIndent(),
     )
     myFixture.completeBasic()
     val lookupStrings = lookupPresentableStrings()
@@ -223,7 +223,7 @@ class CompletionTest : PklTestCase() {
           function m<caret>
         }
         """
-        .trimIndent()
+        .trimIndent(),
     )
     myFixture.completeBasic()
     val lookupStrings = lookupPresentableStrings()
@@ -244,14 +244,14 @@ class CompletionTest : PklTestCase() {
           function <caret>
         }
         """
-        .trimIndent()
+        .trimIndent(),
     )
     myFixture.completeBasic()
     val lookupElements = myFixture.lookupElements
     assertThat(lookupElements).hasSize(1)
     (LookupManager.getActiveLookup(editor) as LookupImpl).finishLookup(
       Lookup.NORMAL_SELECT_CHAR,
-      lookupElements!!.first()
+      lookupElements!!.first(),
     )
     assertThat(
       myFixture.editor.document.text ==
@@ -271,7 +271,7 @@ class CompletionTest : PklTestCase() {
   fun `test complete implement member in module`() {
     myFixture.configureByFiles(
       "implement-member/ConcreteModule.pkl",
-      "implement-member/AbstractModule.pkl"
+      "implement-member/AbstractModule.pkl",
     )
     myFixture.completeBasic()
     assertThat(myFixture.editor.document.text).contains("function greet(name: String): String")
@@ -280,10 +280,37 @@ class CompletionTest : PklTestCase() {
   fun `test complete implement member in module excludes already implemented methods`() {
     myFixture.configureByFiles(
       "implement-member/PartiallyImplementedModule.pkl",
-      "implement-member/AbstractModule.pkl"
+      "implement-member/AbstractModule.pkl",
     )
     myFixture.completeBasic()
     assertThat(myFixture.editor.document.text).contains("function greet(name: String): String")
+  }
+
+  fun `test complete options offer arg-less and arg'd method calls`() {
+    myFixture.configureByText(
+      PklFileType,
+      """
+        function x<T>(y: T): String = y.toString()
+        
+        res = x<caret>
+        """
+        .trimIndent(),
+    )
+    val completions = myFixture.completeBasic()
+    assertThat(completions).hasSize(2)
+    assertThat(completions[0].plainString()).isEqualTo("x(T): String")
+    assertThat(completions[1].plainString()).isEqualTo("x::<T>(T): String")
+  }
+
+  fun LookupElement.plainString(): String = buildString {
+    val p = LookupElementPresentation()
+    renderElement(p)
+    p.itemText?.let { append(it) }
+    p.tailText?.let { append(it) }
+    p.typeText?.let {
+      append(": ")
+      append(it)
+    }
   }
 
   override val fixtureDir: Path?
