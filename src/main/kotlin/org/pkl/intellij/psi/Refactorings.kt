@@ -115,7 +115,11 @@ fun PklAmendExpr.updateInstantiationSyntax(
         if ((target is PklClass || target is PklTypeAlias)) {
           if (!isDryRun) {
             val newExpr =
-              PklPsiFactory.createNewExpr(parentExpr.memberNameText, objectBody, project)
+              PklPsiFactory.createNewExpr(
+                parentExpr.memberName.identifier.text,
+                objectBody,
+                project,
+              )
             replace(newExpr)
           }
           return true
@@ -133,8 +137,8 @@ fun PklAmendExpr.updateInstantiationSyntax(
               if (!isDryRun) {
                 val newExpr =
                   PklPsiFactory.createQualifiedNewExpr(
-                    receiverExpr.memberNameText,
-                    parentExpr.memberNameText,
+                    receiverExpr.memberName.identifier.text,
+                    parentExpr.memberName.identifier.text,
                     objectBody,
                     project,
                   )
@@ -226,7 +230,7 @@ private class ReplacementVisitor(
     val propertyName = expr.memberNameText
 
     if (declParameters != null && usageArguments != null) {
-      val index = declParameters.indexOfFirst { it.identifier.textMatches(propertyName) }
+      val index = declParameters.indexOfFirst { it.identifierName == propertyName }
       val argument = usageArguments.getOrNull(index)
       if (argument != null) {
         expr.replace(argument)
@@ -255,13 +259,13 @@ private class ReplacementVisitor(
    */
   override fun visitTypeName(typeName: PklTypeName) {
     typeName.moduleName?.let { moduleName ->
-      handleReferencedImport(moduleName.identifier.text) { aliasName ->
+      handleReferencedImport(moduleName.identifierName) { aliasName ->
         moduleName.replace(PklPsiFactory.createModuleName(aliasName, project))
       }
       return
     }
 
-    handleReferencedImport(typeName.simpleName.identifier.text) { aliasName ->
+    handleReferencedImport(typeName.simpleName.identifierName) { aliasName ->
       typeName.simpleName.replace(PklPsiFactory.createSimpleTypeName(aliasName, project))
     }
   }

@@ -1,5 +1,5 @@
 /**
- * Copyright © 2024 Apple Inc. and the Pkl project authors. All rights reserved.
+ * Copyright © 2024-2026 Apple Inc. and the Pkl project authors. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -27,7 +27,7 @@ import org.pkl.intellij.type.TypeParameterBindings
 import org.pkl.intellij.type.computeResolvedImportType
 
 abstract class PklClassPropertyBase(node: ASTNode) : PklClassMemberBase(node), PklClassProperty {
-  override fun getName(): String = nameIdentifier.text
+  override fun getName(): String = nameIdentifier.text.removeSurrounding("`")
 
   override val anchor: PsiElement
     get() = nameIdentifier
@@ -39,7 +39,7 @@ abstract class PklClassPropertyBase(node: ASTNode) : PklClassMemberBase(node), P
   override fun getLookupElementType(
     base: PklBaseModule,
     bindings: TypeParameterBindings,
-    context: PklProject?
+    context: PklProject?,
   ): Type = computeResolvedImportType(base, bindings, context)
 
   fun setExpr(expr: PklExpr): PklClassPropertyBase {

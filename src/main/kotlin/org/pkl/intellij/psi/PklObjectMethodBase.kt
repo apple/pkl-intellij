@@ -32,7 +32,7 @@ abstract class PklObjectMethodBase(node: ASTNode) : PklAstWrapperPsiElement(node
   override val anchor: PsiElement
     get() = keyword
 
-  override fun getName(): String? = nameIdentifier?.text
+  override fun getName(): String? = nameIdentifier?.text?.removeSurrounding("`")
 
   override fun getIcon(flags: Int): Icon = PklIcons.METHOD.decorate(this, flags)
 
@@ -43,7 +43,7 @@ abstract class PklObjectMethodBase(node: ASTNode) : PklAstWrapperPsiElement(node
   override fun getLookupElementType(
     base: PklBaseModule,
     bindings: TypeParameterBindings,
-    context: PklProject?
+    context: PklProject?,
   ): Type = returnType.toType(base, bindings, context)
 
   override val hasParameters: Boolean
