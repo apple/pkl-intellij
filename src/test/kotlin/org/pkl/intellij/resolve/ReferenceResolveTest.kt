@@ -162,4 +162,16 @@ class ReferenceResolveTest : PklTestCase() {
     }
     assertThat(module.imports.last().identifier!!.text).isEqualTo("`my-module10`")
   }
+
+  fun `test quoted reference resolves unquoted property`() {
+    myFixture.configureByText(PklFileType, "foo = 1\nres = `fo<caret>o`")
+    val resolved = myFixture.getReferenceAtCaretPosition()!!.resolve()
+    assertThat(resolved).isInstanceOf(PklClassProperty::class.java)
+  }
+
+  fun `test unquoted reference resolves quoted property`() {
+    myFixture.configureByText(PklFileType, "`foo` = 1\nres = fo<caret>o")
+    val resolved = myFixture.getReferenceAtCaretPosition()!!.resolve()
+    assertThat(resolved).isInstanceOf(PklClassProperty::class.java)
+  }
 }

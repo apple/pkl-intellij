@@ -42,6 +42,7 @@ import org.pkl.intellij.util.GlobResolver
 import org.pkl.intellij.util.appendNumericSuffix
 import org.pkl.intellij.util.inferImportPropertyName
 import org.pkl.intellij.util.unexpectedType
+import org.pkl.parser.Lexer
 
 inline fun ASTNode?.eachChild(consumer: (ASTNode) -> Unit) {
   var child = this?.firstChildNode
@@ -143,7 +144,7 @@ fun PsiElement.firstChildTokenOfType(type: IElementType): LeafPsiElement? {
 
 fun PsiElement.firstChildTokenOfEitherType(
   type1: IElementType,
-  type2: IElementType
+  type2: IElementType,
 ): LeafPsiElement? {
   assert(type1 is PklTokenType)
   assert(type2 is PklTokenType)
@@ -267,7 +268,9 @@ val PklObjectSpread.isNullable: Boolean
   get() = firstChildTokenType() == PklElementTypes.QSPREAD
 
 val PklImport.memberName: String?
-  get() = identifier?.text ?: moduleUri?.escapedContent?.let { inferImportPropertyName(it) }
+  get() =
+    identifier?.text?.removeSurrounding("`")
+      ?: moduleUri?.escapedContent?.let { inferImportPropertyName(it) }
 
 val PklMethod.isOverridable: Boolean
   get() =
@@ -296,7 +299,7 @@ val PklClass.supertype: PklType?
 
 inline fun PklClass.eachSuperclassOrModule(
   context: PklProject?,
-  consumer: (PklTypeDefOrModule) -> Unit
+  consumer: (PklTypeDefOrModule) -> Unit,
 ) {
   var clazz = superclass(context)
   var supermostClass = this
@@ -434,7 +437,7 @@ fun PklImportList.findOrInsertImport(module: PklModule): String? {
   for (oldImport in oldImports) {
     if (oldImport.isGlob) continue
     val importedModule = oldImport.resolveModules(null).singleOrNull()
-    if (importedModule == module) return oldImport.memberName
+    if (importedModule == module) return oldImport.memberName?.let(Lexer::maybeQuoteIdentifier)
 
     if (oldImport.memberName == effectiveImportName) {
       effectiveImportName = appendNumericSuffix(effectiveImportName)
@@ -470,7 +473,11 @@ fun PklImportList.findOrInsertImport(module: PklModule): String? {
     if (effectiveImportName == defaultImportName) {
       PklPsiFactory.createImport(importPath, project)
     } else {
-      PklPsiFactory.createAliasedImport(importPath, effectiveImportName, project)
+      PklPsiFactory.createAliasedImport(
+        importPath,
+        Lexer.maybeQuoteIdentifier(effectiveImportName),
+        project,
+      )
     }
 
   val newElementInfo = ImportInfo.create(newImport)
@@ -490,7 +497,7 @@ fun PklImportList.findOrInsertImport(module: PklModule): String? {
     ensureFollowedByNewlines(2)
   }
 
-  return effectiveImportName
+  return Lexer.maybeQuoteIdentifier(effectiveImportName)
 }
 
 val PklImportBase.isGlob
@@ -501,7 +508,7 @@ sealed class ModuleResolutionResult {
     base: PklBaseModule,
     bindings: TypeParameterBindings,
     preserveUnboundedVars: Boolean,
-    context: PklProject?
+    context: PklProject?,
   ): Type
 }
 
@@ -510,14 +517,9 @@ class SimpleModuleResolutionResult(val resolved: PklModule?) : ModuleResolutionR
     base: PklBaseModule,
     bindings: TypeParameterBindings,
     preserveUnboundedVars: Boolean,
-    context: PklProject?
+    context: PklProject?,
   ): Type {
-    return resolved.computeResolvedImportType(
-      base,
-      bindings,
-      context,
-      preserveUnboundedVars,
-    )
+    return resolved.computeResolvedImportType(base, bindings, context, preserveUnboundedVars)
   }
 }
 
@@ -530,18 +532,13 @@ class GlobModuleResolutionResult(val resolved: GlobResolver.GlobResult) : Module
     base: PklBaseModule,
     bindings: TypeParameterBindings,
     preserveUnboundedVars: Boolean,
-    context: PklProject?
+    context: PklProject?,
   ): Type {
     if (resolved.exceededMaxElements || resolved.elements.isEmpty())
       return base.mappingType.withTypeArguments(base.stringType, base.moduleType)
     val allTypes =
       resolved.elements.map {
-        it.computeResolvedImportType(
-          base,
-          bindings,
-          context,
-          preserveUnboundedVars,
-        ) as Type.Module
+        it.computeResolvedImportType(base, bindings, context, preserveUnboundedVars) as Type.Module
       }
     val firstType = allTypes.first()
     val unifiedType =
@@ -556,7 +553,7 @@ class GlobModuleResolutionResult(val resolved: GlobResolver.GlobResult) : Module
     base: PklBaseModule,
     modA: Type.Module,
     modB: Type.Module,
-    context: PklProject?
+    context: PklProject?,
   ): Type {
     return when {
       modA.isSubtypeOf(modB, base, context) -> modB
@@ -638,7 +635,7 @@ fun PklTypeAlias.isRecursive(context: PklProject?): Boolean {
     project.cacheKeyService.getKey("PklTypeAlias.isRecursive", context),
     isRecursiveProvider,
     false,
-    this to context
+    this to context,
   )
 }
 
@@ -693,7 +690,7 @@ object DefaultTypeNameRenderer : TypeNameRenderer {
 fun Appendable.renderType(
   type: PklType?,
   bindings: TypeParameterBindings,
-  nameRenderer: TypeNameRenderer = DefaultTypeNameRenderer
+  nameRenderer: TypeNameRenderer = DefaultTypeNameRenderer,
 ): Appendable {
   when (type) {
     null -> append("unknown")
@@ -758,7 +755,7 @@ fun Appendable.renderType(
 
 fun Appendable.renderType(
   type: Type?,
-  nameRenderer: TypeNameRenderer = DefaultTypeNameRenderer
+  nameRenderer: TypeNameRenderer = DefaultTypeNameRenderer,
 ): Appendable {
   type?.render(this, nameRenderer)
   return this
@@ -767,7 +764,7 @@ fun Appendable.renderType(
 fun Appendable.renderParameterTypeList(
   parameterList: PklParameterList?,
   bindings: TypeParameterBindings,
-  nameRenderer: TypeNameRenderer = DefaultTypeNameRenderer
+  nameRenderer: TypeNameRenderer = DefaultTypeNameRenderer,
 ): Appendable {
   append('(')
 
@@ -793,7 +790,7 @@ fun Appendable.renderParameterTypeList(
 fun Appendable.renderParameterList(
   parameterList: PklParameterList?,
   bindings: TypeParameterBindings,
-  nameRenderer: TypeNameRenderer = DefaultTypeNameRenderer
+  nameRenderer: TypeNameRenderer = DefaultTypeNameRenderer,
 ): Appendable {
   append('(')
 
@@ -813,7 +810,7 @@ fun Appendable.renderParameterList(
 fun Appendable.renderTypedIdentifier(
   typedIdentifier: PklTypedIdentifier,
   bindings: TypeParameterBindings,
-  nameRenderer: TypeNameRenderer = DefaultTypeNameRenderer
+  nameRenderer: TypeNameRenderer = DefaultTypeNameRenderer,
 ): Appendable {
   append(typedIdentifier.identifier.text)
   renderTypeAnnotation(typedIdentifier.type, bindings, nameRenderer)
@@ -832,7 +829,7 @@ fun Appendable.renderTypeAnnotation(
 fun Appendable.renderTypeAnnotation(
   type: PklType?,
   bindings: TypeParameterBindings,
-  nameRenderer: TypeNameRenderer = DefaultTypeNameRenderer
+  nameRenderer: TypeNameRenderer = DefaultTypeNameRenderer,
 ): Appendable {
   append(": ")
   renderType(type, bindings, nameRenderer)

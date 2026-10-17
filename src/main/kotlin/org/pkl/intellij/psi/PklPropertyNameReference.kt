@@ -1,5 +1,5 @@
 /**
- * Copyright © 2024 Apple Inc. and the Pkl project authors. All rights reserved.
+ * Copyright © 2024-2026 Apple Inc. and the Pkl project authors. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -33,21 +33,15 @@ class PklPropertyNameReference(private val propertyName: PklPropertyName) :
   override fun getRangeInElement(): TextRange = ElementManipulators.getValueTextRange(propertyName)
 
   override fun resolveContextual(context: PklProject?): PklElement? {
-    val name = propertyName.identifier.text
+    val name = propertyName.identifierName
     val base = propertyName.project.pklBaseModule
-    return doResolve(
-      ResolveVisitors.firstElementNamed(
-        name,
-        base,
-      ),
-      context
-    )
+    return doResolve(ResolveVisitors.firstElementNamed(name, base), context)
   }
 
   override fun resolve(): PklElement? = resolveContextual(propertyName.enclosingModule?.pklProject)
 
   override fun multiResolve(incompleteCode: Boolean): Array<PklResolveResult> {
-    val name = propertyName.identifier.text
+    val name = propertyName.identifierName
     val base = propertyName.project.pklBaseModule
     val context = propertyName.enclosingModule?.pklProject
     return doResolve(ResolveVisitors.resolveResultsNamed(name, base), context)
