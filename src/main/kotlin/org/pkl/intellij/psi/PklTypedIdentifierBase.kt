@@ -24,7 +24,7 @@ import org.pkl.intellij.type.toType
 
 abstract class PklTypedIdentifierBase(node: ASTNode) :
   PklAstWrapperPsiElement(node), PklTypedIdentifier {
-  override fun getName(): String = identifier.text
+  override fun getName(): String = identifierName
 
   override fun getNameIdentifier(): PsiElement = identifier
 

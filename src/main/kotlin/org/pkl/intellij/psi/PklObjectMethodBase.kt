@@ -32,7 +32,7 @@ abstract class PklObjectMethodBase(node: ASTNode) : PklAstWrapperPsiElement(node
   override val anchor: PsiElement
     get() = keyword
 
-  override fun getName(): String? = nameIdentifier?.text
+  override fun getName(): String? = nameIdentifier?.text?.removeSurrounding("`")
 
   override fun getIcon(flags: Int): Icon = PklIcons.METHOD.decorate(this, flags)
 
