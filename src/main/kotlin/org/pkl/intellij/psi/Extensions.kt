@@ -143,7 +143,7 @@ fun PsiElement.firstChildTokenOfType(type: IElementType): LeafPsiElement? {
 
 fun PsiElement.firstChildTokenOfEitherType(
   type1: IElementType,
-  type2: IElementType
+  type2: IElementType,
 ): LeafPsiElement? {
   assert(type1 is PklTokenType)
   assert(type2 is PklTokenType)
@@ -296,7 +296,7 @@ val PklClass.supertype: PklType?
 
 inline fun PklClass.eachSuperclassOrModule(
   context: PklProject?,
-  consumer: (PklTypeDefOrModule) -> Unit
+  consumer: (PklTypeDefOrModule) -> Unit,
 ) {
   var clazz = superclass(context)
   var supermostClass = this
@@ -501,7 +501,8 @@ sealed class ModuleResolutionResult {
     base: PklBaseModule,
     bindings: TypeParameterBindings,
     preserveUnboundedVars: Boolean,
-    context: PklProject?
+    context: PklProject?,
+    receiverType: Type? = null,
   ): Type
 }
 
@@ -510,13 +511,15 @@ class SimpleModuleResolutionResult(val resolved: PklModule?) : ModuleResolutionR
     base: PklBaseModule,
     bindings: TypeParameterBindings,
     preserveUnboundedVars: Boolean,
-    context: PklProject?
+    context: PklProject?,
+    receiverType: Type?,
   ): Type {
     return resolved.computeResolvedImportType(
       base,
       bindings,
       context,
       preserveUnboundedVars,
+      receiverType = receiverType,
     )
   }
 }
@@ -530,7 +533,8 @@ class GlobModuleResolutionResult(val resolved: GlobResolver.GlobResult) : Module
     base: PklBaseModule,
     bindings: TypeParameterBindings,
     preserveUnboundedVars: Boolean,
-    context: PklProject?
+    context: PklProject?,
+    receiverType: Type?,
   ): Type {
     if (resolved.exceededMaxElements || resolved.elements.isEmpty())
       return base.mappingType.withTypeArguments(base.stringType, base.moduleType)
@@ -541,6 +545,7 @@ class GlobModuleResolutionResult(val resolved: GlobResolver.GlobResult) : Module
           bindings,
           context,
           preserveUnboundedVars,
+          receiverType = receiverType,
         ) as Type.Module
       }
     val firstType = allTypes.first()
@@ -556,7 +561,7 @@ class GlobModuleResolutionResult(val resolved: GlobResolver.GlobResult) : Module
     base: PklBaseModule,
     modA: Type.Module,
     modB: Type.Module,
-    context: PklProject?
+    context: PklProject?,
   ): Type {
     return when {
       modA.isSubtypeOf(modB, base, context) -> modB
@@ -638,7 +643,7 @@ fun PklTypeAlias.isRecursive(context: PklProject?): Boolean {
     project.cacheKeyService.getKey("PklTypeAlias.isRecursive", context),
     isRecursiveProvider,
     false,
-    this to context
+    this to context,
   )
 }
 
@@ -693,7 +698,7 @@ object DefaultTypeNameRenderer : TypeNameRenderer {
 fun Appendable.renderType(
   type: PklType?,
   bindings: TypeParameterBindings,
-  nameRenderer: TypeNameRenderer = DefaultTypeNameRenderer
+  nameRenderer: TypeNameRenderer = DefaultTypeNameRenderer,
 ): Appendable {
   when (type) {
     null -> append("unknown")
@@ -749,6 +754,7 @@ fun Appendable.renderType(
     is PklStringLiteralType -> append(type.stringConstant.text)
     is PklNothingType -> append("nothing")
     is PklModuleType -> append("module")
+    is PklThisType -> append("this")
     is PklUnknownType -> append("unknown")
     else -> throw AssertionError("Unknown type: ${type::class}")
   }
@@ -758,7 +764,7 @@ fun Appendable.renderType(
 
 fun Appendable.renderType(
   type: Type?,
-  nameRenderer: TypeNameRenderer = DefaultTypeNameRenderer
+  nameRenderer: TypeNameRenderer = DefaultTypeNameRenderer,
 ): Appendable {
   type?.render(this, nameRenderer)
   return this
@@ -767,7 +773,7 @@ fun Appendable.renderType(
 fun Appendable.renderParameterTypeList(
   parameterList: PklParameterList?,
   bindings: TypeParameterBindings,
-  nameRenderer: TypeNameRenderer = DefaultTypeNameRenderer
+  nameRenderer: TypeNameRenderer = DefaultTypeNameRenderer,
 ): Appendable {
   append('(')
 
@@ -793,7 +799,7 @@ fun Appendable.renderParameterTypeList(
 fun Appendable.renderParameterList(
   parameterList: PklParameterList?,
   bindings: TypeParameterBindings,
-  nameRenderer: TypeNameRenderer = DefaultTypeNameRenderer
+  nameRenderer: TypeNameRenderer = DefaultTypeNameRenderer,
 ): Appendable {
   append('(')
 
@@ -813,7 +819,7 @@ fun Appendable.renderParameterList(
 fun Appendable.renderTypedIdentifier(
   typedIdentifier: PklTypedIdentifier,
   bindings: TypeParameterBindings,
-  nameRenderer: TypeNameRenderer = DefaultTypeNameRenderer
+  nameRenderer: TypeNameRenderer = DefaultTypeNameRenderer,
 ): Appendable {
   append(typedIdentifier.identifier.text)
   renderTypeAnnotation(typedIdentifier.type, bindings, nameRenderer)
@@ -832,7 +838,7 @@ fun Appendable.renderTypeAnnotation(
 fun Appendable.renderTypeAnnotation(
   type: PklType?,
   bindings: TypeParameterBindings,
-  nameRenderer: TypeNameRenderer = DefaultTypeNameRenderer
+  nameRenderer: TypeNameRenderer = DefaultTypeNameRenderer,
 ): Appendable {
   append(": ")
   renderType(type, bindings, nameRenderer)

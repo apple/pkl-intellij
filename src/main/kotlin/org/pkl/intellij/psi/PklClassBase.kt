@@ -50,7 +50,8 @@ abstract class PklClassBase(node: ASTNode) : PklTypeDefBase(node), PklClass {
   override fun getLookupElementType(
     base: PklBaseModule,
     bindings: TypeParameterBindings,
-    context: PklProject?
+    context: PklProject?,
+    receiverType: Type?,
   ): Type = base.classType.withTypeArguments(Type.Class.create(this))
 
   override val members: Sequence<PklClassMember>
@@ -85,7 +86,7 @@ fun PklClass.cache(context: PklProject?): ClassMemberCache =
       project.cacheKeyService.getKey("PklClass.cache", context),
       classMemberCacheProvider,
       false,
-      this to context
+      this to context,
     )
 
 /** Caches non-local, i.e., externally accessible, members of a class. */
@@ -104,14 +105,14 @@ class ClassMemberCache(
   // let's play it safe and make a class cache depend on the class' enclosing module and its
   // superclass cache's dependencies.
   // this can be revisited if performance issues arise.
-  val dependencies: List<Any>
+  val dependencies: List<Any>,
 ) {
 
   fun visitPropertiesOrMethods(
     isProperty: Boolean,
     bindings: TypeParameterBindings,
     visitor: ResolveVisitor<*>,
-    context: PklProject?
+    context: PklProject?,
   ): Boolean {
     return if (isProperty) doVisit(properties, bindings, visitor, context)
     else doVisit(methods, bindings, visitor, context)
@@ -121,7 +122,7 @@ class ClassMemberCache(
     members: Map<String, PklElement>,
     bindings: TypeParameterBindings,
     visitor: ResolveVisitor<*>,
-    context: PklProject?
+    context: PklProject?,
   ): Boolean {
 
     val exactName = visitor.exactName

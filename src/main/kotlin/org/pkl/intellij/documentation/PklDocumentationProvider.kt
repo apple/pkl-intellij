@@ -23,6 +23,7 @@ import com.intellij.psi.PsiElement
 import com.intellij.psi.PsiFile
 import com.intellij.psi.PsiManager
 import com.intellij.psi.util.isAncestor
+import com.intellij.psi.util.parentOfType
 import com.intellij.psi.util.parentOfTypes
 import java.util.function.Consumer
 import org.intellij.markdown.html.HtmlGenerator
@@ -41,14 +42,13 @@ class PklDocumentationProvider : AbstractDocumentationProvider() {
     editor: Editor,
     file: PsiFile,
     contextElement: PsiElement?,
-    targetOffset: Int
+    targetOffset: Int,
   ): PsiElement? {
     val qualifiedAccessName =
       contextElement?.parentOfTypes(
         PklQualifiedAccessNameBase::class, /* stop class */
-        PklObjectBody::class
-      ) as? PklQualifiedAccessNameBase
-        ?: return null
+        PklObjectBody::class,
+      ) as? PklQualifiedAccessNameBase ?: return null
     val ref = qualifiedAccessName.reference
     val results = ref.multiResolve(false)
     if (results.isEmpty()) return null
@@ -110,7 +110,7 @@ class PklDocumentationProvider : AbstractDocumentationProvider() {
   override fun getDocumentationElementForLink(
     psiManager: PsiManager,
     link: String,
-    position: PsiElement
+    position: PsiElement,
   ): PsiElement? {
     return DocCommentResolvers.resolveLink(psiManager, link, position)
   }
@@ -123,12 +123,12 @@ class PklDocumentationProvider : AbstractDocumentationProvider() {
 
   private fun Appendable.renderSignature(
     element: PsiElement,
-    originalElement: PsiElement?
+    originalElement: PsiElement?,
   ): Boolean {
     val context = originalElement?.enclosingModule?.pklProject
     when (element) {
       is PklReferenceQualifiedAccessProxy -> {
-        renderTypeAnnotation(element, element.name, element.type, originalElement)
+        renderTypeAnnotation(element, element.name, element.type, originalElement, true)
       }
       is PklModule -> {
         renderModifiers(element.modifierList)
@@ -189,65 +189,96 @@ class PklDocumentationProvider : AbstractDocumentationProvider() {
         renderModifiers(element.modifierList)
         append("function ")
         bold { escapeXml { append(element.name ?: "<method>") } }
-        escapeXml {
-          renderTypeParameterList(element.typeParameterList)
-          renderParameterList(element.parameterList, mapOf(), DocumentationTypeNameRenderer)
-          renderTypeAnnotation(element.returnType, mapOf(), DocumentationTypeNameRenderer)
-        }
+        escapeXml { renderTypeParameterList(element.typeParameterList) }
+        renderParameterList(element.parameterList, originalElement)
+        renderTypeAnnotation(element, element.name, element.returnType, originalElement, false)
       }
       is PklProperty -> {
         if (element is PklClassProperty && !element.isLocal) {
           renderOwner(element)
         }
         renderModifiers(element.modifierList)
-        renderTypeAnnotation(element, element.name, element.type, originalElement)
+        renderTypeAnnotation(element, element.name, element.type, originalElement, true)
       }
       is PklTypedIdentifier -> {
         if (element.parent is PklParameterList) {
           append("parameter ")
         }
-        renderTypeAnnotation(element, element.name, element.type, originalElement)
+        renderTypeAnnotation(element, element.name, element.type, originalElement, true)
       }
       else -> return false
     }
     return true
   }
 
+  private fun Appendable.renderParameterList(
+    parameterList: PklParameterList?,
+    originalElement: PsiElement?,
+  ): Appendable {
+    append('(')
+
+    if (parameterList != null) {
+      var first = true
+      for (parameter in parameterList.elements) {
+        if (first) first = false else append(", ")
+        renderTypeAnnotation(
+          parameter,
+          parameter.identifier.text,
+          parameter.type,
+          originalElement,
+          true,
+        )
+      }
+    }
+
+    append(')')
+
+    return this
+  }
+
   private fun Appendable.renderTypeAnnotation(
     element: PklElement,
     name: String?,
     type: PklType?,
-    originalElement: PsiElement?
+    originalElement: PsiElement?,
+    isProperty: Boolean,
   ) {
     if (name == null) return
     val base = element.project.pklBaseModule
     val context = originalElement?.enclosingModule?.pklProject
-    bold { escapeXml { append(name) } }
+    if (isProperty) {
+      bold { escapeXml { append(name) } }
+    }
     escapeXml {
       when {
-        // support flow typing when showing documentation for nodes that navigate to ther nodes
+        // support flow typing when showing documentation for nodes that navigate to their nodes
         // (e.g. they aren't param declarations or class properties)
         element.isPhysical && originalElement?.isAncestor(element) == false -> {
-          val thisType = element.computeThisType(base, mapOf(), context)
-          val visitor =
-            ResolveVisitors.typeOfFirstElementNamed(
-              name,
-              null,
-              element.project.pklBaseModule,
-              isNullSafeAccess = false,
-              preserveUnboundTypeVars = false,
-              thisType,
-            )
+          val accessExpr = originalElement.parentOfType<PklAccessExpr>()
+          val receiverType = accessExpr?.inferReceiverType(base, emptyMap(), context)
           val computedType =
-            Resolvers.resolveUnqualifiedAccess(
-              originalElement,
-              thisType,
-              true,
-              element.project.pklBaseModule,
-              mapOf(),
-              visitor,
-              context
-            )
+            if (isProperty) {
+              val visitor =
+                ResolveVisitors.typeOfFirstElementNamed(
+                  name,
+                  null,
+                  element.project.pklBaseModule,
+                  isNullSafeAccess = false,
+                  preserveUnboundTypeVars = false,
+                  receiverType ?: Type.Unknown,
+                )
+              Resolvers.resolveUnqualifiedAccess(
+                originalElement,
+                receiverType,
+                true,
+                element.project.pklBaseModule,
+                mapOf(),
+                visitor,
+                context,
+              )
+            } else {
+              type?.toType(base, emptyMap(), context, true, receiverType) ?: Type.Unknown
+            }
           renderTypeAnnotation(computedType, DocumentationTypeNameRenderer)
         }
         // otherwise, if a type annotation exists, render it

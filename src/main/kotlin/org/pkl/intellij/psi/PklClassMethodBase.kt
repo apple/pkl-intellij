@@ -1,5 +1,5 @@
 /**
- * Copyright © 2024 Apple Inc. and the Pkl project authors. All rights reserved.
+ * Copyright © 2024-2026 Apple Inc. and the Pkl project authors. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -47,8 +47,9 @@ abstract class PklClassMethodBase(node: ASTNode) : PklClassMemberBase(node), Pkl
   override fun getLookupElementType(
     base: PklBaseModule,
     bindings: TypeParameterBindings,
-    context: PklProject?
-  ): Type = returnType.toType(base, bindings, context, true)
+    context: PklProject?,
+    receiverType: Type?,
+  ): Type = returnType.toType(base, bindings, context, true, receiverType)
 
   override val hasParameters: Boolean
     get() = !parameterList?.elements.isNullOrEmpty()

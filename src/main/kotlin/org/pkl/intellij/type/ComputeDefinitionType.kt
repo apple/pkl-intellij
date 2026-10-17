@@ -28,7 +28,8 @@ fun PsiElement?.computeResolvedImportType(
   bindings: TypeParameterBindings,
   context: PklProject?,
   preserveUnboundTypeVars: Boolean = false,
-  canInferExprBody: Boolean = true
+  canInferExprBody: Boolean = true,
+  receiverType: Type? = null,
 ): Type {
   if (this == null) return Type.Unknown
 
@@ -39,7 +40,8 @@ fun PsiElement?.computeResolvedImportType(
       is PklTypeAlias -> Type.alias(this, context)
       is PklMethod ->
         when {
-          returnType != null -> returnType.toType(base, bindings, context, preserveUnboundTypeVars)
+          returnType != null ->
+            returnType.toType(base, bindings, context, preserveUnboundTypeVars, receiverType)
           else ->
             when {
               canInferExprBody && !isOverridable -> body.computeExprType(base, bindings, context)
@@ -48,7 +50,8 @@ fun PsiElement?.computeResolvedImportType(
         }
       is PklProperty ->
         when {
-          type != null -> type.toType(base, bindings, context, preserveUnboundTypeVars)
+          type != null ->
+            type.toType(base, bindings, context, preserveUnboundTypeVars, receiverType)
           else ->
             when {
               canInferExprBody && isLocalOrConstOrFixed ->
@@ -110,7 +113,8 @@ fun PsiElement?.computeResolvedImportType(
       }
       is PklTypedIdentifier ->
         when {
-          type != null -> type.toType(base, bindings, context, preserveUnboundTypeVars)
+          type != null ->
+            type.toType(base, bindings, context, preserveUnboundTypeVars, receiverType)
           else -> { // try to infer identifier type
             when (val identifierOwner = parent) {
               is PklLetExpr -> identifierOwner.varExpr.computeExprType(base, bindings, context)
@@ -178,7 +182,7 @@ fun PsiElement?.computeResolvedImportType(
                             bindings,
                             context,
                             false,
-                            false
+                            false,
                           )
                         getFunctionParameterType(this, identifierOwner, functionType, base, context)
                       }
@@ -193,8 +197,7 @@ fun PsiElement?.computeResolvedImportType(
       is PklTypeParameter -> Type.Unknown
       else -> Type.Unknown
     }
-  }
-    ?: Type.Unknown
+  } ?: Type.Unknown
 }
 
 private fun getFunctionParameterType(
@@ -202,7 +205,7 @@ private fun getFunctionParameterType(
   parameterList: PklParameterList,
   functionType: Type,
   base: PklBaseModule,
-  context: PklProject?
+  context: PklProject?,
 ): Type {
 
   return when (functionType) {
@@ -223,7 +226,7 @@ private fun getFunctionParameterType(
         parameterList,
         functionType.unaliased(base, context),
         base,
-        context
+        context,
       )
     else -> Type.Unknown
   }

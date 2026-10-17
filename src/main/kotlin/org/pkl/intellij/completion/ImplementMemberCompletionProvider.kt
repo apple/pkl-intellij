@@ -53,7 +53,7 @@ class ImplementMemberCompletionProvider : PklCompletionProvider() {
   override fun addCompletions(
     parameters: CompletionParameters,
     context: ProcessingContext,
-    result: CompletionResultSet
+    result: CompletionResultSet,
   ) {
     val position = parameters.position
     val originalFile = parameters.originalFile
@@ -72,7 +72,7 @@ class ImplementMemberCompletionProvider : PklCompletionProvider() {
         LookupElementBuilder.createWithIcon(prop)
           .withPresentableText(renderCompletionText(prop))
           .bold()
-          .withTypeText(prop.getLookupElementType(base, mapOf(), context).render(), true)
+          .withTypeText(prop.getLookupElementType(base, mapOf(), context, null).render(), true)
           .withInsertHandler(MemberInsertHandler(prop))
       result.addElement(lookupElement)
     }
