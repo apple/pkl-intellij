@@ -67,14 +67,10 @@ sourceSets { main { java { srcDir("generated") } } }
 
 val pklCli: Configuration = configurations.create("pklCli")
 
+val pklStdlib: Configuration = configurations.create("pklStdlib")
+
 dependencies {
-  // put stdlib ZIP on plugin class path instead of exploding it into plugin JAR
-  // (saves work and `Class(Loader).getResource()` doesn't care)
-  implementation(libs.pklStdLib) {
-    attributes {
-      attribute(Attribute.of("intellijPlatformCollected", Boolean::class.javaObjectType), false)
-    }
-  }
+  pklStdlib(libs.pklStdLib)
   implementation(libs.kotlinxJson)
   // needed for kotlin ui dsl:
   // https://plugins.jetbrains.com/docs/intellij/kotlin-ui-dsl-version-2.html
@@ -95,6 +91,12 @@ dependencies {
     bundledPlugin("org.intellij.plugins.markdown")
     testFramework(TestFrameworkType.Platform, libs.versions.intellijTestPlatform.get())
   }
+}
+
+tasks.jar {
+  // Either Gradle or the IDEA plugin doesn't copy the `.zip` file into the plugin classpath
+  // directly, so we need to wire this up ourselves.
+  from(zipTree(pklStdlib.singleFile))
 }
 
 idea {
