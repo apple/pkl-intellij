@@ -699,6 +699,7 @@ fun Appendable.renderType(
   type: PklType?,
   bindings: TypeParameterBindings,
   nameRenderer: TypeNameRenderer = DefaultTypeNameRenderer,
+  receiverType: Type? = null,
 ): Appendable {
   when (type) {
     null -> append("unknown")
@@ -714,7 +715,7 @@ fun Appendable.renderType(
         var first = true
         for (arg in typeArgumentList.elements) {
           if (first) first = false else append(", ")
-          renderType(arg, bindings, nameRenderer)
+          renderType(arg, bindings, nameRenderer, receiverType)
         }
         append('>')
       }
@@ -722,14 +723,14 @@ fun Appendable.renderType(
     is PklNullableType -> {
       val addParens = type is PklUnionType || type is PklFunctionType
       if (addParens) append('(')
-      renderType(type.type, bindings, nameRenderer)
+      renderType(type.type, bindings, nameRenderer, receiverType)
       if (addParens) append(')')
       append('?')
     }
-    is PklConstrainedType -> renderType(type.type, bindings, nameRenderer)
+    is PklConstrainedType -> renderType(type.type, bindings, nameRenderer, receiverType)
     is PklParenthesizedType -> {
       append('(')
-      renderType(type.type, bindings, nameRenderer)
+      renderType(type.type, bindings, nameRenderer, receiverType)
       append(')')
     }
     is PklFunctionType -> {
@@ -737,24 +738,25 @@ fun Appendable.renderType(
       var first = true
       for (t in type.functionTypeParameterList.elements) {
         if (first) first = false else append(", ")
-        renderType(t, bindings, nameRenderer)
+        renderType(t, bindings, nameRenderer, receiverType)
       }
       append(") -> ")
-      renderType(type.type, bindings, nameRenderer)
+      renderType(type.type, bindings, nameRenderer, receiverType)
     }
     is PklUnionType -> {
-      renderType(type.leftType, bindings, nameRenderer)
+      renderType(type.leftType, bindings, nameRenderer, receiverType)
       append("|")
-      renderType(type.rightType, bindings, nameRenderer)
+      renderType(type.rightType, bindings, nameRenderer, receiverType)
     }
     is PklDefaultType -> {
       append('*')
-      renderType(type.type, bindings, nameRenderer)
+      renderType(type.type, bindings, nameRenderer, receiverType)
     }
     is PklStringLiteralType -> append(type.stringConstant.text)
     is PklNothingType -> append("nothing")
     is PklModuleType -> append("module")
-    is PklThisType -> append("this")
+    is PklThisType ->
+      if (receiverType != null) renderType(receiverType, nameRenderer) else append("this")
     is PklUnknownType -> append("unknown")
     else -> throw AssertionError("Unknown type: ${type::class}")
   }
@@ -774,6 +776,7 @@ fun Appendable.renderParameterTypeList(
   parameterList: PklParameterList?,
   bindings: TypeParameterBindings,
   nameRenderer: TypeNameRenderer = DefaultTypeNameRenderer,
+  receiverType: Type? = null,
 ): Appendable {
   append('(')
 
@@ -783,7 +786,7 @@ fun Appendable.renderParameterTypeList(
       if (first) first = false else append(", ")
       val type = parameter.type?.unknownToNull()
       if (type != null) {
-        renderType(type, bindings, nameRenderer)
+        renderType(type, bindings, nameRenderer, receiverType)
       } else {
         // render parameter name, which is more informative than `unknown` type
         append(parameter.identifier.text)

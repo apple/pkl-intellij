@@ -226,7 +226,8 @@ class PklDocumentationProvider : AbstractDocumentationProvider() {
           parameter.identifier.text,
           parameter.type,
           originalElement,
-          true,
+          isProperty = true,
+          resolveByName = false,
         )
       }
     }
@@ -242,6 +243,7 @@ class PklDocumentationProvider : AbstractDocumentationProvider() {
     type: PklType?,
     originalElement: PsiElement?,
     isProperty: Boolean,
+    resolveByName: Boolean = isProperty,
   ) {
     if (name == null) return
     val base = element.project.pklBaseModule
@@ -257,7 +259,7 @@ class PklDocumentationProvider : AbstractDocumentationProvider() {
           val accessExpr = originalElement.parentOfType<PklAccessExpr>()
           val receiverType = accessExpr?.inferReceiverType(base, emptyMap(), context)
           val computedType =
-            if (isProperty) {
+            if (resolveByName) {
               val visitor =
                 ResolveVisitors.typeOfFirstElementNamed(
                   name,

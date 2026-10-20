@@ -506,7 +506,11 @@ object ResolveVisitors {
             when (element) {
               is PklMethod -> {
                 val parameterList = buildString {
-                  renderParameterTypeList(element.parameterList, bindings)
+                  renderParameterTypeList(
+                    element.parameterList,
+                    bindings,
+                    receiverType = receiverType,
+                  )
                 }
                 val insertHandler =
                   ParenthesesInsertHandler.getInstance(
