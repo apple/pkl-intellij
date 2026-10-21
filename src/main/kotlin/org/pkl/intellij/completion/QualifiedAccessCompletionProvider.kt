@@ -1,5 +1,5 @@
 /**
- * Copyright © 2024 Apple Inc. and the Pkl project authors. All rights reserved.
+ * Copyright © 2024-2026 Apple Inc. and the Pkl project authors. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -30,7 +30,7 @@ class QualifiedAccessCompletionProvider : PklCompletionProvider() {
   override fun addCompletions(
     parameters: CompletionParameters,
     context: ProcessingContext,
-    result: CompletionResultSet
+    result: CompletionResultSet,
   ) {
 
     val position = parameters.position
@@ -40,7 +40,7 @@ class QualifiedAccessCompletionProvider : PklCompletionProvider() {
     val accessExpr = position.parentOfType<PklQualifiedAccessExpr>() ?: return
     val receiverType = accessExpr.receiverExpr.computeExprType(base, mapOf(), moduleContext)
 
-    val visitor = ResolveVisitors.lookupElements(base)
+    val visitor = ResolveVisitors.lookupElements(base, receiverType)
     Resolvers.resolveQualifiedAccess(receiverType, true, base, visitor, moduleContext)
     Resolvers.resolveQualifiedAccess(receiverType, false, base, visitor, moduleContext)
     result.addAllElements(visitor.result)

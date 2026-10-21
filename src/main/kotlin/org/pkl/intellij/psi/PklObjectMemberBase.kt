@@ -29,7 +29,8 @@ abstract class PklObjectMemberBase(node: ASTNode) : PklAstWrapperPsiElement(node
   override fun getLookupElementType(
     base: PklBaseModule,
     bindings: TypeParameterBindings,
-    context: PklProject?
+    context: PklProject?,
+    receiverType: Type?,
   ): Type {
     throw AssertionError("This method should have been overridden by ${this::class.qualifiedName}.")
   }
