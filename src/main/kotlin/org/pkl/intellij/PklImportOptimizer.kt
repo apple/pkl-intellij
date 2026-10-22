@@ -59,7 +59,7 @@ class PklImportOptimizer : ImportOptimizer {
       fun create(import: PklImport): ImportInfo {
         val uri = import.moduleUri?.stringConstant?.content?.escapedText()
         val hasSchema = uri != null && uri.contains(':')
-        val alias = import.identifier?.text
+        val alias = import.identifier?.text?.removeSurrounding("`")
         return ImportInfo(import, uri, hasSchema, alias)
       }
     }

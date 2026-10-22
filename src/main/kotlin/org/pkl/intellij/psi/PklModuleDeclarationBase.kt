@@ -21,7 +21,7 @@ import com.intellij.util.IncorrectOperationException
 
 abstract class PklModuleDeclarationBase(node: ASTNode) :
   PklAstWrapperPsiElement(node), PklModuleDeclaration {
-  override fun getName(): String? = nameIdentifier?.text
+  override fun getName(): String? = nameIdentifier?.text?.removeSurrounding("`")
 
   override fun setName(name: String): PsiElement {
     throw IncorrectOperationException()

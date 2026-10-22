@@ -711,7 +711,7 @@ fun Appendable.renderType(
   when (type) {
     null -> append("unknown")
     is PklDeclaredType -> {
-      val name = type.typeName.simpleName.identifier.text
+      val name = type.typeName.simpleName.identifierName
       for ((key, value) in bindings) {
         if (key.name == name) return renderType(value)
       }

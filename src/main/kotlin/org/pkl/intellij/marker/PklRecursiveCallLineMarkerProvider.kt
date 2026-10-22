@@ -66,7 +66,7 @@ class PklRecursiveCallLineMarkerProvider : LineMarkerProvider {
               )
           ) {
             is PklMethod -> {
-              if (accessName.identifier.text == method.name) {
+              if (accessName.identifier.text.removeSurrounding("`") == method.name) {
                 if (document == null)
                   document = findEnclosingDocument(method) ?: continue@nextElement
                 markRecursiveMethod(element, document, lineNumbers, result)
@@ -91,7 +91,7 @@ class PklRecursiveCallLineMarkerProvider : LineMarkerProvider {
               // TODO: check that class (and hence method) is final (or accept the risk of false
               // positives)
               val methodName = method.name ?: continue@nextElement
-              if (accessName.identifier.text == methodName) {
+              if (accessName.identifier.text.removeSurrounding("`") == methodName) {
                 if (base == null) base = method.project.pklBaseModule
                 val targetMethod =
                   accessExpr.resolve(

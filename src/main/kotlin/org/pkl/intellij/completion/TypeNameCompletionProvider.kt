@@ -20,6 +20,7 @@ import com.intellij.codeInsight.completion.CompletionResultSet
 import com.intellij.psi.util.parentOfType
 import com.intellij.util.ProcessingContext
 import org.pkl.intellij.psi.PklTypeName
+import org.pkl.intellij.psi.identifierName
 import org.pkl.intellij.psi.enclosingModule
 import org.pkl.intellij.psi.pklBaseModule
 import org.pkl.intellij.resolve.ResolveVisitors
@@ -38,7 +39,7 @@ class TypeNameCompletionProvider : PklCompletionProvider() {
     val typeName = position.parentOfType<PklTypeName>() ?: return
     val visitor = ResolveVisitors.lookupElements(base).withoutShadowedElements()
 
-    val moduleName = typeName.moduleName?.identifier?.text
+    val moduleName = typeName.moduleName?.identifierName
     if (moduleName != null) {
       Resolvers.resolveQualifiedTypeName(
         position,
