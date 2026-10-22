@@ -1,5 +1,5 @@
 /**
- * Copyright © 2024 Apple Inc. and the Pkl project authors. All rights reserved.
+ * Copyright © 2024-2026 Apple Inc. and the Pkl project authors. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -33,7 +33,7 @@ class PklRecursiveCallLineMarkerProvider : LineMarkerProvider {
 
   override fun collectSlowLineMarkers(
     elements: MutableList<out PsiElement>,
-    result: MutableCollection<in LineMarkerInfo<*>>
+    result: MutableCollection<in LineMarkerInfo<*>>,
   ) {
 
     // add at most one recursive line marker per line
@@ -62,7 +62,7 @@ class PklRecursiveCallLineMarkerProvider : LineMarkerProvider {
                 PklMethod::class,
                 // stop tokens
                 PklObjectBody::class,
-                PklFunctionLiteral::class
+                PklFunctionLiteral::class,
               )
           ) {
             is PklMethod -> {
@@ -84,7 +84,7 @@ class PklRecursiveCallLineMarkerProvider : LineMarkerProvider {
                 PklMethod::class,
                 // stop tokens
                 PklObjectBody::class,
-                PklFunctionLiteral::class
+                PklFunctionLiteral::class,
               )
           ) {
             is PklMethod -> {
@@ -98,11 +98,8 @@ class PklRecursiveCallLineMarkerProvider : LineMarkerProvider {
                     base,
                     null,
                     mapOf(),
-                    ResolveVisitors.firstElementNamed(
-                      methodName,
-                      base,
-                    ),
-                    accessExpr.enclosingModule?.pklProject
+                    ResolveVisitors.firstElementNamed(methodName, base),
+                    accessExpr.enclosingModule?.pklProject,
                   )
                 if (targetMethod === method) {
                   if (document == null) document = findEnclosingDocument(method) ?: return
@@ -125,7 +122,7 @@ class PklRecursiveCallLineMarkerProvider : LineMarkerProvider {
     identifier: PsiElement,
     document: Document,
     lineNumbers: MutableSet<Int>,
-    result: MutableCollection<in LineMarkerInfo<*>>
+    result: MutableCollection<in LineMarkerInfo<*>>,
   ) {
 
     val lineNumber = document.getLineNumber(identifier.textOffset)
@@ -138,7 +135,7 @@ class PklRecursiveCallLineMarkerProvider : LineMarkerProvider {
         PklIcons.RECURSIVE_METHOD_MARKER,
         FunctionUtil.constant("Recursive call"),
         null,
-        RIGHT
+        RIGHT,
       ) {
         "recursive method marker"
       }
