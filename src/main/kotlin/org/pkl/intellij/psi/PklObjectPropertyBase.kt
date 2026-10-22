@@ -30,7 +30,7 @@ abstract class PklObjectPropertyBase(node: ASTNode) :
   override val anchor: PsiElement
     get() = nameIdentifier
 
-  override fun getName(): String = nameIdentifier.text
+  override fun getName(): String = nameIdentifier.text.removeSurrounding("`")
 
   override fun getIcon(flags: Int): Icon = PklIcons.PROPERTY.decorate(this, flags)
 

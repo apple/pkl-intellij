@@ -27,7 +27,7 @@ import org.pkl.intellij.type.TypeParameterBindings
 import org.pkl.intellij.type.computeResolvedImportType
 
 abstract class PklClassPropertyBase(node: ASTNode) : PklClassMemberBase(node), PklClassProperty {
-  override fun getName(): String = nameIdentifier.text
+  override fun getName(): String = propertyName.identifierName
 
   override val anchor: PsiElement
     get() = nameIdentifier

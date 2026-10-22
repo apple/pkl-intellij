@@ -42,6 +42,7 @@ import org.pkl.intellij.util.GlobResolver
 import org.pkl.intellij.util.appendNumericSuffix
 import org.pkl.intellij.util.inferImportPropertyName
 import org.pkl.intellij.util.unexpectedType
+import org.pkl.parser.Lexer
 
 inline fun ASTNode?.eachChild(consumer: (ASTNode) -> Unit) {
   var child = this?.firstChildNode
@@ -267,7 +268,9 @@ val PklObjectSpread.isNullable: Boolean
   get() = firstChildTokenType() == PklElementTypes.QSPREAD
 
 val PklImport.memberName: String?
-  get() = identifier?.text ?: moduleUri?.escapedContent?.let { inferImportPropertyName(it) }
+  get() =
+    identifier?.text?.removeSurrounding("`")
+      ?: moduleUri?.escapedContent?.let { inferImportPropertyName(it) }
 
 val PklMethod.isOverridable: Boolean
   get() =
@@ -434,7 +437,7 @@ fun PklImportList.findOrInsertImport(module: PklModule): String? {
   for (oldImport in oldImports) {
     if (oldImport.isGlob) continue
     val importedModule = oldImport.resolveModules(null).singleOrNull()
-    if (importedModule == module) return oldImport.memberName
+    if (importedModule == module) return oldImport.memberName?.let(Lexer::maybeQuoteIdentifier)
 
     if (oldImport.memberName == effectiveImportName) {
       effectiveImportName = appendNumericSuffix(effectiveImportName)
@@ -470,7 +473,11 @@ fun PklImportList.findOrInsertImport(module: PklModule): String? {
     if (effectiveImportName == defaultImportName) {
       PklPsiFactory.createImport(importPath, project)
     } else {
-      PklPsiFactory.createAliasedImport(importPath, effectiveImportName, project)
+      PklPsiFactory.createAliasedImport(
+        importPath,
+        Lexer.maybeQuoteIdentifier(effectiveImportName),
+        project,
+      )
     }
 
   val newElementInfo = ImportInfo.create(newImport)
@@ -490,7 +497,7 @@ fun PklImportList.findOrInsertImport(module: PklModule): String? {
     ensureFollowedByNewlines(2)
   }
 
-  return effectiveImportName
+  return Lexer.maybeQuoteIdentifier(effectiveImportName)
 }
 
 val PklImportBase.isGlob
@@ -704,7 +711,7 @@ fun Appendable.renderType(
   when (type) {
     null -> append("unknown")
     is PklDeclaredType -> {
-      val name = type.typeName.simpleName.identifier.text
+      val name = type.typeName.simpleName.identifierName
       for ((key, value) in bindings) {
         if (key.name == name) return renderType(value)
       }

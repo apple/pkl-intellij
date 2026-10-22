@@ -1,5 +1,5 @@
 /**
- * Copyright © 2024 Apple Inc. and the Pkl project authors. All rights reserved.
+ * Copyright © 2024-2026 Apple Inc. and the Pkl project authors. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,6 +21,7 @@ import com.intellij.psi.util.parentOfType
 import com.intellij.util.ProcessingContext
 import org.pkl.intellij.psi.PklTypeName
 import org.pkl.intellij.psi.enclosingModule
+import org.pkl.intellij.psi.identifierName
 import org.pkl.intellij.psi.pklBaseModule
 import org.pkl.intellij.resolve.ResolveVisitors
 import org.pkl.intellij.resolve.Resolvers
@@ -30,7 +31,7 @@ class TypeNameCompletionProvider : PklCompletionProvider() {
   override fun addCompletions(
     parameters: CompletionParameters,
     context: ProcessingContext,
-    result: CompletionResultSet
+    result: CompletionResultSet,
   ) {
 
     val position = parameters.position
@@ -38,13 +39,13 @@ class TypeNameCompletionProvider : PklCompletionProvider() {
     val typeName = position.parentOfType<PklTypeName>() ?: return
     val visitor = ResolveVisitors.lookupElements(base).withoutShadowedElements()
 
-    val moduleName = typeName.moduleName?.identifier?.text
+    val moduleName = typeName.moduleName?.identifierName
     if (moduleName != null) {
       Resolvers.resolveQualifiedTypeName(
         position,
         moduleName,
         visitor,
-        position.enclosingModule?.pklProject
+        position.enclosingModule?.pklProject,
       )
     } else {
       Resolvers.resolveUnqualifiedTypeName(
@@ -52,7 +53,7 @@ class TypeNameCompletionProvider : PklCompletionProvider() {
         base,
         mapOf(),
         visitor,
-        position.enclosingModule?.pklProject
+        position.enclosingModule?.pklProject,
       )
     }
 

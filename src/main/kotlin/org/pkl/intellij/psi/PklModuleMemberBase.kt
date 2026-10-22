@@ -25,7 +25,7 @@ import org.pkl.intellij.type.Type
 import org.pkl.intellij.type.TypeParameterBindings
 
 abstract class PklModuleMemberBase(node: ASTNode) : PklAstWrapperPsiElement(node), PklModuleMember {
-  override fun getName(): String? = nameIdentifier?.text
+  override fun getName(): String? = nameIdentifier?.text?.removeSurrounding("`")
 
   override val docComment: PklDocComment?
     get() =

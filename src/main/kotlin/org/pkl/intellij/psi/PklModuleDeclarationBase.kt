@@ -1,5 +1,5 @@
 /**
- * Copyright © 2024 Apple Inc. and the Pkl project authors. All rights reserved.
+ * Copyright © 2024-2026 Apple Inc. and the Pkl project authors. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,7 +21,7 @@ import com.intellij.util.IncorrectOperationException
 
 abstract class PklModuleDeclarationBase(node: ASTNode) :
   PklAstWrapperPsiElement(node), PklModuleDeclaration {
-  override fun getName(): String? = nameIdentifier?.text
+  override fun getName(): String? = nameIdentifier?.text?.removeSurrounding("`")
 
   override fun setName(name: String): PsiElement {
     throw IncorrectOperationException()

@@ -23,7 +23,7 @@ import org.pkl.intellij.type.TypeParameterBindings
 
 abstract class PklTypeParameterBase(node: ASTNode) :
   PklAstWrapperPsiElement(node), PklTypeParameter {
-  override fun getName(): String = identifier.text
+  override fun getName(): String = identifierName
 
   override fun getNameIdentifier(): PsiElement = identifier
 

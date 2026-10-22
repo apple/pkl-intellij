@@ -1508,7 +1508,7 @@ fun PklType?.toType(
       val simpleName = typeName.simpleName
       when (val resolved = simpleName.resolve(context)) {
         null -> Unknown
-        is PklModule -> Type.module(resolved, simpleName.identifier.text, context)
+        is PklModule -> Type.module(resolved, simpleName.identifierName, context)
         is PklClass -> {
           val typeArguments = typeArgumentList?.elements ?: listOf()
           Class.create(

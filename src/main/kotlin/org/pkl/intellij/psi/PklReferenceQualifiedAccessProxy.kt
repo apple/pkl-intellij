@@ -193,7 +193,7 @@ class PklReferenceQualifiedAccessProxy(
           override fun getRangeInElement(): TextRange =
             ElementManipulators.getValueTextRange(this@ModuleName)
 
-          override fun getCanonicalText(): String = this@ModuleName.identifier.text
+          override fun getCanonicalText(): String = this@ModuleName.identifierName
 
           override fun resolveContextual(context: PklProject?): PklModule? = psi.enclosingModule
 
@@ -229,7 +229,7 @@ class PklReferenceQualifiedAccessProxy(
           override fun getRangeInElement(): TextRange =
             ElementManipulators.getValueTextRange(this@SimpleTypeName)
 
-          override fun getCanonicalText(): String = this@SimpleTypeName.identifier.text
+          override fun getCanonicalText(): String = this@SimpleTypeName.identifierName
 
           override fun resolveContextual(context: PklProject?): PsiElement = psi
 
