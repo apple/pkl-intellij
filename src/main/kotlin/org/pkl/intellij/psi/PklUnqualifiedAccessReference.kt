@@ -18,6 +18,7 @@ package org.pkl.intellij.psi
 import com.intellij.openapi.util.TextRange
 import com.intellij.psi.*
 import com.intellij.psi.util.parentOfType
+import com.intellij.util.IncorrectOperationException
 import org.pkl.intellij.packages.dto.PklProject
 import org.pkl.intellij.resolve.ResolveVisitors
 
@@ -44,4 +45,6 @@ class PklUnqualifiedAccessReference(private val accessName: PklUnqualifiedAccess
   override fun resolve(): PsiElement? {
     return resolveContextual(accessName.enclosingModule?.pklProject)
   }
+
+  override fun bindToElement(newTarget: PsiElement): PsiElement = element
 }
