@@ -104,7 +104,6 @@
     LT        = '<'
     NOT       = '!'
     QUESTION  = '?'
-    DCOLON     = '::'
     COLON     = ':'
     ARROW     = '->'
     EQUAL     = '=='
@@ -542,7 +541,7 @@ superAccessName ::= IDENTIFIER {
   mixin = "org.pkl.intellij.psi.PklSuperAccessNameBase"
 }
 
-unqualifiedAccessExpr ::= unqualifiedAccessName (('::' typeArgumentList)? argumentList)? {
+unqualifiedAccessExpr ::= unqualifiedAccessName (typeArgumentList? argumentList)? {
   implements = "org.pkl.intellij.psi.PklAccessExpr"
   mixin = "org.pkl.intellij.psi.PklUnqualifiedAccessExprBase"
   methods = [ memberName = "unqualifiedAccessName" ]
@@ -562,13 +561,13 @@ amendExpr ::= expr objectBody {
   methods = [ parentExpr = "expr" ]
 }
 newExpr ::= new type? objectBody { pin = 1; implements = "org.pkl.intellij.psi.PklObjectBodyOwner" }
-superAccessExpr ::= super '.' superAccessName (('::' typeArgumentList)? argumentList)? {
+superAccessExpr ::= super '.' superAccessName (typeArgumentList? argumentList)? {
   implements = "org.pkl.intellij.psi.PklAccessExpr"
   mixin = "org.pkl.intellij.psi.PklSuperAccessExprBase"
   methods = [ memberName = "superAccessName" ]
 }
 superSubscriptExpr ::= super SEP? subscript
-qualifiedAccessExpr ::= expr ('.' | '?.') qualifiedAccessName (('::' typeArgumentList)? argumentList)? { // not sure what/how to pin here
+qualifiedAccessExpr ::= expr ('.' | '?.') qualifiedAccessName (typeArgumentList? argumentList)? { // not sure what/how to pin here
   implements = "org.pkl.intellij.psi.PklAccessExpr"
   mixin = "org.pkl.intellij.psi.PklQualifiedAccessExprBase"
   methods = [
