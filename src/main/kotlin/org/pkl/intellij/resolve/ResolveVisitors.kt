@@ -79,6 +79,7 @@ object ResolveVisitors {
   fun paramTypesOfFirstMethodNamed(
     expectedName: String,
     base: PklBaseModule,
+    typeArgumentList: PklTypeArgumentList?,
     resolveTypeParamsInParamTypes: Boolean = true,
     receiverType: Type? = null,
   ): ResolveVisitor<List<Type>?> =
@@ -94,7 +95,15 @@ object ResolveVisitors {
         when (element) {
           is PklMethod -> {
             val parameters = element.parameterList?.elements ?: return false
-            val effectiveBindings = if (resolveTypeParamsInParamTypes) bindings else mapOf()
+            val effectiveBindings =
+              if (resolveTypeParamsInParamTypes)
+                bindings.enhanceFromTypeArguments(
+                  typeArgumentList,
+                  element.typeParameterList,
+                  base,
+                  context,
+                )
+              else mapOf()
             result = parameters.map {
               it.type.toType(
                 base,
@@ -119,6 +128,7 @@ object ResolveVisitors {
 
   fun typeOfFirstElementNamed(
     elementName: String,
+    typeArgumentList: PklTypeArgumentList?,
     argumentList: PklArgumentList?,
     base: PklBaseModule,
     isNullSafeAccess: Boolean,
@@ -287,23 +297,34 @@ object ResolveVisitors {
           else -> {
             val typeParameterList = method.typeParameterList
             val allBindings =
-              if (typeParameterList == null || typeParameterList.elements.isEmpty()) {
-                bindings
-              } else {
-                // try to infer method type parameters from method arguments
-                val parameters = method.parameterList?.elements
-                val arguments = argumentList?.elements
-                if (parameters == null || arguments == null) bindings
-                else {
-                  val enhancedBindings = bindings.toMutableMap()
-                  val parameterTypes = parameters.map {
-                    it.type?.toType(base, bindings, context, true, receiverType) ?: Type.Unknown
+              when {
+                typeParameterList == null || typeParameterList.elements.isEmpty() -> bindings
+                typeArgumentList != null ->
+                  bindings.enhanceFromTypeArguments(
+                    typeArgumentList,
+                    typeParameterList,
+                    base,
+                    context,
+                  )
+                else -> {
+                  // try to infer method type parameters from method arguments
+                  val parameters = method.parameterList?.elements
+                  val arguments = argumentList?.elements
+                  if (parameters == null || arguments == null) bindings
+                  else {
+                    val enhancedBindings = bindings.toMutableMap()
+                    val parameterTypes = parameters.map { param ->
+                      param.type?.toType(base, bindings, context, true, receiverType)
+                        ?: Type.Unknown
+                    }
+                    val argumentTypes = arguments.map { param ->
+                      param.computeExprType(base, bindings, context)
+                    }
+                    for (i in 0 until min(parameterTypes.size, argumentTypes.size)) {
+                      inferBindings(parameterTypes[i], argumentTypes, i, enhancedBindings, context)
+                    }
+                    enhancedBindings
                   }
-                  val argumentTypes = arguments.map { it.computeExprType(base, bindings, context) }
-                  for (i in 0 until min(parameterTypes.size, argumentTypes.size)) {
-                    inferBindings(parameterTypes[i], argumentTypes, i, enhancedBindings, context)
-                  }
-                  enhancedBindings
                 }
               }
             method.computeResolvedImportType(
@@ -493,7 +514,7 @@ object ResolveVisitors {
             }
           }
           is PklNavigableElement -> {
-            var lookupElement =
+            val lookupElement =
               LookupElementBuilder.createWithIcon(element)
                 .bold()
                 .withTypeText(
@@ -518,11 +539,27 @@ object ResolveVisitors {
                     true,
                     true,
                   )
-                lookupElement =
+                result.add(
                   lookupElement.withTailText(parameterList, true).withInsertHandler(insertHandler)
+                )
+                if (element.typeParameterList?.elements?.isNotEmpty() ?: false) {
+                  val suffix = buildString {
+                    append("::")
+                    renderTypeParameterList(element.typeParameterList)
+                    append(parameterList)
+                  }
+                  result.add(
+                    lookupElement.withTailText(suffix, true).withInsertHandler { context, element ->
+                      val editor = context.editor
+                      val document = editor.document
+                      document.insertString(context.tailOffset, "::<>()")
+                      editor.caretModel.moveToOffset(context.tailOffset - 3)
+                    }
+                  )
+                }
               }
+              else -> result.add(lookupElement)
             }
-            result.add(lookupElement)
           }
           is PklExpr -> {}
           else -> unexpectedType(element)
