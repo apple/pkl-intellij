@@ -37,7 +37,7 @@ class PklDocCommentAnnotatorTest {
       factory
         .createLightFixtureBuilder(
           LightProjectDescriptor.EMPTY_PROJECT_DESCRIPTOR,
-          "sample pkl project"
+          "sample pkl project",
         )
         .fixture
     fixture = factory.createCodeInsightFixture(base)
@@ -57,7 +57,7 @@ class PklDocCommentAnnotatorTest {
       """
       /// This is a [<warning descr="Unresolved reference: bar">bar</warning>]
       foo: String
-    """
+      """
         .trimIndent()
     )
   }
@@ -68,7 +68,7 @@ class PklDocCommentAnnotatorTest {
       """
       /// This is a [foo]
       foo: String
-    """
+      """
         .trimIndent()
     )
   }
@@ -79,7 +79,7 @@ class PklDocCommentAnnotatorTest {
       """
       /// This is never [null]
       foo: String
-    """
+      """
         .trimIndent()
     )
   }

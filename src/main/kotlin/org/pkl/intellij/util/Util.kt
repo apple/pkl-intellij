@@ -422,7 +422,7 @@ private fun extractError(error: Throwable): Throwable {
 fun <T, R> CompletableFuture<T>.handleOnEdt(handler: (T?, Throwable?) -> R): CompletableFuture<R> {
   return handleAsync(
     { result: T?, error: Throwable? -> handler(result, error?.let(::extractError)) },
-    { runnable -> runInEdt(null) { runnable.run() } }
+    { runnable -> runInEdt(null) { runnable.run() } },
   )
 }
 
@@ -431,7 +431,7 @@ fun InputStream.copyToWithIndicator(
   out: OutputStream,
   progressIndicator: ProgressIndicator,
   totalLength: Long,
-  bufferSize: Int = 8 * 1024
+  bufferSize: Int = 8 * 1024,
 ) {
   var bytesCopied: Long = 0
   val buffer = ByteArray(bufferSize)
@@ -466,17 +466,19 @@ fun PklExpr.toDisplayText(): String? {
       val rightExpr = this.rightExpr?.toDisplayText() ?: "…"
       "$leftExpr[$rightExpr]"
     }
-    is PklSuperAccessExpr -> "super.${memberNameText}${argumentList.renderMethodCallArguments()}"
+    is PklSuperAccessExpr ->
+      "super.${memberName.identifier.text}${argumentList.renderMethodCallArguments()}"
     is PklSuperSubscriptExpr -> "super[${expr.toDisplayText() ?: "…"}]"
     is PklBinExpr -> {
       val leftExpr = this.leftExpr.toDisplayText() ?: "…"
       val rightExpr = this.rightExpr?.toDisplayText() ?: "…"
       "$leftExpr ${operator.text} $rightExpr"
     }
-    is PklUnqualifiedAccessExpr -> "$memberNameText${argumentList.renderMethodCallArguments()}"
+    is PklUnqualifiedAccessExpr ->
+      "${memberName.identifier.text}${argumentList.renderMethodCallArguments()}"
     is PklQualifiedAccessExpr -> {
       val receiver = (this.receiverExpr.toDisplayText() ?: "<receiver>")
-      receiver + "." + this.memberNameText + argumentList.renderMethodCallArguments()
+      receiver + "." + this.memberName.identifier.text + argumentList.renderMethodCallArguments()
     }
     is PklParenthesizedExpr -> expr?.toDisplayText()?.let { "($it)" }
     is PklAmendExpr -> parentExpr.toDisplayText()?.let { "$it {…}" } ?: "(<parent>) {…}"

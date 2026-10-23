@@ -33,7 +33,7 @@ val Project.pklProjectModule: PklProjectModule
         // Aditionally track changes to the [projectModule] PSI (not sure if this makes a
         // difference).
         ProjectRootManager.getInstance(this),
-        stdLib.projectModule.psi
+        stdLib.projectModule.psi,
       )
     }
 

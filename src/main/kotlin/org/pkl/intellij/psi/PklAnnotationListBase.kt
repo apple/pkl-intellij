@@ -1,5 +1,5 @@
 /**
- * Copyright © 2024 Apple Inc. and the Pkl project authors. All rights reserved.
+ * Copyright © 2024-2026 Apple Inc. and the Pkl project authors. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -41,13 +41,12 @@ abstract class PklAnnotationListBase(node: ASTNode) :
         elements.find {
           val resolved = it.typeName?.resolve(enclosingModule?.pklProject)
           resolved != null && resolved === project.pklBaseModule.sourceCodeType.psi
-        }
-          ?: return null
+        } ?: return null
       val body = annotation.objectBody ?: return null
       return SourceCode(
         body.getConstantStringProperty("language") ?: return null,
         body.getConstantStringProperty("prefix"),
-        body.getConstantStringProperty("suffix")
+        body.getConstantStringProperty("suffix"),
       )
     }
 }

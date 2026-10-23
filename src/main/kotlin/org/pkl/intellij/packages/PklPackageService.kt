@@ -56,7 +56,7 @@ val Project.pklPackageService: PklPackageService
 data class PackageLibraryRoots(
   val zipFile: VirtualFile,
   val metadataFile: VirtualFile,
-  val packageRoot: VirtualFile
+  val packageRoot: VirtualFile,
 )
 
 internal val localFs: LocalFileSystem by lazy { LocalFileSystem.getInstance() }
@@ -88,7 +88,7 @@ class PklPackageService(val project: Project) : Disposable, UserDataHolderBase()
             ?: return@ParameterizedCachedValueProvider noCacheResult()
         CachedValueProvider.Result.create(
           PackageMetadata.load(roots.metadataFile),
-          roots.metadataFile
+          roots.metadataFile,
         )
       }
 
@@ -128,7 +128,7 @@ class PklPackageService(val project: Project) : Disposable, UserDataHolderBase()
         object : PklProjectListener {
           override fun pklProjectsUpdated(
             service: PklProjectService,
-            projects: Map<String, PklProject>
+            projects: Map<String, PklProject>,
           ) {
             projectPackages =
               projects.values.flatMap { pklProject ->
@@ -140,7 +140,7 @@ class PklPackageService(val project: Project) : Disposable, UserDataHolderBase()
                   }
               }
           }
-        }
+        },
       )
     }
     val self = this
@@ -173,7 +173,7 @@ class PklPackageService(val project: Project) : Disposable, UserDataHolderBase()
             }
           }
         },
-        this
+        this,
       )
   }
 
@@ -232,11 +232,11 @@ class PklPackageService(val project: Project) : Disposable, UserDataHolderBase()
       this,
       project.cacheKeyService.getKey(
         "PklPackageService.collectAllDependenciesOfPackage",
-        dep.packageUri.toString()
+        dep.packageUri.toString(),
       ),
       allDepsProvider,
       false,
-      project to dep
+      project to dep,
     )
 
   private var timerTask: TimerTask? = null
@@ -255,7 +255,7 @@ class PklPackageService(val project: Project) : Disposable, UserDataHolderBase()
               uri,
               project,
               GlobalSearchScope.projectScope(project),
-              PklModuleUri::class.java
+              PklModuleUri::class.java,
             )
           elems.isNotEmpty()
         }
@@ -273,16 +273,16 @@ class PklPackageService(val project: Project) : Disposable, UserDataHolderBase()
       this,
       project.cacheKeyService.getKey(
         "PklPackageService.getPackageMetadata",
-        packageDependency.packageUri.toString()
+        packageDependency.packageUri.toString(),
       ),
       packageMetadataCachedValuesProvider,
       false,
-      project to packageDependency
+      project to packageDependency,
     )
 
   fun getResolvedDependencies(
     packageDependency: PackageDependency,
-    context: PklProject?
+    context: PklProject?,
   ): Map<String, Dependency>? {
     val metadata = getPackageMetadata(packageDependency) ?: return null
     if (packageDependency.pklProject != null) {
@@ -329,16 +329,16 @@ class PklPackageService(val project: Project) : Disposable, UserDataHolderBase()
       this,
       project.cacheKeyService.getKey(
         "PklPackageService.getLibraryRoots",
-        dependency.packageUri.toString()
+        dependency.packageUri.toString(),
       ),
       libraryRootsProvider,
       false,
-      project to dependency
+      project to dependency,
     )
 
   private fun getResolvedDependenciesOfProjectPackage(
     pklProject: PklProject,
-    metadata: PackageMetadata
+    metadata: PackageMetadata,
   ): Map<String, Dependency>? {
     val projectDeps = pklProject.projectDeps ?: return null
     return metadata.dependencies.entries.fold(mapOf()) { acc, (name, packageDependency) ->

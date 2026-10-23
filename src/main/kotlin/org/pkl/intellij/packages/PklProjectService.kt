@@ -183,13 +183,12 @@ class PklProjectService(private val project: Project) :
         ?.values
         ?.filterIsInstance<PklProject.Companion.RemoteDependency>()
         ?.map { it.uri.copy(checksums = it.checksums) }
-        ?.ifEmpty { null }
-        ?: return
+        ?.ifEmpty { null } ?: return
     project.pklCli.downloadPackage(
       packageUris,
       cacheDir = cacheDir,
       // All transitive dependencies are already declared in PklProject.deps.json
-      noTrasitive = true
+      noTrasitive = true,
     )
     refreshCacheDir(cacheDir)
   }
@@ -213,7 +212,7 @@ class PklProjectService(private val project: Project) :
       projectElement.setAttribute("project-file-uri", project.metadata.projectFileUri)
       projectElement.setAttribute(
         "package-uri",
-        project.metadata.packageUri?.toString() ?: UNKNOWN_PACKAGE_URI
+        project.metadata.packageUri?.toString() ?: UNKNOWN_PACKAGE_URI,
       )
       for ((key, value) in project.metadata.declaredDependencies) {
         val dependency =
@@ -272,8 +271,9 @@ class PklProjectService(private val project: Project) :
     if (packageUriValue == null) {
       isOutOfDate = true
     }
-    val packageUri =
-      packageUriValue?.let { if (it == UNKNOWN_PACKAGE_URI) null else PackageUri.create(it) }
+    val packageUri = packageUriValue?.let {
+      if (it == UNKNOWN_PACKAGE_URI) null else PackageUri.create(it)
+    }
     val projectFileUri = elem.getAttributeValue("project-file-uri")
     val declaredDependencies =
       buildMap<String, PackageUri> {
@@ -310,8 +310,7 @@ class PklProjectService(private val project: Project) :
       elem.getChild("evaluator-settings")?.let { settings ->
         val moduleCacheDir = settings.getAttributeValue("module-cache-dir")
         PklProject.Companion.EvaluatorSettings(moduleCacheDir)
-      }
-        ?: PklProject.Companion.EvaluatorSettings()
+      } ?: PklProject.Companion.EvaluatorSettings()
     val metadata =
       DerivedProjectMetadata(projectFileUri, packageUri, declaredDependencies, evaluatorSettings)
     val projectDeps =
@@ -390,7 +389,7 @@ class PklProjectService(private val project: Project) :
         projectFiles.map { it.toNioPath().toString() },
         title = "get project metadata",
         expression = DEPENDENCIES_EXPR,
-        moduleOutputSeparator = ", "
+        moduleOutputSeparator = ", ",
       )
     return PklProject.parseMetadata("[$output]")
   }

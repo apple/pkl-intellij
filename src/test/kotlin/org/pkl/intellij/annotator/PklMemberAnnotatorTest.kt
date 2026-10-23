@@ -56,12 +56,12 @@ class PklMemberAnnotatorTest {
   fun `abstract property is ignored`() {
     checkHighlighting(
       """
-        <warning descr="Abstract modifier is ignored for properties">abstract</warning> foo: Int
+      <warning descr="Abstract modifier is ignored for properties">abstract</warning> foo: Int
 
-        class Foo {
-          <warning descr="Abstract modifier is ignored for properties">abstract</warning> foo: Int
-        }
-    """
+      class Foo {
+        <warning descr="Abstract modifier is ignored for properties">abstract</warning> foo: Int
+      }
+      """
         .trimIndent()
     )
   }
@@ -70,12 +70,12 @@ class PklMemberAnnotatorTest {
   fun `abstract member inside non-abstract class`() {
     checkHighlighting(
       """
-        <error descr="Abstract method declared inside a non-abstract module">abstract</error> function bar(): Int
+      <error descr="Abstract method declared inside a non-abstract module">abstract</error> function bar(): Int
 
-        class Foo {
-          <error descr="Abstract method declared inside a non-abstract class">abstract</error> function bar(): Int
-        }
-    """
+      class Foo {
+        <error descr="Abstract method declared inside a non-abstract class">abstract</error> function bar(): Int
+      }
+      """
         .trimIndent()
     )
   }
@@ -87,7 +87,7 @@ class PklMemberAnnotatorTest {
       abstract module Foo
 
       abstract function bar() <error descr="Abstract method cannot have a body">= 15</error>
-    """
+      """
         .trimIndent()
     )
   }

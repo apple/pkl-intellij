@@ -26,7 +26,7 @@ import org.pkl.intellij.resolve.ResolveVisitors
 fun PsiElement.computeThisType(
   base: PklBaseModule,
   bindings: TypeParameterBindings,
-  context: PklProject?
+  context: PklProject?,
 ): Type {
   var element: PsiElement? = this
   var memberPredicateExprSeen = false
@@ -106,7 +106,8 @@ fun PsiElement.computeThisType(
           }
         }
       }
-      is PklConstrainedType -> return element.type.toType(base, bindings, context)
+      is PklConstrainedType ->
+        return element.type.toType(base, bindings, context, receiverTypeBase = parent)
       is PklModule,
       is PklClass,
       is PklTypeAlias -> return element.computeResolvedImportType(base, bindings, context)

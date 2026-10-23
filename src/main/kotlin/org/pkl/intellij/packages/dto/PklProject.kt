@@ -53,7 +53,7 @@ data class PklProject(val metadata: DerivedProjectMetadata, val projectDeps: Pro
       val projectFileUri: String,
       val packageUri: PackageUri?,
       val declaredDependencies: Map<String, PackageUri>,
-      val evaluatorSettings: EvaluatorSettings
+      val evaluatorSettings: EvaluatorSettings,
     )
 
     @Serializable data class EvaluatorSettings(val moduleCacheDir: String? = null)
@@ -61,7 +61,7 @@ data class PklProject(val metadata: DerivedProjectMetadata, val projectDeps: Pro
     @Serializable
     data class ProjectDeps(
       val schemaVersion: Int,
-      val resolvedDependencies: Map<String, ResolvedDependency>
+      val resolvedDependencies: Map<String, ResolvedDependency>,
     ) {
       /** Given a package URI, return the resolved dependency for it. */
       fun getResolvedDependency(packageUri: PackageUri): ResolvedDependency? {
@@ -93,7 +93,7 @@ data class PklProject(val metadata: DerivedProjectMetadata, val projectDeps: Pro
     @Serializable
     enum class DependencyType(val strValue: String) {
       @SerialName("local") LOCAL("local"),
-      @SerialName("remote") REMOTE("remote")
+      @SerialName("remote") REMOTE("remote"),
     }
   }
 

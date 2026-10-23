@@ -1,5 +1,5 @@
 /**
- * Copyright © 2024 Apple Inc. and the Pkl project authors. All rights reserved.
+ * Copyright © 2024-2026 Apple Inc. and the Pkl project authors. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,7 +25,7 @@ import org.pkl.intellij.psi.PklTypedIdentifier
 
 class PklMakeBlankIdentifierQuickFix(
   typedIdent: PklTypedIdentifier,
-  private val isIgnore: Boolean = false
+  private val isIgnore: Boolean = false,
 ) : LocalQuickFixAndIntentionActionOnPsiElement(typedIdent) {
   override fun getFamilyName(): String = "QuickFix"
 
@@ -36,7 +36,7 @@ class PklMakeBlankIdentifierQuickFix(
     file: PsiFile,
     editor: Editor?,
     startElement: PsiElement,
-    endElement: PsiElement
+    endElement: PsiElement,
   ) {
     val ident = startElement as PklTypedIdentifier
     ident.replace(PklPsiFactory.createTypedIdentifier(project, "_"))

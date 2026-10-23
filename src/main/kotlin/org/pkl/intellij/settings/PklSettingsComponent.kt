@@ -1,5 +1,5 @@
 /**
- * Copyright © 2024-2025 Apple Inc. and the Pkl project authors. All rights reserved.
+ * Copyright © 2024-2026 Apple Inc. and the Pkl project authors. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -62,7 +62,7 @@ class PklSettingsComponent(private val project: Project) {
           }
         }
       ),
-      mutableListOf()
+      mutableListOf(),
     )
   }
 
@@ -74,7 +74,7 @@ class PklSettingsComponent(private val project: Project) {
               FileChooserDescriptorFactory.createSingleFileDescriptor()
                 .withTitle("Executable Path")
                 .withFileFilter { Files.isExecutable(it.toNioPath()) },
-              project
+              project,
             )
             .bindText(project.pklSettings.state::pklPath)
             .onApply {
@@ -93,7 +93,7 @@ class PklSettingsComponent(private val project: Project) {
             Messages.showErrorDialog(
               project,
               "Error downloading pkl CLI",
-              "Error Downloading Pkl CLI"
+              "Error Downloading Pkl CLI",
             )
           } else {
             textField.component.text = result
@@ -124,7 +124,7 @@ class PklSettingsComponent(private val project: Project) {
                     else -> null // Default to unselected
                   }
                 project.pklSettings.state.formatterGrammarVersion = version
-              }
+              },
             )
             .onApply {
               project.messageBus.syncPublisher(PKL_SETTINGS_CHANGED_TOPIC).settingsChanged()
@@ -154,7 +154,7 @@ class PklSettingsComponent(private val project: Project) {
                     Messages.showErrorDialog(
                       project,
                       "Selected path must be within the project root.",
-                      "Invalid Path"
+                      "Invalid Path",
                     )
                     return@setAddAction
                   }

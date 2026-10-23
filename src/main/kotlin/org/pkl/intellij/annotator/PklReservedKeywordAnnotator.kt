@@ -1,5 +1,5 @@
 /**
- * Copyright © 2024 Apple Inc. and the Pkl project authors. All rights reserved.
+ * Copyright © 2024-2026 Apple Inc. and the Pkl project authors. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -32,7 +32,7 @@ class PklReservedKeywordAnnotator : PklAnnotator() {
         PklElementTypes.DELETE,
         PklElementTypes.CASE,
         PklElementTypes.SWITCH,
-        PklElementTypes.VARARG
+        PklElementTypes.VARARG,
       )
   }
 
@@ -43,7 +43,7 @@ class PklReservedKeywordAnnotator : PklAnnotator() {
         element.textRange,
         "Keyword '${element.text}' is reserved for future use",
         "Keyword <code>${element.text}</code> is reserved for future use",
-        holder
+        holder,
       )
     }
   }

@@ -1,5 +1,5 @@
 /**
- * Copyright © 2024 Apple Inc. and the Pkl project authors. All rights reserved.
+ * Copyright © 2024-2026 Apple Inc. and the Pkl project authors. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,7 +23,7 @@ import org.pkl.intellij.type.TypeParameterBindings
 
 abstract class PklTypeParameterBase(node: ASTNode) :
   PklAstWrapperPsiElement(node), PklTypeParameter {
-  override fun getName(): String = identifier.text
+  override fun getName(): String = identifierName
 
   override fun getNameIdentifier(): PsiElement = identifier
 
@@ -33,7 +33,8 @@ abstract class PklTypeParameterBase(node: ASTNode) :
   override fun getLookupElementType(
     base: PklBaseModule,
     bindings: TypeParameterBindings,
-    context: PklProject?
+    context: PklProject?,
+    receiverType: Type?,
   ): Type = Type.Unknown
 
   override fun toString(): String = super.toString() + "($name)"

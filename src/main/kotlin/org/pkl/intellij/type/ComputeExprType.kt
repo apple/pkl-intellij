@@ -51,7 +51,7 @@ private val exprTypeProvider:
 fun PsiElement?.computeExprType(
   base: PklBaseModule,
   bindings: TypeParameterBindings,
-  context: PklProject?
+  context: PklProject?,
 ): Type {
   return when {
     this == null || this !is PklExpr -> Type.Unknown
@@ -62,7 +62,7 @@ fun PsiElement?.computeExprType(
           project.cacheKeyService.getKey("PsiElement.computeExprType", context),
           exprTypeProvider,
           false,
-          this to context
+          this to context,
         )
     else -> doComputeExprType(base, bindings, context)
   }
@@ -71,7 +71,7 @@ fun PsiElement?.computeExprType(
 private fun PsiElement.doComputeExprType(
   base: PklBaseModule,
   bindings: TypeParameterBindings,
-  context: PklProject?
+  context: PklProject?,
 ): Type {
   return RecursionManager.doPreventingRecursion(this, false) {
     when (this) {
@@ -154,8 +154,8 @@ private fun PsiElement.doComputeExprType(
       is PklLogicalNotExpr -> base.booleanType
       is PklTypeTestExpr -> base.booleanType
       is PklTypeCastExpr -> type.toType(base, bindings, context)
-      is PklModuleExpr -> enclosingModule?.computeResolvedImportType(base, mapOf(), context)
-          ?: Type.Unknown
+      is PklModuleExpr ->
+        enclosingModule?.computeResolvedImportType(base, mapOf(), context) ?: Type.Unknown
       is PklUnaryMinusExpr -> {
         when (expr.computeExprType(base, bindings, context)) {
           base.intType -> base.intType
@@ -220,7 +220,7 @@ private fun PsiElement.doComputeExprType(
                           leftClassType.typeArguments[0],
                           rightClassType.typeArguments[0],
                           base,
-                          context
+                          context,
                         )
                       base.listType.withTypeArguments(typeArgs)
                     }
@@ -237,7 +237,7 @@ private fun PsiElement.doComputeExprType(
                           leftClassType.typeArguments[0],
                           rightClassType.typeArguments[0],
                           base,
-                          context
+                          context,
                         )
                       base.setType.withTypeArguments(typeArgs)
                     }
@@ -253,14 +253,14 @@ private fun PsiElement.doComputeExprType(
                           leftClassType.typeArguments[0],
                           rightClassType.typeArguments[0],
                           base,
-                          context
+                          context,
                         )
                       val valueTypeArgs =
                         Type.union(
                           leftClassType.typeArguments[1],
                           rightClassType.typeArguments[1],
                           base,
-                          context
+                          context,
                         )
                       base.mapType.withTypeArguments(keyTypeArgs, valueTypeArgs)
                     }
@@ -380,14 +380,14 @@ private fun PsiElement.doComputeExprType(
           thenExpr.computeExprType(base, bindings, context),
           elseExpr.computeExprType(base, bindings, context),
           base,
-          context
+          context,
         )
       is PklNullCoalesceBinExpr ->
         Type.union(
           leftExpr.computeExprType(base, bindings, context).nonNull(base, context),
           rightExpr.computeExprType(base, bindings, context),
           base,
-          context
+          context,
         )
       is PklNonNullAssertionExpr ->
         expr.computeExprType(base, bindings, context).nonNull(base, context)
@@ -419,8 +419,7 @@ private fun PsiElement.doComputeExprType(
       is PklParenthesizedExpr -> expr.computeExprType(base, bindings, context)
       else -> Type.Unknown
     }
-  }
-    ?: Type.Unknown
+  } ?: Type.Unknown
 }
 
 /**
@@ -429,7 +428,7 @@ private fun PsiElement.doComputeExprType(
  */
 private fun PklStringContentEx.computeStringLiteralType(
   base: PklBaseModule,
-  context: PklProject?
+  context: PklProject?,
 ): Type {
   var stringLiterals = listOf(StringBuilder())
   eachChild { child ->
@@ -470,13 +469,12 @@ private fun PklStringContentEx.computeStringLiteralType(
           childType is Type.Union && childType.isUnionOfStringLiterals -> {
             // bail out if this results in over 100 string literals to avoid getting too expensive.
             if (childType.cardinality * stringLiterals.size > 100) return base.stringType
-            stringLiterals =
-              stringLiterals.flatMap { stringLiteral ->
-                childType.map { type ->
-                  type as Type.StringLiteral
-                  StringBuilder(stringLiteral).append(type.value)
-                }
+            stringLiterals = stringLiterals.flatMap { stringLiteral ->
+              childType.map { type ->
+                type as Type.StringLiteral
+                StringBuilder(stringLiteral).append(type.value)
               }
+            }
           }
           childType is Type.StringLiteral -> {
             stringLiterals.forEach { it.append(childType.value) }
@@ -496,7 +494,7 @@ private fun doComputeSubscriptExprType(
   receiverType: Type,
   getKeyType: () -> Type,
   base: PklBaseModule,
-  context: PklProject?
+  context: PklProject?,
 ) =
   when (receiverType) {
     is Type.StringLiteral -> base.stringType

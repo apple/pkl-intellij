@@ -1,5 +1,5 @@
 /**
- * Copyright © 2024 Apple Inc. and the Pkl project authors. All rights reserved.
+ * Copyright © 2024-2026 Apple Inc. and the Pkl project authors. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -28,36 +28,42 @@ class PklDeclarationRangeHandler : DeclarationRangeHandler<PklElement> {
         val start =
           declaration.modifierList
             ?: declaration.firstChildOfType(PklElementTypes.MODULE)
-              ?: declaration.qualifiedIdentifier ?: declaration.extendsAmendsClause
-              ?: return TextRange.EMPTY_RANGE
+            ?: declaration.qualifiedIdentifier
+            ?: declaration.extendsAmendsClause
+            ?: return TextRange.EMPTY_RANGE
         val end =
           declaration.extendsAmendsClause
             ?: declaration.qualifiedIdentifier
-              ?: declaration.firstChildOfType(PklElementTypes.MODULE) ?: declaration.modifierList
-              ?: return TextRange.EMPTY_RANGE
+            ?: declaration.firstChildOfType(PklElementTypes.MODULE)
+            ?: declaration.modifierList
+            ?: return TextRange.EMPTY_RANGE
         TextRange(start.textOffset, end.textRange.endOffset)
       }
       is PklClass -> {
         val start = container.modifierList
         val end =
           container.extendsClause
-            ?: container.typeParameterList ?: container.identifier
-              ?: container.firstChildOfType(PklElementTypes.CLASS_KEYWORD)!!
+            ?: container.typeParameterList
+            ?: container.identifier
+            ?: container.firstChildOfType(PklElementTypes.CLASS_KEYWORD)!!
         TextRange(start.textOffset, end.textRange.endOffset)
       }
       is PklTypeAlias -> {
         val start = container.modifierList
         val end =
           container.typeParameterList
-            ?: container.identifier ?: container.firstChildOfType(PklElementTypes.CLASS_KEYWORD)!!
+            ?: container.identifier
+            ?: container.firstChildOfType(PklElementTypes.CLASS_KEYWORD)!!
         TextRange(start.textOffset, end.textRange.endOffset)
       }
       is PklMethod -> {
         val start = container.modifierList
         val end =
           container.returnType
-            ?: container.parameterList ?: container.typeParameterList ?: container.identifier
-              ?: container.firstChildOfType(PklElementTypes.FUNCTION)!!
+            ?: container.parameterList
+            ?: container.typeParameterList
+            ?: container.identifier
+            ?: container.firstChildOfType(PklElementTypes.FUNCTION)!!
         TextRange(start.textOffset, end.textRange.endOffset)
       }
       is PklProperty -> {

@@ -135,10 +135,10 @@ class PklParserTest : ParsingTestCase("", "pkl", PklParserDefinition()) {
   fun testMemberPredicate() {
     doCodeTest(
       """
-       res1 { [[a]] {} }
-       res2 { [[a > 3]] {} }
-       res3 { [[a.isEven]] {} }
-     """
+      res1 { [[a]] {} }
+      res2 { [[a > 3]] {} }
+      res3 { [[a.isEven]] {} }
+      """
         .trimIndent()
     )
   }
@@ -146,10 +146,10 @@ class PklParserTest : ParsingTestCase("", "pkl", PklParserDefinition()) {
   fun testMemberPredicateEndingInSubscriptExpression() {
     doCodeTest(
       """
-       res1 { [[a[b]]] {} }
-       res2 { [[a[b[c]]]] {} }
-       res3 { [[x + a[x + b[x + c]]]] {} }
-     """
+      res1 { [[a[b]]] {} }
+      res2 { [[a[b[c]]]] {} }
+      res3 { [[x + a[x + b[x + c]]]] {} }
+      """
         .trimIndent()
     )
   }
@@ -157,12 +157,12 @@ class PklParserTest : ParsingTestCase("", "pkl", PklParserDefinition()) {
   fun testSubscriptExpression() {
     doCodeTest(
       """
-       res1 = a[b]
-       res2 = a[b + c]
-       res3 = a[b.c(d)]
-       res4 = a[b[c]]
-       res5 = a[x + b[x + c[x + d]]]
-     """
+      res1 = a[b]
+      res2 = a[b + c]
+      res3 = a[b.c(d)]
+      res4 = a[b[c]]
+      res5 = a[x + b[x + c[x + d]]]
+      """
         .trimIndent()
     )
   }
@@ -174,7 +174,7 @@ class PklParserTest : ParsingTestCase("", "pkl", PklParserDefinition()) {
       res2 = 0.5.min
       res3 = 0.500_000.min
       res4 = 1_000.h
-    """
+      """
         .trimIndent()
     )
   }
@@ -187,7 +187,7 @@ class PklParserTest : ParsingTestCase("", "pkl", PklParserDefinition()) {
       } {
         bar = 1
       }
-    """
+      """
         .trimIndent()
     )
   }
@@ -196,10 +196,10 @@ class PklParserTest : ParsingTestCase("", "pkl", PklParserDefinition()) {
     doCodeTest(
       """
       import* "*.pkl" as myGlob
-      
+
       res1 = import*("*.pkl")
       res2 = read*("*.txt")
-    """
+      """
         .trimIndent()
     )
   }
@@ -208,9 +208,9 @@ class PklParserTest : ParsingTestCase("", "pkl", PklParserDefinition()) {
     doCodeTest(
       """
       typealias Foo = "bar"|*"foo"|Int
-      
+
       foo: *Foo|"bar"
-    """
+      """
         .trimIndent()
     )
   }
@@ -219,7 +219,7 @@ class PklParserTest : ParsingTestCase("", "pkl", PklParserDefinition()) {
     doCodeTest(
       """
       test = new { base = "" }
-      
+
       foo = new {
         (test) { base = "a" } is Dynamic
         (test) { base = "b" } is Dynamic
@@ -236,7 +236,7 @@ class PklParserTest : ParsingTestCase("", "pkl", PklParserDefinition()) {
         hello \
         world
         ${"\""}""
-    """
+      """
         .trimIndent()
     )
   }

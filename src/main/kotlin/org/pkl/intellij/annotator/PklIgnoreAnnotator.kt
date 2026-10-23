@@ -1,5 +1,5 @@
 /**
- * Copyright © 2024 Apple Inc. and the Pkl project authors. All rights reserved.
+ * Copyright © 2024-2026 Apple Inc. and the Pkl project authors. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -34,7 +34,7 @@ class PklIgnoreAnnotator : PklAnnotator() {
       element.parentOfTypes(
         PklTypedIdentifier::class,
         /* stop classes */ PklObjectBody::class,
-        PklExpr::class
+        PklExpr::class,
       )
     if (parent is PklTypedIdentifier && parent.type == null) return
     if (parent == null || parent !is PklParameterList) {

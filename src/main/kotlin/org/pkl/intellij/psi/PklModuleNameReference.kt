@@ -24,11 +24,11 @@ class PklModuleNameReference(private val moduleName: PklModuleName) :
 
   override fun getRangeInElement(): TextRange = ElementManipulators.getValueTextRange(moduleName)
 
-  override fun getCanonicalText(): String = moduleName.identifier.text
+  override fun getCanonicalText(): String = moduleName.identifierName
 
   override fun resolveContextual(context: PklProject?): PklModule? {
     val module = moduleName.enclosingModule ?: return null
-    val moduleNameText = moduleName.identifier.text
+    val moduleNameText = moduleName.identifierName
     for (import in module.imports) {
       if (import.memberName == moduleNameText) {
         val resolved = import.resolve(context) as? SimpleModuleResolutionResult ?: return null

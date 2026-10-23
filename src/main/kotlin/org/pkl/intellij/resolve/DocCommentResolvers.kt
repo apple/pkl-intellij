@@ -36,7 +36,7 @@ object DocCommentResolvers {
     psiManager: PsiManager,
     link: String,
     position: PsiElement,
-    context: PklProject?
+    context: PklProject?,
   ): PsiElement? {
     val parts = link.split('.')
     val base = psiManager.project.pklBaseModule
@@ -50,7 +50,7 @@ object DocCommentResolvers {
       isProperty,
       base,
       visitor,
-      context
+      context,
     )
     return visitor.result
   }
@@ -59,7 +59,7 @@ object DocCommentResolvers {
     psiManager: PsiManager,
     link: String,
     position: PsiElement,
-    context: PklProject?
+    context: PklProject?,
   ): PsiElement? {
     val isProperty = !link.endsWith("()")
     val memberName = if (isProperty) link else link.dropLast(2)
@@ -80,10 +80,10 @@ object DocCommentResolvers {
       base,
       mapOf(),
       visitor,
-      context
+      context,
     )
-    // search for type in supermodules
-    ?: if (isProperty)
+      // search for type in supermodules
+      ?: if (isProperty)
         Resolvers.resolveUnqualifiedTypeName(position, base, mapOf(), visitor, context)
       else null
   }

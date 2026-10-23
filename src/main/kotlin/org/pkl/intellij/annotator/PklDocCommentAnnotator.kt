@@ -35,7 +35,7 @@ class PklDocCommentAnnotator : PklAnnotator() {
         reference.absoluteRange,
         "Unresolved reference: $text",
         "Unresolved reference: <code>${text.escapeXml()}</code>",
-        holder
+        holder,
       )
     }
   }

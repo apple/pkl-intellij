@@ -41,7 +41,7 @@ class PklReferenceQualifiedAccessProxy(
   val domain: Type,
   val referent: PklType,
   val myProject: Project,
-  val classProperties: List<PklClassProperty>
+  val classProperties: List<PklClassProperty>,
 ) : FakePsiElement(), PklElement, PsiNamedElement, Iconable, PklDocCommentOwner {
   // `referenceType` guaranteed to exist; PklReferenceQualifiedAccessProxy is only created when
   // pkl:ref is available.
@@ -84,11 +84,15 @@ class PklReferenceQualifiedAccessProxy(
   fun getLookupElementType(
     base: PklBaseModule,
     bindings: TypeParameterBindings,
-    context: PklProject?
+    context: PklProject?,
+    receiverType: Type?,
   ): Type =
     project.pklRefModule!!
       .referenceType
-      .withTypeArguments(domain, referent.toType(base, bindings, context))
+      .withTypeArguments(
+        domain,
+        referent.toType(base, bindings, context, receiverType = receiverType),
+      )
 
   override val docComment: PklDocComment? = classProperties.firstOrNull()?.docComment
 
@@ -178,8 +182,7 @@ class PklReferenceQualifiedAccessProxy(
           is Type.Alias -> type.psi.enclosingModule?.declaredName?.text
           is Type.Module -> ""
           else -> null
-        }
-          ?: "<module>"
+        } ?: "<module>",
       )
 
     override fun getText(): String = identifier.text
@@ -190,7 +193,7 @@ class PklReferenceQualifiedAccessProxy(
           override fun getRangeInElement(): TextRange =
             ElementManipulators.getValueTextRange(this@ModuleName)
 
-          override fun getCanonicalText(): String = this@ModuleName.identifier.text
+          override fun getCanonicalText(): String = this@ModuleName.identifierName
 
           override fun resolveContextual(context: PklProject?): PklModule? = psi.enclosingModule
 
@@ -215,7 +218,7 @@ class PklReferenceQualifiedAccessProxy(
           is Type.Module -> type.psi.displayName
           is Type.Variable -> type.psi.text
           else -> "<type>"
-        }
+        },
       )
 
     override fun getText(): String = identifier.text
@@ -226,7 +229,7 @@ class PklReferenceQualifiedAccessProxy(
           override fun getRangeInElement(): TextRange =
             ElementManipulators.getValueTextRange(this@SimpleTypeName)
 
-          override fun getCanonicalText(): String = this@SimpleTypeName.identifier.text
+          override fun getCanonicalText(): String = this@SimpleTypeName.identifierName
 
           override fun resolveContextual(context: PklProject?): PsiElement = psi
 
@@ -290,7 +293,8 @@ class PklReferenceQualifiedAccessProxy(
     override fun getLookupElementType(
       base: PklBaseModule,
       bindings: TypeParameterBindings,
-      context: PklProject?
+      context: PklProject?,
+      receiverType: Type?,
     ): Type = myType
   }
 }

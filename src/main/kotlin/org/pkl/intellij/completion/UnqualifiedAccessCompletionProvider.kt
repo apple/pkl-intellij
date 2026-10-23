@@ -1,5 +1,5 @@
 /**
- * Copyright © 2024-2025 Apple Inc. and the Pkl project authors. All rights reserved.
+ * Copyright © 2024-2026 Apple Inc. and the Pkl project authors. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -53,7 +53,7 @@ class UnqualifiedAccessCompletionProvider : PklCompletionProvider() {
   // (expression completions aren't wrapped with [PrioritizedLookupElement] at all.)
   enum class Group(val grouping: Int) {
     AMEND(2),
-    ASSIGN(1)
+    ASSIGN(1),
   }
 
   private fun LookupElementBuilder.withGroup(group: Group): LookupElement =
@@ -65,7 +65,7 @@ class UnqualifiedAccessCompletionProvider : PklCompletionProvider() {
   override fun addCompletions(
     parameters: CompletionParameters,
     context: ProcessingContext,
-    result: CompletionResultSet
+    result: CompletionResultSet,
   ) {
 
     val position = parameters.position
@@ -86,7 +86,7 @@ class UnqualifiedAccessCompletionProvider : PklCompletionProvider() {
         .withParents(
           PklUnqualifiedAccessName::class.java,
           PklUnqualifiedAccessExpr::class.java,
-          PklObjectElement::class.java
+          PklObjectElement::class.java,
         )
         .accepts(position) || psiElement().withParent(PklPropertyName::class.java).accepts(position)
     ) {
@@ -99,7 +99,7 @@ class UnqualifiedAccessCompletionProvider : PklCompletionProvider() {
           alreadyDefinedProperties,
           base,
           result,
-          projectContext
+          projectContext,
         )
       ) {
         return
@@ -117,7 +117,7 @@ class UnqualifiedAccessCompletionProvider : PklCompletionProvider() {
       base,
       thisType.bindings,
       visitor,
-      projectContext
+      projectContext,
     )
     Resolvers.resolveUnqualifiedAccess(
       position,
@@ -127,7 +127,7 @@ class UnqualifiedAccessCompletionProvider : PklCompletionProvider() {
       base,
       thisType.bindings,
       visitor,
-      projectContext
+      projectContext,
     )
 
     result.addAllElements(visitor.result)
@@ -138,7 +138,7 @@ class UnqualifiedAccessCompletionProvider : PklCompletionProvider() {
   private fun shouldCompleteClassesOrTypeAliases(
     position: PsiElement,
     base: PklBaseModule,
-    context: PklProject?
+    context: PklProject?,
   ): Boolean {
     fun isClassOrTypeAlias(type: Type): Boolean =
       when (type) {
@@ -158,7 +158,7 @@ class UnqualifiedAccessCompletionProvider : PklCompletionProvider() {
     alreadyDefinedProperties: Set<String>,
     base: PklBaseModule,
     result: CompletionResultSet,
-    context: PklProject?
+    context: PklProject?,
   ): Boolean {
 
     return when {
@@ -170,7 +170,7 @@ class UnqualifiedAccessCompletionProvider : PklCompletionProvider() {
           alreadyDefinedProperties,
           base,
           result,
-          context
+          context,
         ) &&
           addDefinitionCompletions(
             position,
@@ -178,7 +178,7 @@ class UnqualifiedAccessCompletionProvider : PklCompletionProvider() {
             alreadyDefinedProperties,
             base,
             result,
-            context
+            context,
           )
       thisType.isSubtypeOf(base.typedType, base, context) -> {
         val enclosingDef =
@@ -187,7 +187,7 @@ class UnqualifiedAccessCompletionProvider : PklCompletionProvider() {
             PklClass::class,
             // stop classes
             PklExpr::class,
-            PklObjectBody::class
+            PklObjectBody::class,
           )
         val isClassDef =
           when (enclosingDef) {
@@ -245,7 +245,7 @@ class UnqualifiedAccessCompletionProvider : PklCompletionProvider() {
     thisType: Type,
     base: PklBaseModule,
     result: CompletionResultSet,
-    context: PklProject?
+    context: PklProject?,
   ) {
 
     val properties =
@@ -259,7 +259,8 @@ class UnqualifiedAccessCompletionProvider : PklCompletionProvider() {
       if (propertyName in alreadyDefinedProperties) continue
       if (property.isFixedOrConst && !isClassOrModule) continue
 
-      val propertyType = property.type.toType(base, thisType.bindings, context)
+      val propertyType =
+        property.type.toType(base, thisType.bindings, context, receiverType = thisType)
       val amendedPropertyType = propertyType.amended(base, context)
       if (amendedPropertyType != Type.Nothing && amendedPropertyType != Type.Unknown) {
         val amendingPropertyType = propertyType.amending(base, context)
@@ -274,7 +275,7 @@ class UnqualifiedAccessCompletionProvider : PklCompletionProvider() {
     thisType: Type.Class,
     base: PklBaseModule,
     result: CompletionResultSet,
-    context: PklProject?
+    context: PklProject?,
   ) {
 
     val keyType = thisType.typeArguments[0]
@@ -303,7 +304,7 @@ class UnqualifiedAccessCompletionProvider : PklCompletionProvider() {
     thisType: Type.Class,
     base: PklBaseModule,
     result: CompletionResultSet,
-    context: PklProject?
+    context: PklProject?,
   ) {
 
     val elementType = thisType.typeArguments[0]
@@ -332,7 +333,7 @@ class UnqualifiedAccessCompletionProvider : PklCompletionProvider() {
     actualType: () -> Type,
     base: PklBaseModule,
     result: CompletionResultSet,
-    context: PklProject?
+    context: PklProject?,
   ) {
     val unaliasedGenericType = genericType.unaliased(base, context)
 
@@ -360,7 +361,7 @@ class UnqualifiedAccessCompletionProvider : PklCompletionProvider() {
           { unaliasedActualType.rightType },
           base,
           result,
-          context
+          context,
         )
       }
       else -> return
@@ -371,37 +372,24 @@ class UnqualifiedAccessCompletionProvider : PklCompletionProvider() {
     position: PsiElement,
     base: PklBaseModule,
     result: CompletionResultSet,
-    context: PklProject?
+    context: PklProject?,
   ) {
     val expr =
       position.parentOfTypes(PklUnqualifiedAccessExpr::class, PklPropertyName::class)
-        as? PklUnqualifiedAccessExpr
-        ?: return
+        as? PklUnqualifiedAccessExpr ?: return
 
     doAddInferredExprTypeCompletions(
-      expr.inferExprTypeFromContext(
-        base,
-        mapOf(),
-        context,
-        false,
-      ),
-      {
-        expr.inferExprTypeFromContext(
-          base,
-          mapOf(),
-          context,
-          true,
-        )
-      },
+      expr.inferExprTypeFromContext(base, mapOf(), context, false),
+      { expr.inferExprTypeFromContext(base, mapOf(), context, true) },
       base,
       result,
-      context
+      context,
     )
   }
 
   private fun getLambdaParameterNames(
     parameterTypes: List<Type>,
-    base: PklBaseModule
+    base: PklBaseModule,
   ): List<String> {
     assert(parameterTypes.size <= 5)
 
@@ -466,7 +454,7 @@ class UnqualifiedAccessCompletionProvider : PklCompletionProvider() {
   private fun createPropertyAmendElement(
     propertyName: String,
     propertyType: Type,
-    propertyPsi: PklProperty?
+    propertyPsi: PklProperty?,
   ): LookupElement {
     return LookupElementBuilder.create("${propertyPsi.modifiers}$propertyName {\n\n}")
       .withPresentableText("${propertyPsi.modifiers}$propertyName {…}")
@@ -526,7 +514,7 @@ class UnqualifiedAccessCompletionProvider : PklCompletionProvider() {
   private fun createPropertyAssignElement(
     propertyName: String,
     propertyType: Type,
-    propertyPsi: PklProperty
+    propertyPsi: PklProperty,
   ): LookupElement {
     return LookupElementBuilder.create("${propertyPsi.modifiers}$propertyName = ")
       .bold()
@@ -539,7 +527,7 @@ class UnqualifiedAccessCompletionProvider : PklCompletionProvider() {
   private fun createEntryAmendElement(
     keyType: Type,
     valueType: Type,
-    base: PklBaseModule
+    base: PklBaseModule,
   ): LookupElement {
     val templateBuilderFactory =
       ApplicationManager.getApplication().getService(TemplateBuilderFactory::class.java)
@@ -586,7 +574,7 @@ class UnqualifiedAccessCompletionProvider : PklCompletionProvider() {
   private fun createEntryAssignElement(
     keyType: Type,
     valueType: Type,
-    base: PklBaseModule
+    base: PklBaseModule,
   ): LookupElement {
     val templateBuilderFactory =
       ApplicationManager.getApplication().getService(TemplateBuilderFactory::class.java)
@@ -626,7 +614,7 @@ class UnqualifiedAccessCompletionProvider : PklCompletionProvider() {
 
   private fun createFunctionLiteralElement(
     functionType: Type,
-    parameterNames: List<String>
+    parameterNames: List<String>,
   ): LookupElement {
     val templateBuilderFactory =
       ApplicationManager.getApplication().getService(TemplateBuilderFactory::class.java)

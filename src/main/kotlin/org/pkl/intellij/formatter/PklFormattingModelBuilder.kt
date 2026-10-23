@@ -1,5 +1,5 @@
 /**
- * Copyright © 2024-2025 Apple Inc. and the Pkl project authors. All rights reserved.
+ * Copyright © 2024-2026 Apple Inc. and the Pkl project authors. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -47,7 +47,7 @@ class PklFormattingModelBuilder : FormattingModelBuilder {
         OR,
         PIPE,
         PLUS,
-        POW
+        POW,
       )
 
     val TIGHT_OPERATORS = TokenSet.create(DOT, QDOT, UNION)
@@ -107,7 +107,7 @@ class PklFormattingModelBuilder : FormattingModelBuilder {
     return FormattingModelProvider.createFormattingModelForPsiFile(
       context.psiElement.containingFile,
       PklBlock(context.psiElement.node, Indent.getNoneIndent(), spacingBuilder),
-      context.codeStyleSettings
+      context.codeStyleSettings,
     )
   }
 }

@@ -51,7 +51,7 @@ class PklRemoveImportQuickFix(import: PklImport) :
     file: PsiFile,
     editor: Editor?,
     startElement: PsiElement,
-    endElement: PsiElement
+    endElement: PsiElement,
   ) {
     val module = file as? PklModule ?: return
     for (import in unusedImports(module)) {
@@ -63,12 +63,12 @@ class PklRemoveImportQuickFix(import: PklImport) :
   override fun generatePreview(
     project: Project,
     editor: Editor,
-    file: PsiFile
+    file: PsiFile,
   ): IntentionPreviewInfo = buildPreview(project)
 
   override fun generatePreview(
     project: Project,
-    previewDescriptor: ProblemDescriptor
+    previewDescriptor: ProblemDescriptor,
   ): IntentionPreviewInfo = buildPreview(project)
 
   private fun buildPreview(project: Project): IntentionPreviewInfo {
@@ -84,7 +84,7 @@ class PklRemoveImportQuickFix(import: PklImport) :
           project,
           PklLanguage,
           text,
-          1.0f
+          1.0f,
         )
         append("</s>")
       }

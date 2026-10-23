@@ -36,15 +36,16 @@ val Project.pklStdLib: PklStdLib
     CachedValuesManager.getManager(this).getCachedValue(this) {
       CachedValueProvider.Result.create(
         PklStdLib.create(this),
-        ProjectRootManager.getInstance(this)
+        ProjectRootManager.getInstance(this),
       )
     }
 
 @Suppress("unused")
 class PklStdLib(val modules: List<PklStdLibModule>) {
   private val modulesByName: Map<String, PklStdLibModule> = modules.associateBy { it.name }
-  private val modulesByShortName: Map<String, PklStdLibModule> =
-    modules.associateBy { it.shortName }
+  private val modulesByShortName: Map<String, PklStdLibModule> = modules.associateBy {
+    it.shortName
+  }
 
   val baseModule: PklStdLibModule = modulesByShortName.getValue("base")
 
@@ -71,18 +72,17 @@ class PklStdLib(val modules: List<PklStdLibModule>) {
           ?.filter { it.extension == "pkl" && it.name != "package-info.pkl" }
           ?: throw AssertionError("Failed to locate Pkl standard library modules.")
 
-      val modules =
-        moduleFiles.mapNotNull { virtualFile ->
-          val psiFile =
-            psiManager.findFile(virtualFile)
-              ?: throw AssertionError(
-                "Failed to parse Pkl standard library module ${virtualFile.path}."
-              )
-          // `.pkl` files might not be associated with the Pkl language.
-          if (psiFile !is PklModule) return@mapNotNull null
-          val psiPointer = pointerManager.createSmartPsiElementPointer<PklModule>(psiFile, psiFile)
-          PklStdLibModule(virtualFile, psiPointer)
-        }
+      val modules = moduleFiles.mapNotNull { virtualFile ->
+        val psiFile =
+          psiManager.findFile(virtualFile)
+            ?: throw AssertionError(
+              "Failed to parse Pkl standard library module ${virtualFile.path}."
+            )
+        // `.pkl` files might not be associated with the Pkl language.
+        if (psiFile !is PklModule) return@mapNotNull null
+        val psiPointer = pointerManager.createSmartPsiElementPointer<PklModule>(psiFile, psiFile)
+        PklStdLibModule(virtualFile, psiPointer)
+      }
 
       return PklStdLib(modules)
     }
@@ -153,7 +153,7 @@ class PklStdLib(val modules: List<PklStdLibModule>) {
 
 class PklStdLibModule(
   val file: VirtualFile,
-  private val pointer: SmartPsiElementPointer<PklModule>
+  private val pointer: SmartPsiElementPointer<PklModule>,
 ) {
   val shortName: String = file.nameWithoutExtension
 

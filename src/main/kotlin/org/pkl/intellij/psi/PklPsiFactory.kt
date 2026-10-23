@@ -36,7 +36,7 @@ object PklPsiFactory {
         text,
         LocalTimeCounter.currentTime(),
         false,
-        true
+        true,
       ) as PklModule
 
   fun createImport(moduleUri: String, project: Project): PklImport {
@@ -118,7 +118,7 @@ object PklPsiFactory {
     moduleName: String,
     typeName: String,
     objectBody: PklObjectBody,
-    project: Project
+    project: Project,
   ): PklNewExpr {
     val module = createModule("x = new $moduleName.$typeName {}", project)
     return (module.properties.single().expr as PklNewExpr).apply {
@@ -129,7 +129,7 @@ object PklPsiFactory {
   fun createParenthesizedAmendExpr(
     expr: PklExpr,
     objectBody: PklObjectBody,
-    project: Project
+    project: Project,
   ): PklAmendExpr {
     val module = createModule("result = (${expr.text}) ${objectBody.text}", project)
     return module.properties.first().expr as PklAmendExpr
@@ -142,7 +142,7 @@ object PklPsiFactory {
 
   fun createUnqualifiedPropertyAccessExpr(
     propertyName: String,
-    project: Project
+    project: Project,
   ): PklUnqualifiedAccessExpr {
     val module = createModule("x = $propertyName", project)
     return module.properties.single().expr as PklUnqualifiedAccessExpr
@@ -152,7 +152,7 @@ object PklPsiFactory {
     methodName: String,
     arg1Expr: PklExpr,
     arg2Expr: PklExpr,
-    project: Project
+    project: Project,
   ): PklUnqualifiedAccessExpr {
     val module = createModule("x = $methodName(a, b)", project)
     return (module.properties.single().expr as PklUnqualifiedAccessExpr).apply {
@@ -168,7 +168,7 @@ object PklPsiFactory {
     valueVarName: String,
     expr: PklExpr,
     body: PklObjectBody,
-    project: Project
+    project: Project,
   ): PklForGenerator {
     val module = createModule("x { for ($keyVarName, $valueVarName in y) {} }", project)
     return (module.properties.single().objectBodyList.single().members.single() as PklForGenerator)
@@ -241,7 +241,7 @@ object PklPsiFactory {
     className: String,
     extends: String?,
     properties: List<PklClassProperty>,
-    project: Project
+    project: Project,
   ): PklClass {
     val module =
       createModule(
@@ -262,7 +262,7 @@ object PklPsiFactory {
           }
           append("\n}")
         },
-        project
+        project,
       )
     return module.typeDefs.first() as PklClass
   }

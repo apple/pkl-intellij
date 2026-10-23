@@ -26,7 +26,7 @@ import org.pkl.intellij.resolve.DocCommentResolvers
 class PklDocCommentReference(
   element: PsiElement,
   private val rangeInElement: TextRange,
-  private val fullLabelTextRange: TextRange
+  private val fullLabelTextRange: TextRange,
 ) : PsiReferenceBase<PsiElement>(element, rangeInElement) {
   override fun resolve(): PsiElement? {
     val link =

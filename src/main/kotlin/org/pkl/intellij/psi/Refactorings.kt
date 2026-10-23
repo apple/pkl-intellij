@@ -20,7 +20,7 @@ import com.intellij.openapi.project.Project
 fun PklAccessExpr.replaceDeprecated(
   module: PklModule,
   isDryRun: Boolean = false,
-  applyIf: (PklAnnotationListOwner, Deprecated) -> Boolean = { _, _ -> true }
+  applyIf: (PklAnnotationListOwner, Deprecated) -> Boolean = { _, _ -> true },
 ): Boolean {
   val target = memberName.reference?.resolve() as? PklAnnotationListOwner ?: return false
   val deprecated = target.annotationList?.deprecated ?: return false
@@ -64,7 +64,7 @@ fun PklAccessExpr.replaceDeprecated(
 fun PklTypeName.replaceDeprecated(
   module: PklModule,
   isDryRun: Boolean = false,
-  applyIf: (PklAnnotationListOwner, Deprecated) -> Boolean = { _, _ -> true }
+  applyIf: (PklAnnotationListOwner, Deprecated) -> Boolean = { _, _ -> true },
 ): Boolean {
   val context = module.pklProject
   val target = simpleName.resolve(context) as? PklAnnotationListOwner ?: return false
@@ -105,7 +105,7 @@ fun PklAmendExpr.updateInstantiationSyntax(
   project: Project,
   // only explicitly set by recursive call
   parentExpr: PklExpr = this.parentExpr,
-  isDryRun: Boolean = false
+  isDryRun: Boolean = false,
 ): Boolean {
   when (parentExpr) {
     is PklUnqualifiedAccessExpr -> {
@@ -115,7 +115,11 @@ fun PklAmendExpr.updateInstantiationSyntax(
         if ((target is PklClass || target is PklTypeAlias)) {
           if (!isDryRun) {
             val newExpr =
-              PklPsiFactory.createNewExpr(parentExpr.memberNameText, objectBody, project)
+              PklPsiFactory.createNewExpr(
+                parentExpr.memberName.identifier.text,
+                objectBody,
+                project,
+              )
             replace(newExpr)
           }
           return true
@@ -133,10 +137,10 @@ fun PklAmendExpr.updateInstantiationSyntax(
               if (!isDryRun) {
                 val newExpr =
                   PklPsiFactory.createQualifiedNewExpr(
-                    receiverExpr.memberNameText,
-                    parentExpr.memberNameText,
+                    receiverExpr.memberName.identifier.text,
+                    parentExpr.memberName.identifier.text,
                     objectBody,
-                    project
+                    project,
                   )
                 replace(newExpr)
               }
@@ -170,7 +174,7 @@ fun PklAmendExpr.updateParenthesizedAmendExpression(
     return parentExpr.updateParenthesizedAmendExpression(
       project,
       isDryRun = isDryRun,
-      isParenthesized = isParenthesized
+      isParenthesized = isParenthesized,
     )
   }
 
@@ -180,7 +184,7 @@ fun PklAmendExpr.updateParenthesizedAmendExpression(
     }
   }
 
-  if (!isParenthesized) {
+  if (!isParenthesized && parentExpr !is PklNewExpr) {
     if (!isDryRun) {
       val parenthesizedExpr =
         PklPsiFactory.createParenthesizedAmendExpr(parentExpr, objectBody, project)
@@ -211,7 +215,7 @@ private class ReplacementVisitor(
 
   /** The method arguments of the deprecated element's usage, if any. */
   private val usageArguments: List<PklExpr>?,
-  private val project: Project
+  private val project: Project,
 ) : PklRecursiveVisitor<Unit>() {
   /**
    * Handles referenced method parameters and referenced imports, such as `replaceWith =
@@ -226,7 +230,7 @@ private class ReplacementVisitor(
     val propertyName = expr.memberNameText
 
     if (declParameters != null && usageArguments != null) {
-      val index = declParameters.indexOfFirst { it.identifier.textMatches(propertyName) }
+      val index = declParameters.indexOfFirst { it.identifierName == propertyName }
       val argument = usageArguments.getOrNull(index)
       if (argument != null) {
         expr.replace(argument)
@@ -255,13 +259,13 @@ private class ReplacementVisitor(
    */
   override fun visitTypeName(typeName: PklTypeName) {
     typeName.moduleName?.let { moduleName ->
-      handleReferencedImport(moduleName.identifier.text) { aliasName ->
+      handleReferencedImport(moduleName.identifierName) { aliasName ->
         moduleName.replace(PklPsiFactory.createModuleName(aliasName, project))
       }
       return
     }
 
-    handleReferencedImport(typeName.simpleName.identifier.text) { aliasName ->
+    handleReferencedImport(typeName.simpleName.identifierName) { aliasName ->
       typeName.simpleName.replace(PklPsiFactory.createSimpleTypeName(aliasName, project))
     }
   }
@@ -287,7 +291,7 @@ private class ReplacementVisitor(
 
 fun PklTypeDefOrModule.createMember(
   parentMember: PklClassMember,
-  myModule: PklModule
+  myModule: PklModule,
 ): PklClassMember {
   return when (parentMember) {
     is PklClassProperty -> {
@@ -323,10 +327,7 @@ private fun StringBuilder.appendModifiersWithoutAbstractOrExternal(
   return !isFirst
 }
 
-private fun renderProperty(
-  myModule: PklModule,
-  originalProperty: PklClassProperty,
-): String {
+private fun renderProperty(myModule: PklModule, originalProperty: PklClassProperty): String {
   return buildString {
     if (appendModifiersWithoutAbstractOrExternal(originalProperty.modifierList)) {
       append(" ")
@@ -341,10 +342,7 @@ private fun renderProperty(
   }
 }
 
-private fun renderMethod(
-  myModule: PklModule,
-  originalMethod: PklClassMethod,
-): String {
+private fun renderMethod(myModule: PklModule, originalMethod: PklClassMethod): String {
   return buildString {
     if (appendModifiersWithoutAbstractOrExternal(originalMethod.modifierList)) {
       append(' ')

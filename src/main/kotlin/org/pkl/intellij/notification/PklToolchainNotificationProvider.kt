@@ -1,5 +1,5 @@
 /**
- * Copyright © 2024 Apple Inc. and the Pkl project authors. All rights reserved.
+ * Copyright © 2024-2026 Apple Inc. and the Pkl project authors. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -34,14 +34,14 @@ class PklToolchainNotificationProvider(project: Project) : EditorNotificationPro
         PKL_SETTINGS_CHANGED_TOPIC,
         PklSettingsChangedListener {
           EditorNotifications.getInstance(project).updateAllNotifications()
-        }
+        },
       )
     }
   }
 
   override fun collectNotificationData(
     project: Project,
-    file: VirtualFile
+    file: VirtualFile,
   ): Function<in FileEditor, out JComponent?> {
     return Function { _ ->
       if (file.fileType != PklFileType) return@Function null

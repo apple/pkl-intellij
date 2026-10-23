@@ -37,18 +37,18 @@ class PklSyncProjectNotificationProvider(project: Project) : EditorNotificationP
         object : PklProjectListener {
           override fun pklProjectDependenciesUpdated(
             service: PklProjectService,
-            pklProject: PklProject
+            pklProject: PklProject,
           ) {
             EditorNotifications.getInstance(project).updateAllNotifications()
           }
 
           override fun pklProjectsUpdated(
             service: PklProjectService,
-            projects: Map<String, PklProject>
+            projects: Map<String, PklProject>,
           ) {
             EditorNotifications.getInstance(project).updateAllNotifications()
           }
-        }
+        },
       )
     }
   }
@@ -57,7 +57,7 @@ class PklSyncProjectNotificationProvider(project: Project) : EditorNotificationP
 
   override fun collectNotificationData(
     project: Project,
-    file: VirtualFile
+    file: VirtualFile,
   ): Function<in FileEditor, out JComponent?> {
     if (ScratchUtil.isScratch(file)) return noComponent
     if (!project.pklCli.isAvailable()) return noComponent

@@ -1,5 +1,5 @@
 /**
- * Copyright © 2024-2025 Apple Inc. and the Pkl project authors. All rights reserved.
+ * Copyright © 2024-2026 Apple Inc. and the Pkl project authors. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -32,7 +32,7 @@ class PklCodeStyleSettingsProvider : CodeStyleSettingsProvider() {
 
   override fun createConfigurable(
     settings: CodeStyleSettings,
-    modelSettings: CodeStyleSettings
+    modelSettings: CodeStyleSettings,
   ): CodeStyleConfigurable {
 
     return object :
@@ -44,7 +44,7 @@ class PklCodeStyleSettingsProvider : CodeStyleSettingsProvider() {
 
   private class PklCodeStyleMainPanel(
     currentSettings: CodeStyleSettings,
-    settings: CodeStyleSettings
+    settings: CodeStyleSettings,
   ) : TabbedLanguageCodeStylePanel(PklLanguage, currentSettings, settings) {
 
     override fun initTabs(settings: CodeStyleSettings) {

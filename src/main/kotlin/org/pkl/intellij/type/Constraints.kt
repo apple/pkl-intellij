@@ -27,7 +27,7 @@ import org.pkl.intellij.util.isMathematicalInteger
 
 fun List<PklExpr>.toConstraintExprs(
   base: PklBaseModule,
-  context: PklProject?
+  context: PklProject?,
 ): List<ConstraintExpr> = map { it.toConstraintExpr(base, context) }
 
 fun PklExpr?.toConstraintExpr(base: PklBaseModule, context: PklProject?): ConstraintExpr {
@@ -42,8 +42,10 @@ fun PklExpr?.toConstraintExpr(base: PklBaseModule, context: PklProject?): Constr
           strippedText.substring(2).toLongOrNull(8)?.let { IntValue(it) } ?: Error
         strippedText.startsWith("0b") ->
           strippedText.substring(2).toLongOrNull(2)?.let { IntValue(it) } ?: Error
-        else -> strippedText.toLongOrNull()?.let { IntValue(it) }
-            ?: strippedText.toDoubleOrNull()?.let { FloatValue(it) } ?: Error
+        else ->
+          strippedText.toLongOrNull()?.let { IntValue(it) }
+            ?: strippedText.toDoubleOrNull()?.let { FloatValue(it) }
+            ?: Error
       }
     }
     is PklStringLiteral -> content.escapedText()?.let { StringValue(it) } ?: Error
@@ -57,13 +59,13 @@ fun PklExpr?.toConstraintExpr(base: PklBaseModule, context: PklProject?): Constr
         expr.toConstraintExpr(base, context),
         type.toType(base, mapOf(), context),
         base,
-        context
+        context,
       )
     is PklIfExpr ->
       If(
         conditionExpr.toConstraintExpr(base, context),
         thenExpr.toConstraintExpr(base, context),
-        elseExpr.toConstraintExpr(base, context)
+        elseExpr.toConstraintExpr(base, context),
       )
     is PklAccessExpr -> {
       val receiverExpr by lazy {
@@ -83,7 +85,7 @@ fun PklExpr?.toConstraintExpr(base: PklBaseModule, context: PklProject?): Constr
               memberNameText,
               base,
             ),
-            context
+            context,
           )
       ) {
         is PklClassProperty -> {
@@ -616,7 +618,7 @@ sealed class ConstraintExpr {
     private val operandExpr: ConstraintExpr,
     private val type: Type,
     private val base: PklBaseModule,
-    private val context: PklProject?
+    private val context: PklProject?,
   ) : ConstraintExpr() {
     override fun evaluate(thisValue: ConstraintValue): ConstraintValue =
       operandExpr.computeType(base, context).isSubtypeOf(type, base, context).toBool()
@@ -695,7 +697,7 @@ sealed class ConstraintExpr {
 
   abstract class OneArgMethodCall(
     protected val receiverExpr: ConstraintExpr,
-    protected val argumentExpr: ConstraintExpr
+    protected val argumentExpr: ConstraintExpr,
   ) : ConstraintExpr() {
 
     abstract val methodName: String
@@ -711,7 +713,7 @@ sealed class ConstraintExpr {
   abstract class TwoArgMethodCall(
     protected val receiverExpr: ConstraintExpr,
     protected val argument1Expr: ConstraintExpr,
-    protected val argument2Expr: ConstraintExpr
+    protected val argument2Expr: ConstraintExpr,
   ) : ConstraintExpr() {
 
     abstract val methodName: String
@@ -728,7 +730,7 @@ sealed class ConstraintExpr {
 
   abstract class VarArgMethodCall(
     private val receiverExpr: ConstraintExpr,
-    protected val argumentExprs: List<ConstraintExpr>
+    protected val argumentExprs: List<ConstraintExpr>,
   ) : ConstraintExpr() {
 
     abstract val methodName: String
@@ -988,14 +990,14 @@ sealed class ConstraintExpr {
         leftExpr.computeType(base, context),
         rightExpr.computeType(base, context),
         base,
-        context
+        context,
       )
   }
 
   class If(
     private val conditionExpr: ConstraintExpr,
     private val thenExpr: ConstraintExpr,
-    private val elseExpr: ConstraintExpr
+    private val elseExpr: ConstraintExpr,
   ) : ConstraintExpr() {
     override fun evaluate(thisValue: ConstraintValue): ConstraintValue {
       return when (conditionExpr.evaluate(thisValue)) {
@@ -1010,7 +1012,7 @@ sealed class ConstraintExpr {
         thenExpr.computeType(base, context),
         elseExpr.computeType(base, context),
         base,
-        context
+        context,
       )
 
     override fun render(builder: StringBuilder) {
@@ -1366,7 +1368,7 @@ sealed class ConstraintExpr {
   class IntIsBetween(
     receiverExpr: ConstraintExpr,
     argument1Expr: ConstraintExpr,
-    argument2Expr: ConstraintExpr
+    argument2Expr: ConstraintExpr,
   ) : TwoArgMethodCall(receiverExpr, argument1Expr, argument2Expr) {
 
     override val methodName: String
@@ -1402,7 +1404,7 @@ sealed class ConstraintExpr {
   class FloatIsBetween(
     receiverExpr: ConstraintExpr,
     argument1Expr: ConstraintExpr,
-    argument2Expr: ConstraintExpr
+    argument2Expr: ConstraintExpr,
   ) : TwoArgMethodCall(receiverExpr, argument1Expr, argument2Expr) {
 
     override val methodName: String
@@ -1437,7 +1439,7 @@ sealed class ConstraintExpr {
   class DurationIsBetween(
     receiverExpr: ConstraintExpr,
     argument1Expr: ConstraintExpr,
-    argument2Expr: ConstraintExpr
+    argument2Expr: ConstraintExpr,
   ) : TwoArgMethodCall(receiverExpr, argument1Expr, argument2Expr) {
 
     override val methodName: String
@@ -1457,7 +1459,7 @@ sealed class ConstraintExpr {
   class DataSizeIsBetween(
     receiverExpr: ConstraintExpr,
     argument1Expr: ConstraintExpr,
-    argument2Expr: ConstraintExpr
+    argument2Expr: ConstraintExpr,
   ) : TwoArgMethodCall(receiverExpr, argument1Expr, argument2Expr) {
 
     override val methodName: String
@@ -1681,7 +1683,7 @@ sealed class ConstraintExpr {
 private inline fun expectOneArg(
   arguments: List<PklExpr>,
   base: PklBaseModule,
-  builder: (ConstraintExpr) -> ConstraintExpr
+  builder: (ConstraintExpr) -> ConstraintExpr,
 ): ConstraintExpr =
   when (arguments.size) {
     // no need to pass on context; constraint support only operates on stdlib types.
@@ -1692,7 +1694,7 @@ private inline fun expectOneArg(
 private inline fun expectTwoArgs(
   arguments: List<PklExpr>,
   base: PklBaseModule,
-  builder: (ConstraintExpr, ConstraintExpr) -> ConstraintExpr
+  builder: (ConstraintExpr, ConstraintExpr) -> ConstraintExpr,
 ): ConstraintExpr =
   when (arguments.size) {
     // no need to pass on context; constraint support only operates on stdlib types.

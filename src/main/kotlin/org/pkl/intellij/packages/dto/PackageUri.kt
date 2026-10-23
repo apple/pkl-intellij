@@ -34,7 +34,7 @@ data class PackageUri(
   val authority: String,
   val path: String,
   val version: Version,
-  val checksums: Checksums?
+  val checksums: Checksums?,
 ) {
   private val basePath = path.substringBeforeLast('@')
 

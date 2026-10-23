@@ -224,7 +224,7 @@ object GlobResolver {
     filter: (VirtualFile) -> Boolean,
     listElementCallCount: AtomicInteger,
     visited: MutableSet<String> = mutableSetOf(),
-    result: MutableList<VirtualFile> = mutableListOf()
+    result: MutableList<VirtualFile> = mutableListOf(),
   ): List<VirtualFile>? {
     // Detect cycles using canonical path, falling back to regular path for non-local filesystems
     val pathKey = virtualFile.canonicalPath ?: virtualFile.path
@@ -253,7 +253,7 @@ object GlobResolver {
     globPart: String,
     listElementCallCount: AtomicInteger,
     listChildren: (VirtualFile) -> Array<VirtualFile>,
-    isPartial: Boolean
+    isPartial: Boolean,
   ): List<VirtualFile>? {
     if (listElementCallCount.getAndIncrement() > MAX_LIST_ELEMENTS) {
       return null
@@ -267,7 +267,7 @@ object GlobResolver {
           val matches = pattern.matcher(file.path.substringAfter(baseFile.path).drop(1)).matches()
           if (isPartial) matches && file.isDirectory else matches
         },
-        listElementCallCount
+        listElementCallCount,
       )
     }
     return baseFile.children
@@ -296,7 +296,7 @@ object GlobResolver {
     isPartial: Boolean,
     listChildren: (VirtualFile) -> Array<VirtualFile>,
     psiManager: PsiManager,
-    result: MutableList<PsiFileSystemItem>
+    result: MutableList<PsiFileSystemItem>,
   ): Boolean {
     val patternPart = globPatternParts[idx]
     val isLeaf = idx == globPatternParts.size - 1
@@ -322,7 +322,7 @@ object GlobResolver {
           isPartial,
           listChildren,
           psiManager,
-          result
+          result,
         )
       }
     } else {
@@ -343,7 +343,7 @@ object GlobResolver {
               isPartial,
               listChildren,
               psiManager,
-              result
+              result,
             )
           if (exceededMaxElements) return true
         }
@@ -361,7 +361,7 @@ object GlobResolver {
     globPattern: String,
     isPartial: Boolean,
     project: Project,
-    listChildren: (VirtualFile) -> Array<VirtualFile>
+    listChildren: (VirtualFile) -> Array<VirtualFile>,
   ): GlobResult {
     val psiManager = PsiManager.getInstance(project)
     if (globPattern.isEmpty()) {
@@ -379,7 +379,7 @@ object GlobResolver {
         isPartial,
         listChildren,
         psiManager,
-        result
+        result,
       )
     return GlobResult(result, exceededMaxElements)
   }
@@ -389,7 +389,7 @@ object GlobResolver {
     globPattern: String,
     isPartial: Boolean,
     project: Project,
-    listChildren: (VirtualFile) -> Array<VirtualFile>
+    listChildren: (VirtualFile) -> Array<VirtualFile>,
   ): GlobResult {
     val psiManager = PsiManager.getInstance(project)
     if (globPattern == "/")
@@ -406,7 +406,7 @@ object GlobResolver {
         isPartial,
         listChildren,
         psiManager,
-        result
+        result,
       )
     return GlobResult(result, exceededMaxElements)
   }

@@ -59,6 +59,7 @@ enum class PklColor(humanName: String, default: TextAttributesKey) {
   PROPERTY("Identifiers//Property", Default.IDENTIFIER),
   TYPE_ALIAS("Identifiers//Type alias", CLASS.textAttributesKey),
   DOC_COMMENT_REFERENCE("Comments//Member Link", Default.DOC_COMMENT_TAG_VALUE);
+
   // endregion
 
   val textAttributesKey = TextAttributesKey.createTextAttributesKey("PKL_$name", default)

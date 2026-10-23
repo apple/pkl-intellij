@@ -28,7 +28,7 @@ object PkldocLinkGeneratingProvider : GeneratingProvider {
   override fun processNode(
     visitor: HtmlGenerator.HtmlGeneratingVisitor,
     text: String,
-    node: ASTNode
+    node: ASTNode,
   ) {
     val labelNode =
       node.children.firstOrNull { it.type == MarkdownElementTypes.LINK_LABEL } ?: return

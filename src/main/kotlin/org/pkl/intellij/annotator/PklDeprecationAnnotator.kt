@@ -1,5 +1,5 @@
 /**
- * Copyright © 2024 Apple Inc. and the Pkl project authors. All rights reserved.
+ * Copyright © 2024-2026 Apple Inc. and the Pkl project authors. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -32,8 +32,7 @@ class PklDeprecationAnnotator : PklAnnotator() {
   override fun doAnnotate(element: PsiElement, holder: AnnotationHolder) {
     val target =
       element.pklReference?.resolveContextual(element.enclosingModule?.pklProject)
-        as? PklAnnotationListOwner
-        ?: return
+        as? PklAnnotationListOwner ?: return
     val deprecated = target.annotationList?.deprecated ?: return
     if (isSuppressed(element, PklProblemGroups.deprecated)) return
 

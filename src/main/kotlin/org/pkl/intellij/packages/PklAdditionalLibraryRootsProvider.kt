@@ -1,5 +1,5 @@
 /**
- * Copyright © 2024 Apple Inc. and the Pkl project authors. All rights reserved.
+ * Copyright © 2024-2026 Apple Inc. and the Pkl project authors. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -28,7 +28,7 @@ import org.pkl.intellij.util.*
 data class PklLibrary(
   val packageDependency: PackageDependency,
   val metadata: PackageMetadata,
-  val project: Project
+  val project: Project,
 ) : SyntheticLibrary(), ItemPresentation {
   override fun getSourceRoots(): Collection<VirtualFile> {
     val roots = project.pklPackageService.getLibraryRoots(packageDependency) ?: return emptyList()
