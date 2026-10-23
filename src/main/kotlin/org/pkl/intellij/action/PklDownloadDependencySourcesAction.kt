@@ -48,8 +48,7 @@ class PklDownloadDependencySourcesAction : IntentionAction {
           packageService.getLibraryRoots(PackageDependency(dep.packageUri, null, dep.checksums)) ==
             null
         }
-        ?.map { it.packageUri.copy(checksums = it.checksums) }
-        ?: return
+        ?.map { it.packageUri.copy(checksums = it.checksums) } ?: return
     if (packagesToDownload.isEmpty()) return
     packageService.downloadPackage(packagesToDownload).handleOnEdt { _, err ->
       if (err != null) {
@@ -61,7 +60,7 @@ class PklDownloadDependencySourcesAction : IntentionAction {
                 <code>${err.message}</code>
               """
             .trimIndent(),
-          "Pkl Download Failed"
+          "Pkl Download Failed",
         )
       }
     }

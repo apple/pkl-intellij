@@ -33,7 +33,7 @@ class PklRenameIgnoreQuickFix(expr: PsiElement) :
     file: PsiFile,
     editor: Editor?,
     startElement: PsiElement,
-    endElement: PsiElement
+    endElement: PsiElement,
   ) {
     startElement.replace(PklPsiFactory.createIdentifier("`_`", project))
   }

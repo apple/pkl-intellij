@@ -36,7 +36,7 @@ class PklDocCommentMemberLinkCompletionProvider : PklCompletionProvider() {
   override fun addCompletions(
     parameters: CompletionParameters,
     context: ProcessingContext,
-    result: CompletionResultSet
+    result: CompletionResultSet,
   ) {
     val docComment = parameters.position.parentOfType<PklDocComment>() ?: return
     val reference =
@@ -51,7 +51,7 @@ class PklDocCommentMemberLinkCompletionProvider : PklCompletionProvider() {
 
   private fun completeUnqualifiedMemberLink(
     docComment: PklDocComment,
-    result: CompletionResultSet
+    result: CompletionResultSet,
   ) {
     val base = docComment.project.pklBaseModule
     val context = docComment.enclosingModule?.pklProject
@@ -63,7 +63,7 @@ class PklDocCommentMemberLinkCompletionProvider : PklCompletionProvider() {
       base,
       mapOf(),
       visitor,
-      context
+      context,
     )
     Resolvers.resolveUnqualifiedAccess(
       docComment,
@@ -72,7 +72,7 @@ class PklDocCommentMemberLinkCompletionProvider : PklCompletionProvider() {
       base,
       mapOf(),
       visitor,
-      context
+      context,
     )
     Resolvers.resolveUnqualifiedTypeName(docComment, base, mapOf(), visitor, context)
     result.addAllElements(visitor.result)
@@ -81,7 +81,7 @@ class PklDocCommentMemberLinkCompletionProvider : PklCompletionProvider() {
   private fun completeQualifiedMemberLink(
     reference: PklDocCommentReference,
     docComment: PklDocComment,
-    result: CompletionResultSet
+    result: CompletionResultSet,
   ) {
     val project = docComment.project
     val context = docComment.enclosingModule?.pklProject
@@ -92,7 +92,7 @@ class PklDocCommentMemberLinkCompletionProvider : PklCompletionProvider() {
       true,
       project.pklBaseModule,
       visitor,
-      context
+      context,
     )
     Resolvers.resolveQualifiedDocCommentMemberLink(
       reference.fullText,
@@ -100,7 +100,7 @@ class PklDocCommentMemberLinkCompletionProvider : PklCompletionProvider() {
       false,
       project.pklBaseModule,
       visitor,
-      context
+      context,
     )
     result.addAllElements(visitor.result)
   }

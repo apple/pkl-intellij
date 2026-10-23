@@ -28,7 +28,7 @@ import org.pkl.intellij.util.*
 data class PklLibrary(
   val packageDependency: PackageDependency,
   val metadata: PackageMetadata,
-  val project: Project
+  val project: Project,
 ) : SyntheticLibrary(), ItemPresentation {
   override fun getSourceRoots(): Collection<VirtualFile> {
     val roots = project.pklPackageService.getLibraryRoots(packageDependency) ?: return emptyList()

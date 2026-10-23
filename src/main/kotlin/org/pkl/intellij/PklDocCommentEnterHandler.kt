@@ -42,7 +42,7 @@ class PklDocCommentEnterHandler : EnterHandlerDelegateAdapter() {
     caretOffsetRef: Ref<Int>,
     caretAdvanceRef: Ref<Int>,
     dataContext: DataContext,
-    originalHandler: EditorActionHandler?
+    originalHandler: EditorActionHandler?,
   ): EnterHandlerDelegate.Result {
     if (file.fileType != PklFileType) {
       return EnterHandlerDelegate.Result.Continue

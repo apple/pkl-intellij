@@ -30,7 +30,7 @@ class PklExprTypeProvider : ExpressionTypeProvider<PklExpr>() {
       element.computeExprType(
         element.project.pklBaseModule,
         mapOf(),
-        element.enclosingModule?.pklProject
+        element.enclosingModule?.pklProject,
       )
     return type.render().escapeXml()
   }

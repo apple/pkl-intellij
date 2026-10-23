@@ -26,7 +26,7 @@ fun inferResourceType(resourceUri: PklStringLiteral, base: PklBaseModule): Type 
         base.stringType,
         base.resourceType,
         base,
-        null
+        null,
       ) // empty string -> bail out
   val stringChars = firstChild.text
 

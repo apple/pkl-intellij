@@ -42,7 +42,7 @@ internal val jarFs: JarFileSystem =
 data class PackageDependency(
   override val packageUri: PackageUri,
   val pklProject: PklProject?,
-  val checksums: Checksums?
+  val checksums: Checksums?,
 ) : Dependency {
   override fun getRoot(project: Project): VirtualFile? =
     project.pklPackageService.getLibraryRoots(this)?.packageRoot
@@ -50,7 +50,7 @@ data class PackageDependency(
 
 data class LocalProjectDependency(
   override val packageUri: PackageUri,
-  private val projectDir: VirtualFile
+  private val projectDir: VirtualFile,
 ) : Dependency {
   override fun getRoot(project: Project): VirtualFile = projectDir
 }

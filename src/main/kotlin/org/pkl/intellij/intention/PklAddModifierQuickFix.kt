@@ -27,7 +27,7 @@ import org.pkl.intellij.psi.*
 class PklAddModifierQuickFix(
   private val text: String,
   modifiers: PklModifierList,
-  private val modifierType: IElementType
+  private val modifierType: IElementType,
 ) : LocalQuickFixAndIntentionActionOnPsiElement(modifiers) {
 
   override fun getText(): String = text
@@ -39,7 +39,7 @@ class PklAddModifierQuickFix(
     file: PsiFile,
     editor: Editor?,
     startElement: PsiElement,
-    endElement: PsiElement
+    endElement: PsiElement,
   ) {
     val modifiers = startElement as PklModifierList
     modifiers.addModifier(modifierType, project)

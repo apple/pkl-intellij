@@ -29,7 +29,7 @@ abstract class PklUnqualifiedAccessExprBase(node: ASTNode) :
     receiverType: Type?,
     bindings: TypeParameterBindings,
     visitor: ResolveVisitor<R>,
-    context: PklProject?
+    context: PklProject?,
   ): R {
     return Resolvers.resolveUnqualifiedAccess(
       this,
@@ -38,7 +38,7 @@ abstract class PklUnqualifiedAccessExprBase(node: ASTNode) :
       base,
       bindings,
       visitor,
-      context
+      context,
     )
   }
 
@@ -47,7 +47,7 @@ abstract class PklUnqualifiedAccessExprBase(node: ASTNode) :
     receiverType: Type?,
     bindings: TypeParameterBindings,
     visitor: ResolveVisitor<R>,
-    context: PklProject?
+    context: PklProject?,
   ): Pair<R, Resolvers.LookupMode> {
     return Resolvers.resolveUnqualifiedAccessAndLookupMode(
       this,
@@ -57,7 +57,7 @@ abstract class PklUnqualifiedAccessExprBase(node: ASTNode) :
       base,
       bindings,
       visitor,
-      context
+      context,
     )
   }
 }

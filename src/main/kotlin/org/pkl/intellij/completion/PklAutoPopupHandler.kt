@@ -33,7 +33,7 @@ class PklAutoPopupHandler : TypedHandlerDelegate() {
     charTyped: Char,
     project: Project,
     editor: Editor,
-    file: PsiFile
+    file: PsiFile,
   ): Result {
 
     if (file !is PklModule) return CONTINUE

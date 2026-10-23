@@ -48,7 +48,7 @@ class PklProjectFileModificationTracker(project: Project) : ModificationTracker 
               }
             }
           }
-        }
+        },
       )
   }
 

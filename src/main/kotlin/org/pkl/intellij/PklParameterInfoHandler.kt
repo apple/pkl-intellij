@@ -54,14 +54,14 @@ class PklParameterInfoHandler :
 
   override fun showParameterInfo(
     argumentList: PklArgumentList,
-    context: CreateParameterInfoContext
+    context: CreateParameterInfoContext,
   ) {
     context.showHint(argumentList, argumentList.textRange.startOffset, this)
   }
 
   override fun updateParameterInfo(
     argumentList: PklArgumentList,
-    context: UpdateParameterInfoContext
+    context: UpdateParameterInfoContext,
   ) {
     if (context.parameterOwner == null || argumentList == context.parameterOwner) {
       context.parameterOwner = argumentList
@@ -100,7 +100,7 @@ class PklParameterInfoHandler :
       isGrey,
       isDeprecated,
       false,
-      context.defaultParameterColor
+      context.defaultParameterColor,
     )
   }
 
@@ -112,7 +112,7 @@ class PklParameterInfoHandler :
       ParameterInfoUtils.getCurrentParameterIndex(
         argumentList.node,
         context.offset,
-        PklElementTypes.COMMA
+        PklElementTypes.COMMA,
       )
     context.setCurrentParameter(argumentIndex)
     return argumentList
@@ -126,13 +126,12 @@ class PklParameterInfoHandler :
     val visitor = ResolveVisitors.elementsNamed(accessExpr.memberNameText, base)
     val methods =
       accessExpr.resolve(base, null, mapOf(), visitor, accessExpr.enclosingModule?.pklProject)
-    val parameterLists =
-      methods.mapNotNull { method ->
-        when (method) {
-          is PklMethod -> method.parameterList
-          else -> null
-        }
+    val parameterLists = methods.mapNotNull { method ->
+      when (method) {
+        is PklMethod -> method.parameterList
+        else -> null
       }
+    }
     context.itemsToShow = parameterLists.toTypedArray()
     return argumentList
   }
@@ -143,7 +142,7 @@ class PklParameterInfoHandler :
       element,
       PklArgumentList::class.java,
       true,
-      *stopSearchClassesArray
+      *stopSearchClassesArray,
     )
   }
 }

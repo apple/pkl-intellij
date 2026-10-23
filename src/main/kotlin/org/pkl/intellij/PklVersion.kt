@@ -27,7 +27,7 @@ class PklVersion(
   val minor: Int,
   val patch: Int,
   val preReleaseLabel: String?,
-  @Suppress("MemberVisibilityCanBePrivate") val buildMetadata: String?
+  @Suppress("MemberVisibilityCanBePrivate") val buildMetadata: String?,
 ) : Comparable<PklVersion> {
   override operator fun compareTo(other: PklVersion): Int = COMPARATOR.compare(this, other)
 
@@ -67,7 +67,7 @@ class PklVersion(
         result.groups[2]!!.value.toInt(),
         result.groups[3]!!.value.toInt(),
         result.groups[4]?.value,
-        result.groups[5]?.value
+        result.groups[5]?.value,
       )
     }
   }

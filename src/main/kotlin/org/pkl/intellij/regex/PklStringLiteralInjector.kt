@@ -84,7 +84,7 @@ class PklStringLiteralInjector : MultiHostInjector {
           "Regex",
           base,
         ),
-        accessExpr.enclosingModule?.pklProject
+        accessExpr.enclosingModule?.pklProject,
       )
     return resolved == base.regexConstructor
   }

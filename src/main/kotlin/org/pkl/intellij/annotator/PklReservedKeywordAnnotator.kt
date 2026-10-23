@@ -32,7 +32,7 @@ class PklReservedKeywordAnnotator : PklAnnotator() {
         PklElementTypes.DELETE,
         PklElementTypes.CASE,
         PklElementTypes.SWITCH,
-        PklElementTypes.VARARG
+        PklElementTypes.VARARG,
       )
   }
 
@@ -43,7 +43,7 @@ class PklReservedKeywordAnnotator : PklAnnotator() {
         element.textRange,
         "Keyword '${element.text}' is reserved for future use",
         "Keyword <code>${element.text}</code> is reserved for future use",
-        holder
+        holder,
       )
     }
   }

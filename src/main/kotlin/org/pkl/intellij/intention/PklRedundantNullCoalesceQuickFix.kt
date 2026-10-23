@@ -34,7 +34,7 @@ class PklRedundantNullCoalesceQuickFix(nullCoalesceExpr: PklNullCoalesceBinExpr)
     file: PsiFile,
     editor: Editor?,
     startElement: PsiElement,
-    endElement: PsiElement
+    endElement: PsiElement,
   ) {
     val nullCoalesceExpr = startElement as PklNullCoalesceBinExpr
     nullCoalesceExpr.replace(nullCoalesceExpr.leftExpr)

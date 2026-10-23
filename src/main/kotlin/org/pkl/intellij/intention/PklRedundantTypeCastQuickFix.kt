@@ -34,7 +34,7 @@ class PklRedundantTypeCastQuickFix(typeCastExpr: PklTypeCastExpr) :
     file: PsiFile,
     editor: Editor?,
     startElement: PsiElement,
-    endElement: PsiElement
+    endElement: PsiElement,
   ) {
     val typeCastExpr = startElement as PklTypeCastExpr
     typeCastExpr.replace(typeCastExpr.expr)

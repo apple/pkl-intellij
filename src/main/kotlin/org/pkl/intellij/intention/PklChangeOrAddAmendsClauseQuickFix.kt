@@ -37,7 +37,7 @@ class PklChangeOrAddAmendsClauseQuickFix(elem: PklModule, private val uri: Strin
     file: PsiFile,
     editor: Editor?,
     startElement: PsiElement,
-    endElement: PsiElement
+    endElement: PsiElement,
   ) {
     startElement as PklModule
     val clause = PklPsiFactory.createAmendsClause(uri, project)

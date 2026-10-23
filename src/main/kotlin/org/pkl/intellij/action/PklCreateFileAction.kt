@@ -49,13 +49,13 @@ class PklCreateFileAction :
   override fun getActionName(
     directory: PsiDirectory,
     newName: String,
-    templateName: String
+    templateName: String,
   ): String = "Pkl File"
 
   override fun createFileFromTemplate(
     name: String,
     template: FileTemplate,
-    dir: PsiDirectory
+    dir: PsiDirectory,
   ): PsiFile? =
     try {
       val project = dir.project
@@ -74,7 +74,7 @@ class PklCreateFileAction :
         Messages.showErrorDialog(
           dir.project,
           e.message,
-          IdeBundle.message("title.cannot.create.file")
+          IdeBundle.message("title.cannot.create.file"),
         )
       }
       null

@@ -55,7 +55,7 @@ abstract class PklModuleUriBase : PklStubBasedPsiElementBase<PklModuleUriStub>, 
         }
       CachedValueProvider.Result.create(
         result,
-        psiManager.modificationTracker.forLanguage(PklLanguage)
+        psiManager.modificationTracker.forLanguage(PklLanguage),
       )
     }
   }
@@ -105,7 +105,7 @@ abstract class PklModuleUriBase : PklStubBasedPsiElementBase<PklModuleUriStub>, 
 
   private fun createPackageReferences(
     contentText: String,
-    contentOffset: Int
+    contentOffset: Int,
   ): Array<PsiReference> {
     val references = mutableListOf<PklModuleUriReference>()
     val offset = contentText.indexOf("#") + 1

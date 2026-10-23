@@ -56,7 +56,7 @@ class PklExternalSystemProjectAware(private val project: Project) : ExternalSyst
               else ExternalSystemRefreshStatus.SUCCESS
             listener.onProjectReloadFinish(status)
           }
-        }
+        },
       )
   }
 }

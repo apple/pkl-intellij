@@ -47,7 +47,7 @@ class PklFormattingModelBuilder : FormattingModelBuilder {
         OR,
         PIPE,
         PLUS,
-        POW
+        POW,
       )
 
     val TIGHT_OPERATORS = TokenSet.create(DOT, QDOT, UNION)
@@ -107,7 +107,7 @@ class PklFormattingModelBuilder : FormattingModelBuilder {
     return FormattingModelProvider.createFormattingModelForPsiFile(
       context.psiElement.containingFile,
       PklBlock(context.psiElement.node, Indent.getNoneIndent(), spacingBuilder),
-      context.codeStyleSettings
+      context.codeStyleSettings,
     )
   }
 }

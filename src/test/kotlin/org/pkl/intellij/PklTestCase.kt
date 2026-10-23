@@ -39,7 +39,7 @@ abstract class PklTestCase : CodeInsightFixtureTestCase<ModuleFixtureBuilder<*>>
     // copy all files in the fixtures dir into the ephemeral test project
     fixtureDir?.copyToRecursively(
       projectDir.toNioPath().apply { parent.createDirectories() },
-      followLinks = false
+      followLinks = false,
     )
     System.getProperty("org.pkl.intellij.pklExecutable")?.let {
       project.pklSettings.state.pklPath = it
@@ -64,7 +64,7 @@ abstract class PklTestCase : CodeInsightFixtureTestCase<ModuleFixtureBuilder<*>>
           override fun pklProjectSyncFinished() {
             fut.complete(null)
           }
-        }
+        },
       )
     myFixture.project.pklProjectService.syncProjects()
     fut.get()

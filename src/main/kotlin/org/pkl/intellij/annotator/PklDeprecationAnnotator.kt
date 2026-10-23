@@ -32,8 +32,7 @@ class PklDeprecationAnnotator : PklAnnotator() {
   override fun doAnnotate(element: PsiElement, holder: AnnotationHolder) {
     val target =
       element.pklReference?.resolveContextual(element.enclosingModule?.pklProject)
-        as? PklAnnotationListOwner
-        ?: return
+        as? PklAnnotationListOwner ?: return
     val deprecated = target.annotationList?.deprecated ?: return
     if (isSuppressed(element, PklProblemGroups.deprecated)) return
 

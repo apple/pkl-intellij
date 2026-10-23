@@ -47,7 +47,7 @@ class PklDownloadPackageAction(private val packageUri: PackageUri) : IntentionAc
               <code>${err.message}</code>
             """
             .trimIndent(),
-          "Pkl Download Failed"
+          "Pkl Download Failed",
         )
       }
     }

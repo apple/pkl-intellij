@@ -30,7 +30,7 @@ object PkldocFlavorDescriptor : CommonMarkFlavourDescriptor() {
 
   override fun createHtmlGeneratingProviders(
     linkMap: LinkMap,
-    baseURI: URI?
+    baseURI: URI?,
   ): Map<IElementType, GeneratingProvider> {
     // `TablesGeneratingProvider` is an internal class, so grab it from `GFMFlavourDescriptor`
     val tablesGeneratingProvider =
@@ -43,7 +43,7 @@ object PkldocFlavorDescriptor : CommonMarkFlavourDescriptor() {
         MarkdownElementTypes.SHORT_REFERENCE_LINK to PkldocLinkGeneratingProvider,
         MarkdownElementTypes.FULL_REFERENCE_LINK to PkldocLinkGeneratingProvider,
         GFMElementTypes.TABLE to tablesGeneratingProvider,
-        GFMTokenTypes.CELL to TrimmingInlineHolderProvider()
+        GFMTokenTypes.CELL to TrimmingInlineHolderProvider(),
       )
   }
 }

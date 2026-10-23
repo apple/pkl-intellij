@@ -36,13 +36,13 @@ class PklPrefixDependencyNotationQuickFix(element: PklModuleUri) :
     file: PsiFile,
     editor: Editor?,
     startElement: PsiElement,
-    endElement: PsiElement
+    endElement: PsiElement,
   ) {
     startElement as PklModuleUri
     startElement.stringConstant.replace(
       PklPsiFactory.createStringConstant(
         "./" + startElement.stringConstant.content.escapedText(),
-        project
+        project,
       )
     )
   }

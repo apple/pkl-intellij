@@ -36,7 +36,7 @@ class PklAddDefaultValueQuickFix(property: PklClassProperty) :
     file: PsiFile,
     editor: Editor?,
     startElement: PsiElement,
-    endElement: PsiElement
+    endElement: PsiElement,
   ) {
     val property = startElement as PklClassPropertyBase
     val expr = PklPsiFactory.createTodo(project)

@@ -55,8 +55,8 @@ class PklTypeAnnotatorTest {
   fun `this - not allowed in typealias bodies`() {
     checkHighlighting(
       """
-       typealias Foo = <error descr="Cannot reference `this` type within a type alias body">this</error>
-    """
+      typealias Foo = <error descr="Cannot reference `this` type within a type alias body">this</error>
+      """
         .trimIndent()
     )
   }
@@ -65,8 +65,8 @@ class PklTypeAnnotatorTest {
   fun `module - not allowed in typealias bodies`() {
     checkHighlighting(
       """
-       typealias Foo = <warning descr="Cannot reference `module` type within a type alias body; this will be an error in a future release">module</warning>
-    """
+      typealias Foo = <warning descr="Cannot reference `module` type within a type alias body; this will be an error in a future release">module</warning>
+      """
         .trimIndent()
     )
   }
@@ -75,12 +75,12 @@ class PklTypeAnnotatorTest {
   fun `module - not allowed in class bodies`() {
     checkHighlighting(
       """
-       class Foo {
-         bar: <warning descr="Cannot reference `module` type within a class body; this will be an error in a future release">module</warning>
-         // const properties in class should warn for the class, not the const property
-         baz: <warning descr="Cannot reference `module` type within a class body; this will be an error in a future release">module</warning>
-       }
-    """
+      class Foo {
+        bar: <warning descr="Cannot reference `module` type within a class body; this will be an error in a future release">module</warning>
+        // const properties in class should warn for the class, not the const property
+        baz: <warning descr="Cannot reference `module` type within a class body; this will be an error in a future release">module</warning>
+      }
+      """
         .trimIndent()
     )
   }
@@ -89,9 +89,9 @@ class PklTypeAnnotatorTest {
   fun `module - not allowed in annotation bodies`() {
     checkHighlighting(
       """
-       @Foo{ bar = baz is <warning descr="Cannot reference `module` type within an annotation body; this will be an error in a future release">module</warning> }
-       module test
-    """
+      @Foo{ bar = baz is <warning descr="Cannot reference `module` type within an annotation body; this will be an error in a future release">module</warning> }
+      module test
+      """
         .trimIndent()
     )
   }
@@ -103,7 +103,7 @@ class PklTypeAnnotatorTest {
       const res1 = foo is <warning descr="Cannot reference `module` type from const property `res1`; this will be an error in a future release">module</warning>
       const res2: <warning descr="Cannot reference `module` type from const property `res2`; this will be an error in a future release">module</warning> = foo
       const res3 = new { foo is <warning descr="Cannot reference `module` type from const property `res3`; this will be an error in a future release">module</warning> }
-    """
+      """
         .trimIndent()
     )
   }
@@ -116,7 +116,7 @@ class PklTypeAnnotatorTest {
       const function res2(): <warning descr="Cannot reference `module` type from const method `res2`; this will be an error in a future release">module</warning> = foo
       const function res3() = new { foo is <warning descr="Cannot reference `module` type from const method `res3`; this will be an error in a future release">module</warning> }
       const function res4(foo: <warning descr="Cannot reference `module` type from const method `res4`; this will be an error in a future release">module</warning>) = null
-    """
+      """
         .trimIndent()
     )
   }
@@ -125,9 +125,9 @@ class PklTypeAnnotatorTest {
   fun `module - allowed in class extends clause`() {
     checkHighlighting(
       """
-       open module test
-       class Foo extends module
-    """
+      open module test
+      class Foo extends module
+      """
         .trimIndent()
     )
   }

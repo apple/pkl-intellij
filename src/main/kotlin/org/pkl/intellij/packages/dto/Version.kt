@@ -24,7 +24,7 @@ data class Version(
   var minor: Int,
   val patch: Int,
   val preRelease: String?,
-  val build: String?
+  val build: String?,
 ) : Comparable<Version> {
 
   /** Compares this version to the given version according to semantic versioning rules. */
@@ -51,8 +51,7 @@ data class Version(
       ?.map { str ->
         if (NUMERIC_IDENTIFIER.matcher(str).matches()) Identifier(str.toLong(), null)
         else Identifier(-1, str)
-      }
-      ?: emptyList()
+      } ?: emptyList()
   }
 
   private class Identifier(private val numericId: Long, private val alphanumericId: String?) :
@@ -118,7 +117,7 @@ data class Version(
             matcher.group(2).toInt(),
             matcher.group(3).toInt(),
             matcher.group(4),
-            matcher.group(5)
+            matcher.group(5),
           )
         } catch (e: NumberFormatException) {
           null

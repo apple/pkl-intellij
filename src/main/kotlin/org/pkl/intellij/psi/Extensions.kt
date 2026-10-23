@@ -413,14 +413,15 @@ fun PklPropertyName.resolve(context: PklProject?): PklElement? =
 val PklModuleUri.escapedContent: String?
   get() = stringConstant.content.escapedText()
 
-fun PklModuleUri.resolve(context: PklProject?): PklModule? =
-  escapedContent?.let { text ->
-    PklModuleUriReference.resolve(text, text, containingFile, enclosingModule, project, context)
-      as? PklModule?
-  }
+fun PklModuleUri.resolve(context: PklProject?): PklModule? = escapedContent?.let { text ->
+  PklModuleUriReference.resolve(text, text, containingFile, enclosingModule, project, context)
+    as? PklModule?
+}
 
 private fun PklModuleUri.resolveGlob(context: PklProject?): GlobResolver.GlobResult? =
-  escapedContent?.let { PklModuleUriReference.resolveGlob(it, it, this, context) }
+  escapedContent?.let {
+    PklModuleUriReference.resolveGlob(it, it, this, context)
+  }
 
 /**
  * Finds or inserts (in sort order) an import for [module] and returns its member name. Returns

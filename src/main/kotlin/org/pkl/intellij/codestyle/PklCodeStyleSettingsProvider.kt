@@ -32,7 +32,7 @@ class PklCodeStyleSettingsProvider : CodeStyleSettingsProvider() {
 
   override fun createConfigurable(
     settings: CodeStyleSettings,
-    modelSettings: CodeStyleSettings
+    modelSettings: CodeStyleSettings,
   ): CodeStyleConfigurable {
 
     return object :
@@ -44,7 +44,7 @@ class PklCodeStyleSettingsProvider : CodeStyleSettingsProvider() {
 
   private class PklCodeStyleMainPanel(
     currentSettings: CodeStyleSettings,
-    settings: CodeStyleSettings
+    settings: CodeStyleSettings,
   ) : TabbedLanguageCodeStylePanel(PklLanguage, currentSettings, settings) {
 
     override fun initTabs(settings: CodeStyleSettings) {

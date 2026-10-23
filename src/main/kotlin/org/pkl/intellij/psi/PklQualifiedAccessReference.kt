@@ -45,7 +45,7 @@ class PklQualifiedAccessReference(private val accessName: PklQualifiedAccessName
           base,
           mapOf(),
           visitor,
-          context
+          context,
         )
       if (result != null) return result
     }
@@ -61,7 +61,7 @@ class PklQualifiedAccessReference(private val accessName: PklQualifiedAccessName
       null,
       mapOf(),
       ResolveVisitors.resolveResultsNamed(accessExpr.memberNameText, base),
-      accessExpr.enclosingModule?.pklProject
+      accessExpr.enclosingModule?.pklProject,
     )
   }
 }

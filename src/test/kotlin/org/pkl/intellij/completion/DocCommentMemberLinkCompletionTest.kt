@@ -32,7 +32,7 @@ class DocCommentMemberLinkCompletionTest : PklTestCase() {
 
       function foo(): String
       """
-        .trimIndent()
+        .trimIndent(),
     )
     myFixture.completeBasic()
     val lookupStrings = myFixture.lookupElementStrings
@@ -46,7 +46,7 @@ class DocCommentMemberLinkCompletionTest : PklTestCase() {
       /// This is a [fo<caret>]
       function myFunc(foo: String, fooey: String) = "foo"
       """
-        .trimIndent()
+        .trimIndent(),
     )
     myFixture.completeBasic()
     val lookupStrings = myFixture.lookupElementStrings
@@ -64,7 +64,7 @@ class DocCommentMemberLinkCompletionTest : PklTestCase() {
 
       function foo(): String
       """
-        .trimIndent()
+        .trimIndent(),
     )
     myFixture.completeBasic()
     val lookupStrings = myFixture.lookupElementStrings
@@ -83,7 +83,7 @@ class DocCommentMemberLinkCompletionTest : PklTestCase() {
         baz: Int
       }
       """
-        .trimIndent()
+        .trimIndent(),
     )
     myFixture.completeBasic()
     val lookupStrings = myFixture.lookupElementStrings

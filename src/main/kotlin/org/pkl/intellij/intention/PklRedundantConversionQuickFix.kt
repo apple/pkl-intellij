@@ -36,7 +36,7 @@ class PklRedundantConversionQuickFix(
     file: PsiFile,
     editor: Editor?,
     startElement: PsiElement,
-    endElement: PsiElement
+    endElement: PsiElement,
   ) {
     val accessExpr = startElement as PklQualifiedAccessExpr
     accessExpr.replace(accessExpr.receiverExpr)

@@ -35,15 +35,15 @@ class PklFindUsagesProvider : FindUsagesProvider {
       TokenSet.create(
         PklElementTypes.LINE_COMMENT,
         PklElementTypes.BLOCK_COMMENT,
-        PklElementTypes.DOC_COMMENT_LINE
+        PklElementTypes.DOC_COMMENT_LINE,
       ),
       TokenSet.create(
         PklElementTypes.STRING_CHARS,
         PklElementTypes.NUMBER,
         PklElementTypes.TRUE,
         PklElementTypes.FALSE,
-        PklElementTypes.NULL
-      )
+        PklElementTypes.NULL,
+      ),
     )
 
   override fun canFindUsagesFor(element: PsiElement): Boolean =

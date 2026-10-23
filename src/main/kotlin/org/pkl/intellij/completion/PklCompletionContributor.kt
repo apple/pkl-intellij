@@ -26,19 +26,19 @@ class PklCompletionContributor : CompletionContributor() {
     extend(
       BASIC,
       psiElement(PklElementTypes.IDENTIFIER).withParent(PklSimpleTypeName::class.java),
-      TypeNameCompletionProvider()
+      TypeNameCompletionProvider(),
     )
 
     extend(
       BASIC,
       psiElement(PklElementTypes.IDENTIFIER).withParent(PklPropertyName::class.java),
-      UnqualifiedAccessCompletionProvider()
+      UnqualifiedAccessCompletionProvider(),
     )
 
     extend(
       BASIC,
       psiElement(PklElementTypes.IDENTIFIER).withParent(PklUnqualifiedAccessName::class.java),
-      UnqualifiedAccessCompletionProvider()
+      UnqualifiedAccessCompletionProvider(),
     )
 
     extend(
@@ -46,39 +46,39 @@ class PklCompletionContributor : CompletionContributor() {
       psiElement(PklElementTypes.IDENTIFIER)
         .withParent(PklPropertyName::class.java)
         .withSuperParent(2, PklClassProperty::class.java),
-      ImplementMemberCompletionProvider()
+      ImplementMemberCompletionProvider(),
     )
 
     extend(
       BASIC,
       psiElement(PklElementTypes.IDENTIFIER).withParent(PklUnqualifiedAccessName::class.java),
-      ImplementMemberCompletionProvider()
+      ImplementMemberCompletionProvider(),
     )
 
     extend(
       BASIC,
       psiElement(PklElementTypes.IDENTIFIER).withParent(PklClassMethod::class.java),
-      ImplementMemberCompletionProvider()
+      ImplementMemberCompletionProvider(),
     )
 
     extend(
       BASIC,
       psiElement(PklElementTypes.IDENTIFIER).withParent(PklQualifiedAccessName::class.java),
-      QualifiedAccessCompletionProvider()
+      QualifiedAccessCompletionProvider(),
     )
 
     extend(
       BASIC,
       psiElement(PklElementTypes.STRING_CHARS)
         .withSuperParent(2, psiElement(PklStringLiteral::class.java)),
-      StringLiteralTypeCompletionProvider()
+      StringLiteralTypeCompletionProvider(),
     )
 
     extend(
       BASIC,
       psiElement(PklElementTypes.STRING_CHARS)
         .withSuperParent(3, psiElement(PklModuleUri::class.java)),
-      ModuleUriCompletionProvider()
+      ModuleUriCompletionProvider(),
     )
 
     extend(
@@ -87,13 +87,13 @@ class PklCompletionContributor : CompletionContributor() {
         .withSuperParent(3, psiElement(PklObjectProperty::class.java).withName("uri"))
         .withSuperParent(7, psiElement(PklClassProperty::class.java).withName("dependencies"))
         .inVirtualFile(VirtualFilePattern().withName("PklProject")),
-      ModuleUriCompletionProvider(packageUriOnly = true)
+      ModuleUriCompletionProvider(packageUriOnly = true),
     )
 
     extend(
       BASIC,
       psiElement(PklElementTypes.DOC_COMMENT_LINE),
-      PklDocCommentMemberLinkCompletionProvider()
+      PklDocCommentMemberLinkCompletionProvider(),
     )
   }
 }

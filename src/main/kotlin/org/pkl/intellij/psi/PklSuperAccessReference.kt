@@ -37,7 +37,7 @@ class PklSuperAccessReference(private val accessName: PklSuperAccessName) :
         accessExpr.memberNameText,
         base,
       ),
-      context
+      context,
     )
   }
 

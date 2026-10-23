@@ -26,7 +26,7 @@ import org.pkl.intellij.psi.*
 class PklSuperdefinitionLineMarkerProvider : RelatedItemLineMarkerProvider() {
   override fun collectNavigationMarkers(
     element: PsiElement,
-    result: MutableCollection<in RelatedItemLineMarkerInfo<*>>
+    result: MutableCollection<in RelatedItemLineMarkerInfo<*>>,
   ) {
 
     // line markers should be added for leaf elements only
@@ -75,7 +75,7 @@ class PklSuperdefinitionLineMarkerProvider : RelatedItemLineMarkerProvider() {
               PklClass::class,
               PklModule::class,
               // stop class
-              PklObjectProperty::class
+              PklObjectProperty::class,
             )
         ) {
           is PklClass -> {
@@ -108,7 +108,7 @@ class PklSuperdefinitionLineMarkerProvider : RelatedItemLineMarkerProvider() {
     nameIdentifier: PsiElement,
     supermethod: PklClassMethod,
     enclosingDef: PklTypeDefOrModule,
-    result: MutableCollection<in RelatedItemLineMarkerInfo<PsiElement>>
+    result: MutableCollection<in RelatedItemLineMarkerInfo<PsiElement>>,
   ) {
 
     val isAbstract = supermethod.isAbstract
@@ -126,7 +126,7 @@ class PklSuperdefinitionLineMarkerProvider : RelatedItemLineMarkerProvider() {
     nameIdentifier: PsiElement,
     superproperty: PklClassProperty,
     enclosingDef: PklTypeDefOrModule,
-    result: MutableCollection<in RelatedItemLineMarkerInfo<PsiElement>>
+    result: MutableCollection<in RelatedItemLineMarkerInfo<PsiElement>>,
   ) {
 
     val isAbstract = superproperty.isAbstract

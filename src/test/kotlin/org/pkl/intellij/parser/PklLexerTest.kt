@@ -39,7 +39,7 @@ class PklLexerTest : LexerTestCase() {
   fun testLiterals() {
     doTest( // String literals
       "\"abc\" \"\\\"\" " + // Comments
-      "// abc\n /// doc1 \n /// doc 2\n /* block */\n" + // Numeric literals
+        "// abc\n /// doc1 \n /// doc 2\n /* block */\n" + // Numeric literals
         "42 -1 0xac -0xDC09 0b0010111 1.23 1e3 1.23e-2 .12 .1e3 " + // keywords
         "true false"
     )

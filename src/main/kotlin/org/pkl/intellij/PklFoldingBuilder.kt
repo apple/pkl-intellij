@@ -31,7 +31,7 @@ class PklFoldingBuilder : CustomFoldingBuilder() {
     result: MutableList<FoldingDescriptor>,
     root: PsiElement,
     document: Document,
-    quick: Boolean
+    quick: Boolean,
   ) {
 
     if (root !is PklModule) return

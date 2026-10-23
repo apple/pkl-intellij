@@ -30,7 +30,7 @@ abstract class PklSuperAccessExprBase(node: ASTNode) :
     receiverType: Type?,
     bindings: TypeParameterBindings,
     visitor: ResolveVisitor<R>,
-    context: PklProject?
+    context: PklProject?,
   ): R {
     // TODO: Pkl doesn't currently enforce that `super.foo`
     // has the same type as `this.foo` if `super.foo` is defined in a superclass.

@@ -34,7 +34,7 @@ class PklRedundantNonNullAssertionQuickFix(nonNullAssertionExpr: PklNonNullAsser
     file: PsiFile,
     editor: Editor?,
     startElement: PsiElement,
-    endElement: PsiElement
+    endElement: PsiElement,
   ) {
     val nonNullAssertionExpr = startElement as PklNonNullAssertionExpr
     nonNullAssertionExpr.replace(nonNullAssertionExpr.expr)

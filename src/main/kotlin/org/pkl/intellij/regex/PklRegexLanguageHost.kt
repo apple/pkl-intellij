@@ -71,8 +71,9 @@ class PklRegexLanguageHost : RegExpLanguageHost {
   override fun getSupportedNamedGroupTypes(context: RegExpElement): EnumSet<Type> =
     SUPPORTED_NAMED_GROUP_TYPES
 
-  override fun isValidGroupName(name: String, group: RegExpGroup): Boolean =
-    name.all { AsciiUtil.isLetterOrDigit(it) }
+  override fun isValidGroupName(name: String, group: RegExpGroup): Boolean = name.all {
+    AsciiUtil.isLetterOrDigit(it)
+  }
 
   override fun supportsExtendedHexCharacter(regExpChar: RegExpChar): Boolean =
     regExpChar.unescapedText[1] == 'x'
@@ -131,8 +132,9 @@ class PklRegexLanguageHost : RegExpLanguageHost {
     }
   }
 
-  private fun isValidProperty(category: String): Boolean =
-    allKnownProperties.any { it[0] == category }
+  private fun isValidProperty(category: String): Boolean = allKnownProperties.any {
+    it[0] == category
+  }
 
   private fun isValidUnicodeBlock(category: String): Boolean =
     try {

@@ -31,7 +31,7 @@ class StringLiteralTypeCompletionProvider : PklCompletionProvider() {
   override fun addCompletions(
     parameters: CompletionParameters,
     context: ProcessingContext,
-    result: CompletionResultSet
+    result: CompletionResultSet,
   ) {
 
     val position = parameters.position
@@ -51,7 +51,7 @@ class StringLiteralTypeCompletionProvider : PklCompletionProvider() {
     result: CompletionResultSet,
     originalAlias: Type.Alias?,
     base: PklBaseModule,
-    context: PklProject?
+    context: PklProject?,
   ) {
 
     when (resultType) {
@@ -85,7 +85,7 @@ class StringLiteralTypeCompletionProvider : PklCompletionProvider() {
           result,
           resultType,
           base,
-          context
+          context,
         )
       }
       else -> {}

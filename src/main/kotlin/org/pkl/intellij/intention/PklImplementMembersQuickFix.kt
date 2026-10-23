@@ -37,7 +37,7 @@ class PklImplementMembersQuickFix(element: PklTypeDefOrModule) :
     file: PsiFile,
     editor: Editor?,
     startElement: PsiElement,
-    endElement: PsiElement
+    endElement: PsiElement,
   ) {
     val def = startElement as PklTypeDefOrModule
     val myModule = startElement.enclosingModule ?: return
@@ -74,7 +74,7 @@ class PklImplementMembersQuickFix(element: PklTypeDefOrModule) :
     node: ASTNode,
     parentMembers: List<PklClassMember>,
     myModule: PklModule,
-    insertedMembers: MutableList<PsiElement>
+    insertedMembers: MutableList<PsiElement>,
   ) {
     val isModule = this is PklModule
     val propertiesContainer =

@@ -31,7 +31,7 @@ class PklGoToSymbolContributor : ChooseByNameContributorEx {
   override fun processNames(
     processor: Processor<in String>,
     scope: GlobalSearchScope,
-    filter: IdFilter?
+    filter: IdFilter?,
   ) {
     if (!scope.isSearchInLibraries) return
 
@@ -57,7 +57,7 @@ class PklGoToSymbolContributor : ChooseByNameContributorEx {
   override fun processElementsWithName(
     name: String,
     processor: Processor<in NavigationItem>,
-    parameters: FindSymbolParameters
+    parameters: FindSymbolParameters,
   ) {
     if (!parameters.searchScope.isSearchInLibraries) return
 

@@ -42,7 +42,7 @@ class PklAmendExprEnterHandler : EnterHandlerDelegateAdapter() {
     caretOffsetRef: Ref<Int>,
     caretAdvanceRef: Ref<Int>,
     dataContext: DataContext,
-    originalHandler: EditorActionHandler?
+    originalHandler: EditorActionHandler?,
   ): EnterHandlerDelegate.Result {
     if (file.fileType != PklFileType) {
       return EnterHandlerDelegate.Result.Continue
@@ -80,13 +80,12 @@ class PklAmendExprEnterHandler : EnterHandlerDelegateAdapter() {
       elementAtCaret
         .takeIf { it.elementType == AMEND_EXPR && it.children[0].text[0] != '(' }
         ?.children
-        ?.get(0)
-        ?: return EnterHandlerDelegate.Result.Continue
+        ?.get(0) ?: return EnterHandlerDelegate.Result.Continue
 
     document.replaceString(
       unparenthesizedExpr.textRange.startOffset,
       unparenthesizedExpr.textRange.endOffset,
-      "(" + unparenthesizedExpr.text + ")"
+      "(" + unparenthesizedExpr.text + ")",
     )
 
     caretOffset += 2

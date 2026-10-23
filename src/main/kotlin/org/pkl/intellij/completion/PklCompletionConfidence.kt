@@ -28,7 +28,7 @@ class PklCompletionConfidence : CompletionConfidence() {
     editor: Editor,
     contextElement: PsiElement,
     psiFile: PsiFile,
-    offset: Int
+    offset: Int,
   ): ThreeState {
     // prevent auto-popup while typing a number (not sure why this happens)
     if (contextElement.elementType == PklElementTypes.NUMBER) {

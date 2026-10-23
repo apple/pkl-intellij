@@ -37,14 +37,14 @@ class PklLanguageCodeStyleSettingsProvider : LanguageCodeStyleSettingsProvider()
         "correct"
       else
         "wrong"
-  """
+    """
       .trimIndent()
 
   override fun getIndentOptionsEditor(): IndentOptionsEditor = IndentOptionsEditor()
 
   override fun customizeDefaults(
     commonSettings: CommonCodeStyleSettings,
-    indentOptions: CommonCodeStyleSettings.IndentOptions
+    indentOptions: CommonCodeStyleSettings.IndentOptions,
   ) {
 
     with(indentOptions) {

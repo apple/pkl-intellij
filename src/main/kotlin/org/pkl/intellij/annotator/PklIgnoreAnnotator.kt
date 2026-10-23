@@ -34,7 +34,7 @@ class PklIgnoreAnnotator : PklAnnotator() {
       element.parentOfTypes(
         PklTypedIdentifier::class,
         /* stop classes */ PklObjectBody::class,
-        PklExpr::class
+        PklExpr::class,
       )
     if (parent is PklTypedIdentifier && parent.type == null) return
     if (parent == null || parent !is PklParameterList) {

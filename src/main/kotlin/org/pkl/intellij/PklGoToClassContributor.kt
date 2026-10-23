@@ -28,7 +28,7 @@ class PklGoToClassContributor : ChooseByNameContributorEx {
   override fun processNames(
     processor: Processor<in String>,
     scope: GlobalSearchScope,
-    filter: IdFilter?
+    filter: IdFilter?,
   ) {
     if (scope.isSearchInLibraries) {
       val stdlib = scope.project?.pklStdLib ?: return
@@ -43,7 +43,7 @@ class PklGoToClassContributor : ChooseByNameContributorEx {
   override fun processElementsWithName(
     name: String,
     processor: Processor<in NavigationItem>,
-    parameters: FindSymbolParameters
+    parameters: FindSymbolParameters,
   ) {
     if (parameters.searchScope.isSearchInLibraries) {
       val stdlib = parameters.project.pklStdLib

@@ -30,7 +30,7 @@ abstract class PklQualifiedAccessExprBase(node: ASTNode) :
     receiverType: Type?,
     bindings: TypeParameterBindings,
     visitor: ResolveVisitor<R>,
-    context: PklProject?
+    context: PklProject?,
   ): R {
     val myReceiverType = receiverType ?: receiverExpr.computeExprType(base, bindings, context)
     return Resolvers.resolveQualifiedAccess(
@@ -38,7 +38,7 @@ abstract class PklQualifiedAccessExprBase(node: ASTNode) :
       isPropertyAccess,
       base,
       visitor,
-      context
+      context,
     )
   }
 }

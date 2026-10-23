@@ -22,7 +22,7 @@ class PklIdentifierOwnerManipulator : AbstractElementManipulator<PklIdentifierOw
   override fun handleContentChange(
     element: PklIdentifierOwner,
     range: TextRange,
-    newContent: String
+    newContent: String,
   ): PklIdentifierOwner {
 
     val oldIdentifier = element.identifier

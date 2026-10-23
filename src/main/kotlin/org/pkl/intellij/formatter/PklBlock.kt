@@ -30,7 +30,7 @@ import org.pkl.intellij.psi.PklElementTypes.*
 open class PklBlock(
   node: ASTNode,
   private val indent: Indent,
-  protected val spacingBuilder: SpacingBuilder
+  protected val spacingBuilder: SpacingBuilder,
 ) : AbstractBlock(node, null, null) {
 
   companion object {
@@ -43,13 +43,13 @@ open class PklBlock(
         ARGUMENT_LIST,
         FUNCTION_PARAMETER_LIST,
         TYPE_CONSTRAINT_LIST,
-        FUNCTION_TYPE_PARAMETER_LIST
+        FUNCTION_TYPE_PARAMETER_LIST,
       )
     private val INDENT_CHILDREN_OF =
       TokenSet.orSet(
         PARENTHESIZED_LISTS,
         BODIES,
-        TokenSet.create(IF_EXPR, LET_EXPR, FOR_GENERATOR, WHEN_GENERATOR)
+        TokenSet.create(IF_EXPR, LET_EXPR, FOR_GENERATOR, WHEN_GENERATOR),
       )
     private val EXPR_BODY_CONTAINERS =
       TokenSet.create(
@@ -58,7 +58,7 @@ open class PklBlock(
         CLASS_PROPERTY,
         OBJECT_METHOD,
         OBJECT_PROPERTY,
-        FUNCTION_LITERAL
+        FUNCTION_LITERAL,
       )
     private val LET_FOR_WHEN = TokenSet.create(LET_EXPR, FOR_GENERATOR, WHEN_GENERATOR)
   }
@@ -87,7 +87,7 @@ open class PklBlock(
             PklBlock(
               childNode,
               calculateBlockIndent(parentType, childNode, prevChildNode),
-              spacingBuilder
+              spacingBuilder,
             )
         }
       result.add(childBlock)
@@ -135,7 +135,7 @@ open class PklBlock(
   private fun calculateBlockIndent(
     parentType: IElementType,
     blockNode: ASTNode,
-    prevNode: ASTNode?
+    prevNode: ASTNode?,
   ): Indent {
     val blockType = blockNode.elementType
 

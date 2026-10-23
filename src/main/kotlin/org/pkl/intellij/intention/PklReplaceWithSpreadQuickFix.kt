@@ -23,9 +23,8 @@ import com.intellij.psi.PsiFile
 import org.pkl.intellij.psi.PklForGenerator
 import org.pkl.intellij.psi.PklPsiFactory
 
-class PklReplaceWithSpreadQuickFix(
-  forGenerator: PklForGenerator,
-) : LocalQuickFixAndIntentionActionOnPsiElement(forGenerator) {
+class PklReplaceWithSpreadQuickFix(forGenerator: PklForGenerator) :
+  LocalQuickFixAndIntentionActionOnPsiElement(forGenerator) {
   override fun getFamilyName(): String = "QuickFix"
 
   override fun getText(): String = "Replace with spread syntax"
@@ -35,7 +34,7 @@ class PklReplaceWithSpreadQuickFix(
     file: PsiFile,
     editor: Editor?,
     startElement: PsiElement,
-    endElement: PsiElement
+    endElement: PsiElement,
   ) {
     val forGenerator = startElement as PklForGenerator
     val iterable = forGenerator.iterableExpr ?: return

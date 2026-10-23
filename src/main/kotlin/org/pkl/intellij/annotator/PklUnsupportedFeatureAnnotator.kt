@@ -52,7 +52,7 @@ class PklUnsupportedFeatureAnnotator : PklAnnotator() {
       tooltip,
       holder,
       PklProblemGroups.unsupportedFeature,
-      element
+      element,
     )
   }
 }

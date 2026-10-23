@@ -37,7 +37,7 @@ class PklUnqualifiedAccessReference(private val accessName: PklUnqualifiedAccess
         accessExpr.memberNameText,
         base,
       ),
-      context
+      context,
     )
   }
 

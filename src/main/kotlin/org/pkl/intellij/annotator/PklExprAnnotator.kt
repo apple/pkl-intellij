@@ -61,7 +61,7 @@ class PklExprAnnotator : PklAnnotator() {
               null,
               mapOf(),
               visitor,
-              context
+              context,
             )
           when (target) {
             null -> {
@@ -126,7 +126,7 @@ class PklExprAnnotator : PklAnnotator() {
                         base.listingToListMethod,
                         base,
                         holder,
-                        context
+                        context,
                       )
                     }
                   }
@@ -141,7 +141,7 @@ class PklExprAnnotator : PklAnnotator() {
                         base.mappingToMapMethod,
                         base,
                         holder,
-                        context
+                        context,
                       )
                     }
                   }
@@ -167,7 +167,7 @@ class PklExprAnnotator : PklAnnotator() {
                         base.listingToListMethod,
                         base,
                         holder,
-                        context
+                        context,
                       )
                     }
                   }
@@ -182,7 +182,7 @@ class PklExprAnnotator : PklAnnotator() {
                         base.mappingToMapMethod,
                         base,
                         holder,
-                        context
+                        context,
                       )
                     }
                   }
@@ -230,7 +230,7 @@ class PklExprAnnotator : PklAnnotator() {
               holder
                 .newAnnotation(
                   HighlightSeverity.WARNING,
-                  "Amends expression can be replaced with `new`"
+                  "Amends expression can be replaced with `new`",
                 )
                 .range(element.parentExpr)
             if (holder.currentFile.canModify()) {
@@ -325,7 +325,7 @@ class PklExprAnnotator : PklAnnotator() {
   private fun checkConstQualifiedAccess(
     element: PklQualifiedAccessExpr,
     target: PklModifierListOwner,
-    holder: AnnotationHolder
+    holder: AnnotationHolder,
   ) {
     // only need to check for const-ness if the receiver is `module` or `this`.
     if (element.receiverExpr !is PklModuleExpr && element.receiverExpr !is PklThisExpr) return
@@ -335,7 +335,7 @@ class PklExprAnnotator : PklAnnotator() {
       holder,
       // pretend this is an implicit this lookup so that [checkConstAccess] can vet whether this
       // lookup is allowed.
-      if (element.receiverExpr is PklThisExpr) Resolvers.LookupMode.IMPLICIT_THIS else null
+      if (element.receiverExpr is PklThisExpr) Resolvers.LookupMode.IMPLICIT_THIS else null,
     )
   }
 
@@ -355,12 +355,12 @@ class PklExprAnnotator : PklAnnotator() {
         element.textRange,
         "Cannot reference `module` from here because it is not `const`",
         """
-            Cannot reference <code>module</code> from here because it is not <code>const</code>.
-          """
+        Cannot reference <code>module</code> from here because it is not <code>const</code>.
+        """
           .trimIndent(),
         holder,
         null,
-        null
+        null,
       )
     }
   }
@@ -371,7 +371,7 @@ class PklExprAnnotator : PklAnnotator() {
         PklConstrainedType::class,
         PklMemberPredicate::class,
         // stop class
-        PklObjectBody::class
+        PklObjectBody::class,
       )
     ) {
       is PklConstrainedType,
@@ -422,12 +422,12 @@ class PklExprAnnotator : PklAnnotator() {
         element.textRange,
         "Cannot reference `this` from here because it is not `const`",
         """
-            Cannot reference <code>this</code> from here because it is not <code>const</code>.
-          """
+        Cannot reference <code>this</code> from here because it is not <code>const</code>.
+        """
           .trimIndent(),
         holder,
         null,
-        null
+        null,
       )
     }
   }
@@ -436,7 +436,7 @@ class PklExprAnnotator : PklAnnotator() {
     element: PklElement,
     target: PklModifierListOwner,
     holder: AnnotationHolder,
-    lookupMode: Resolvers.LookupMode?
+    lookupMode: Resolvers.LookupMode?,
   ) {
     val (isConst, isInConstScope) = element.getConstScope()
     val targetObjectParent = target.parentOfType<PklObjectBodyBase>()
@@ -447,7 +447,7 @@ class PklExprAnnotator : PklAnnotator() {
         .parentOfTypes(
           PklConstrainedType::class,
           PklMemberPredicate::class,
-          /* stop class */ PklClassProperty::class
+          /* stop class */ PklClassProperty::class,
         )
         .let { it != null && it !is PklClassProperty }
     // lookups on `this` is always allowed in custom this scopes.
@@ -477,7 +477,7 @@ class PklExprAnnotator : PklAnnotator() {
           .trimIndent(),
         holder,
         null,
-        null
+        null,
       )
       return
     }
@@ -518,7 +518,7 @@ class PklExprAnnotator : PklAnnotator() {
             .trimIndent(),
           holder,
           null,
-          null
+          null,
         )
       }
     }
@@ -528,7 +528,7 @@ class PklExprAnnotator : PklAnnotator() {
     element: PklElement,
     action: String,
     name: String?,
-    holder: AnnotationHolder
+    holder: AnnotationHolder,
   ) {
     createAnnotation(
       HighlightSeverity.WARNING,
@@ -544,7 +544,7 @@ class PklExprAnnotator : PklAnnotator() {
         .trimIndent(),
       holder,
       null,
-      null
+      null,
     )
   }
 
@@ -553,7 +553,7 @@ class PklExprAnnotator : PklAnnotator() {
     conversionMethod: PklClassMethod,
     base: PklBaseModule,
     holder: AnnotationHolder,
-    context: PklProject?
+    context: PklProject?,
   ) {
     if (expr !is PklQualifiedAccessExpr) return
 
@@ -642,7 +642,7 @@ class PklExprAnnotator : PklAnnotator() {
     receiverType: Type,
     base: PklBaseModule,
     holder: AnnotationHolder,
-    context: PklProject?
+    context: PklProject?,
   ) {
     createAnnotation(
       if (receiverType.isUnresolvedMemberFatal(base, context)) HighlightSeverity.ERROR
@@ -652,20 +652,20 @@ class PklExprAnnotator : PklAnnotator() {
       "Unresolved reference: <code>${expr.memberNameText.escapeXml()}<code>",
       holder,
       PklProblemGroups.unresolvedElement,
-      expr
+      expr,
     )
   }
 
   private fun checkRecursivePropertyReference(
     expr: PklAccessExpr,
     property: PklProperty,
-    holder: AnnotationHolder
+    holder: AnnotationHolder,
   ) {
     val parent =
       expr.parentOfTypes(
         PklObjectMember::class,
         PklModuleMember::class, // includes `PklClassMember`
-        PklFunctionLiteral::class
+        PklFunctionLiteral::class,
       )
 
     if (areElementsEquivalent(parent, property)) {

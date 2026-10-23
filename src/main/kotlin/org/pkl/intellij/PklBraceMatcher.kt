@@ -33,7 +33,7 @@ class PklBraceMatcher : PairedBraceMatcher {
         BracePair(PklElementTypes.LBRACK, PklElementTypes.RBRACK, false),
         BracePair(PklElementTypes.LBRACE, PklElementTypes.RBRACE, true),
         BracePair(PklElementTypes.LPRED, PklElementTypes.RPRED, false),
-        BracePair(PklElementTypes.INTERPOLATION_START, PklElementTypes.INTERPOLATION_END, false)
+        BracePair(PklElementTypes.INTERPOLATION_START, PklElementTypes.INTERPOLATION_END, false),
       )
   }
 
@@ -41,7 +41,7 @@ class PklBraceMatcher : PairedBraceMatcher {
 
   override fun isPairedBracesAllowedBeforeType(
     lbraceType: IElementType,
-    contextType: IElementType?
+    contextType: IElementType?,
   ): Boolean = true
 
   override fun getCodeConstructStart(file: PsiFile, openingBraceOffset: Int): Int {

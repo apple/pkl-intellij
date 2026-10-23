@@ -34,7 +34,7 @@ class PklUpdateAmendSyntaxQuickFix(amendExpr: PklAmendExpr) :
     file: PsiFile,
     editor: Editor?,
     startElement: PsiElement,
-    endElement: PsiElement
+    endElement: PsiElement,
   ) {
     val amendExpr = startElement as PklAmendExpr
     amendExpr.updateParenthesizedAmendExpression(project)

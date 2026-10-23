@@ -59,7 +59,7 @@ class PklCli(private val proj: Project) {
   fun downloadPackage(
     packages: List<PackageUri>,
     cacheDir: Path? = null,
-    noTrasitive: Boolean = false
+    noTrasitive: Boolean = false,
   ): String {
     val args = buildList {
       add("download-package")
@@ -79,7 +79,7 @@ class PklCli(private val proj: Project) {
     moduleUris: List<String>,
     title: String?,
     expression: String? = null,
-    moduleOutputSeparator: String? = null
+    moduleOutputSeparator: String? = null,
   ): String {
     val args = buildList {
       add("eval")
@@ -119,7 +119,7 @@ class PklCli(private val proj: Project) {
           override fun processStarting(
             executorId: String,
             env: ExecutionEnvironment,
-            handler: ProcessHandler
+            handler: ProcessHandler,
           ) {
             if (env !== environment) return
             handler.addProcessListener(
@@ -138,12 +138,12 @@ class PklCli(private val proj: Project) {
             executorId: String,
             env: ExecutionEnvironment,
             handler: ProcessHandler,
-            exitCode: Int
+            exitCode: Int,
           ) {
             if (env !== environment) return
             fut.complete(exitCode)
           }
-        }
+        },
       )
     runInEdt {
       try {
@@ -171,7 +171,8 @@ class PklCli(private val proj: Project) {
   private fun systemPklPath(): String? =
     // common locations for Pkl CLI
     "/opt/homebrew/bin/pkl".ifExecutable
-      ?: "/opt/brew/bin/pkl".ifExecutable ?: "/usr/local/bin/pkl".ifExecutable
+      ?: "/opt/brew/bin/pkl".ifExecutable
+      ?: "/usr/local/bin/pkl".ifExecutable
 
   private fun pathToPklExecutable(): String? =
     proj.pklSettings.state.pklPath.ifEmpty { systemPklPath() }

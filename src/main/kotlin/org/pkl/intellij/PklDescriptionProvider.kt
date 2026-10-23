@@ -25,7 +25,7 @@ import org.pkl.intellij.util.unexpectedType
 class PklDescriptionProvider : ElementDescriptionProvider {
   override fun getElementDescription(
     element: PsiElement,
-    location: ElementDescriptionLocation
+    location: ElementDescriptionLocation,
   ): String? {
     if (element !is PklElement) return null
 

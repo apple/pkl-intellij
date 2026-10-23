@@ -33,7 +33,7 @@ class PklRemoveDefaultTypeQuickFix(type: PklDefaultType) :
     file: PsiFile,
     editor: Editor?,
     startElement: PsiElement,
-    endElement: PsiElement
+    endElement: PsiElement,
   ) {
     val type = startElement as PklDefaultType
     val innerType = type.type ?: return

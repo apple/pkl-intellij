@@ -40,7 +40,7 @@ object DocumentationTypeNameRenderer : TypeNameRenderer {
   fun Appendable.renderTypeName(
     module: PklModule?,
     simpleName: String?,
-    displayName: String? = simpleName
+    displayName: String? = simpleName,
   ) {
     notEscapeXml {
       append("<a href='psi_element://")

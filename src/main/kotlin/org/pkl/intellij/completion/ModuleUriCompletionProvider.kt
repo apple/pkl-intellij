@@ -55,14 +55,14 @@ class ModuleUriCompletionProvider(private val packageUriOnly: Boolean = false) :
         LookupElementBuilder.create(FILE_SCHEME).completeAgain(),
         LookupElementBuilder.create(HTTPS_SCHEME),
         LookupElementBuilder.create(MODULE_PATH_SCHEME).completeAgain(),
-        LookupElementBuilder.create(PACKAGE_SCHEME).completeAgain()
+        LookupElementBuilder.create(PACKAGE_SCHEME).completeAgain(),
       )
 
     private val GLOBBABLE_SCHEME_ELEMENTS =
       listOf(
         LookupElementBuilder.create(FILE_SCHEME).completeAgain(),
         LookupElementBuilder.create(MODULE_PATH_SCHEME).completeAgain(),
-        LookupElementBuilder.create(PACKAGE_SCHEME).completeAgain()
+        LookupElementBuilder.create(PACKAGE_SCHEME).completeAgain(),
       )
 
     private val LOCAL_FILE_SYSTEM_ROOT: VirtualFile =
@@ -105,7 +105,7 @@ class ModuleUriCompletionProvider(private val packageUriOnly: Boolean = false) :
         context.document.replaceString(
           context.startOffset,
           context.startOffset + item.lookupString.length + chompRemainderLength,
-          replacement
+          replacement,
         )
       }
     }
@@ -114,7 +114,7 @@ class ModuleUriCompletionProvider(private val packageUriOnly: Boolean = false) :
   override fun addCompletions(
     parameters: CompletionParameters,
     context: ProcessingContext,
-    resultSet: CompletionResultSet
+    resultSet: CompletionResultSet,
   ) {
 
     // Operate on the original PSI tree, not the one where [CompletionUtilCore.DUMMY_IDENTIFIER] was
@@ -135,7 +135,7 @@ class ModuleUriCompletionProvider(private val packageUriOnly: Boolean = false) :
     isGlobImport: Boolean,
     sourceModule: PklModule,
     project: Project,
-    resultSet: CompletionResultSet
+    resultSet: CompletionResultSet,
   ) {
     // collect lookup elements before adding them to result set
     // (according to docs, batch insert is preferable)
@@ -175,7 +175,7 @@ class ModuleUriCompletionProvider(private val packageUriOnly: Boolean = false) :
               ".",
               packageAssetUri.assetPath,
               false,
-              collector
+              collector,
             )
           }
         }
@@ -193,7 +193,7 @@ class ModuleUriCompletionProvider(private val packageUriOnly: Boolean = false) :
               project,
               targetUri,
               sourceModule,
-              sourceModule.pklProject
+              sourceModule.pklProject,
             )
             ?.let { root ->
               val delimiter = targetUri.indexOf('/')
@@ -230,7 +230,7 @@ class ModuleUriCompletionProvider(private val packageUriOnly: Boolean = false) :
 
   private fun completePackageBaseUriVersions(
     targetUri: String,
-    collector: MutableList<LookupElement>
+    collector: MutableList<LookupElement>,
   ) {
     val path = targetUri.drop(10)
     val basePath = path.substringBeforeLast('/')
@@ -274,7 +274,7 @@ class ModuleUriCompletionProvider(private val packageUriOnly: Boolean = false) :
     // the path to complete
     relativeTargetFilePath: String,
     isModulePath: Boolean,
-    collector: MutableList<LookupElement>
+    collector: MutableList<LookupElement>,
   ) {
     val relativeTargetDirPath = relativeTargetFilePath.substringBeforeLast('/', ".")
     val isTripleDotDirPath = relativeTargetDirPath.startsWith("...")
@@ -317,7 +317,7 @@ class ModuleUriCompletionProvider(private val packageUriOnly: Boolean = false) :
     // source file's directory path relative to its source or class root
     relativeSourceDirPath: String,
     // target directory path relative to source file's directory path
-    relativeTargetDirPath: String
+    relativeTargetDirPath: String,
   ): List<VirtualFile> { // list of directories that [relativeTargetDirPath] may refer to
 
     if (relativeSourceDirPath == ".") return emptyList()
@@ -352,7 +352,7 @@ class ModuleUriCompletionProvider(private val packageUriOnly: Boolean = false) :
     targetUri: String,
     sourceModule: PklModule,
     isGlobImport: Boolean,
-    collector: MutableList<LookupElement>
+    collector: MutableList<LookupElement>,
   ) {
 
     val projectRootManager = ProjectRootManager.getInstance(sourceModule.project)
@@ -391,7 +391,7 @@ class ModuleUriCompletionProvider(private val packageUriOnly: Boolean = false) :
         relativeSourceDirPath,
         relativeTargetFilePath,
         false,
-        collector
+        collector,
       )
     }
   }

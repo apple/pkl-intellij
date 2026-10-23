@@ -29,7 +29,7 @@ class Deprecated(
   val target: PsiElement?,
   val since: String?,
   val message: String?,
-  val replaceWith: String?
+  val replaceWith: String?,
 )
 
 class SourceCode(val language: String, val prefix: String?, val suffix: String?)

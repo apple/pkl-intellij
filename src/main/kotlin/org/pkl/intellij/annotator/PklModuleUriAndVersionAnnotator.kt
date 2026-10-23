@@ -53,7 +53,7 @@ class PklModuleUriAndVersionAnnotator : PklAnnotator() {
           minPklVersionDetails.first,
           projectPklVersion,
           minPklVersionDetails.second,
-          holder
+          holder,
         )
       }
       is PklModuleUri -> {
@@ -79,7 +79,7 @@ class PklModuleUriAndVersionAnnotator : PklAnnotator() {
   private fun annotatePackageUri(
     element: PklModuleUri,
     uriText: String,
-    holder: AnnotationHolder
+    holder: AnnotationHolder,
   ): Boolean {
     if (!uriText.startsWith("package:")) return false
     val uri =
@@ -94,7 +94,7 @@ class PklModuleUriAndVersionAnnotator : PklAnnotator() {
             Malformed URI: <code>$uriText</code>
           """
             .trimIndent(),
-          holder
+          holder,
         )
         return true
       }
@@ -104,10 +104,10 @@ class PklModuleUriAndVersionAnnotator : PklAnnotator() {
         element.textRange,
         "Missing authority",
         """
-            Package URIs must contain an authority segment, for example, <code>//example.com</code> in <code>package://example.com/package@1.0.0#/MyModule.pkl</code>
-          """
+        Package URIs must contain an authority segment, for example, <code>//example.com</code> in <code>package://example.com/package@1.0.0#/MyModule.pkl</code>
+        """
           .trimIndent(),
-        holder
+        holder,
       )
       return true
     }
@@ -117,10 +117,10 @@ class PklModuleUriAndVersionAnnotator : PklAnnotator() {
         element.stringConstant.textRange,
         "Missing path",
         """
-            Package URIs must contain an path segment, for example, <code>/package@1.0.0</code> in <code>package://example.com/package@1.0.0#/MyModule.pkl</code>.
-          """
+        Package URIs must contain an path segment, for example, <code>/package@1.0.0</code> in <code>package://example.com/package@1.0.0#/MyModule.pkl</code>.
+        """
           .trimIndent(),
-        holder
+        holder,
       )
       return true
     }
@@ -131,10 +131,10 @@ class PklModuleUriAndVersionAnnotator : PklAnnotator() {
         element.stringConstant.textRange,
         "Missing version",
         """
-            Package URIs must contain a version, for example, <code>@1.0.0</code> in <code>package://example.com/package@1.0.0#/MyModule.pkl</code>.
-          """
+        Package URIs must contain a version, for example, <code>@1.0.0</code> in <code>package://example.com/package@1.0.0#/MyModule.pkl</code>.
+        """
           .trimIndent(),
-        holder
+        holder,
       )
       return true
     }
@@ -147,7 +147,7 @@ class PklModuleUriAndVersionAnnotator : PklAnnotator() {
         TextRange(0, versionAndChecksumPart.length).shiftRight(element.textOffset + offset),
         "Invalid semver",
         "Invalid semver: <code>$versionAndChecksumPart</code>",
-        holder
+        holder,
       )
       return true
     }
@@ -160,7 +160,7 @@ class PklModuleUriAndVersionAnnotator : PklAnnotator() {
             element.stringConstant.textRange,
             "Invalid checksum",
             "Invalid checksum: <code>$versionAndChecksumPart</code>. Checksums should have form `::sha256:<checksum>",
-            holder
+            holder,
           )
           return true
         }
@@ -171,7 +171,7 @@ class PklModuleUriAndVersionAnnotator : PklAnnotator() {
             element.stringConstant.textRange,
             "Invalid checksum",
             "Invalid checksum: <code>$versionAndChecksumPart</code>. Checksums should have form `::sha256:<checksum>",
-            holder
+            holder,
           )
           return true
         }
@@ -183,7 +183,7 @@ class PklModuleUriAndVersionAnnotator : PklAnnotator() {
         element.stringConstant.textRange,
         "Missing fragment",
         "Package URIs must contain a fragment, for example, <code>#/MyModule.pkl</code> in <code>package://example.com/package@1.0.0#/MyModule.pkl</code>.",
-        holder
+        holder,
       )
       return true
     }
@@ -194,7 +194,7 @@ class PklModuleUriAndVersionAnnotator : PklAnnotator() {
         TextRange(0, uri.fragment.length).shiftRight(element.textOffset + offset),
         "Invalid fragment path",
         "Package imports must contain a fragment that starts with `/`.",
-        holder
+        holder,
       )
       return true
     }
@@ -208,7 +208,7 @@ class PklModuleUriAndVersionAnnotator : PklAnnotator() {
           element.stringConstant.content.textRange,
           "Missing package sources",
           "Missing sources for package <code>$packageUri</code>",
-          holder
+          holder,
         )
         ?.apply { withFix(PklDownloadPackageAction(packageUri)) }
         ?.create()
@@ -222,7 +222,7 @@ class PklModuleUriAndVersionAnnotator : PklAnnotator() {
     reference: PsiReference,
     resolved: List<PsiElement>,
     holder: AnnotationHolder,
-    context: PklProject?
+    context: PklProject?,
   ): Boolean {
     if (!element.stringConstant.content.text.startsWith("@")) return false
     if (!element.isPhysical) return false
@@ -237,7 +237,7 @@ class PklModuleUriAndVersionAnnotator : PklAnnotator() {
             reference.rangeInElement.shiftRight(element.textOffset),
             "Missing sources for dependency '$dependencyName'",
             "Missing sources for dependency <code>${dependencyName.escapeXml()}</code>",
-            holder
+            holder,
           )
           ?.apply { withFix(PklDownloadDependencySourcesAction()) }
           ?.create()
@@ -248,7 +248,7 @@ class PklModuleUriAndVersionAnnotator : PklAnnotator() {
           reference.rangeInElement.shiftRight(element.textOffset),
           "Cannot find dependency '$dependencyName'",
           "Cannot find dependency <code>${dependencyName.escapeXml()}</code>.",
-          holder
+          holder,
         )
         return true
       }
@@ -260,10 +260,10 @@ class PklModuleUriAndVersionAnnotator : PklAnnotator() {
             reference.rangeInElement.shiftRight(element.textOffset),
             "Invalid path",
             """
-              Paths starting with <code>@</code> is notation for importing a dependency.
+            Paths starting with <code>@</code> is notation for importing a dependency.
             """
               .trimIndent(),
-            holder
+            holder,
           )
           ?.apply { withFix(PklPrefixDependencyNotationQuickFix(element)) }
           ?.create()
@@ -276,7 +276,7 @@ class PklModuleUriAndVersionAnnotator : PklAnnotator() {
   private fun checkScheme(
     element: PklModuleUri,
     scheme: String,
-    holder: AnnotationHolder
+    holder: AnnotationHolder,
   ): Boolean {
     // only warn on known unglobbable schemes
     if (scheme == "pkl" || scheme == "http" || scheme == "https") {
@@ -287,7 +287,7 @@ class PklModuleUriAndVersionAnnotator : PklAnnotator() {
         "Scheme \"$scheme\" is not globbable",
         holder,
         PklProblemGroups.unresolvedElement,
-        element
+        element,
       )
       return true
     }
@@ -299,7 +299,7 @@ class PklModuleUriAndVersionAnnotator : PklAnnotator() {
     references: Array<PsiReference>,
     uriText: String,
     holder: AnnotationHolder,
-    context: PklProject?
+    context: PklProject?,
   ) {
     val sourceFileUri = element.containingFile.virtualFile.url
     val scheme = parseUriOrNull(uriText)?.scheme ?: URI(sourceFileUri).scheme
@@ -314,7 +314,7 @@ class PklModuleUriAndVersionAnnotator : PklAnnotator() {
         "Cannot combine triple-dot module URIs with glob imports",
         holder,
         PklProblemGroups.unresolvedElement,
-        element
+        element,
       )
       return
     }
@@ -330,7 +330,7 @@ class PklModuleUriAndVersionAnnotator : PklAnnotator() {
           reference.rangeInElement.shiftRight(element.textOffset),
           message,
           message,
-          holder
+          holder,
         )
       }
       if (
@@ -347,7 +347,7 @@ class PklModuleUriAndVersionAnnotator : PklAnnotator() {
           "Glob pattern has no matches",
           holder,
           PklProblemGroups.unresolvedElement,
-          element
+          element,
         )
       }
       if (index == references.lastIndex && resolved.elements.any { it !is PklModule }) {
@@ -358,7 +358,7 @@ class PklModuleUriAndVersionAnnotator : PklAnnotator() {
           "Some matched entries are not Pkl modules",
           holder,
           PklProblemGroups.unresolvedElement,
-          element
+          element,
         )
       }
     }
@@ -369,7 +369,7 @@ class PklModuleUriAndVersionAnnotator : PklAnnotator() {
     references: Array<PsiReference>,
     uriText: String,
     holder: AnnotationHolder,
-    context: PklProject?
+    context: PklProject?,
   ) {
     val project = holder.currentProject
     val base = project.pklBaseModule
@@ -390,7 +390,7 @@ class PklModuleUriAndVersionAnnotator : PklAnnotator() {
             reference,
             resolved?.let { listOf(it) } ?: emptyList(),
             holder,
-            context
+            context,
           )
       ) {
         return
@@ -403,7 +403,7 @@ class PklModuleUriAndVersionAnnotator : PklAnnotator() {
           "Unresolved import",
           holder,
           PklProblemGroups.unresolvedElement,
-          element
+          element,
         )
         continue
       }
@@ -436,7 +436,7 @@ class PklModuleUriAndVersionAnnotator : PklAnnotator() {
     moduleMinPklVersion: PklVersion,
     projectPklVersion: PklVersion,
     element: PklElement,
-    holder: AnnotationHolder
+    holder: AnnotationHolder,
   ) {
 
     if (moduleMinPklVersion > projectPklVersion) {
@@ -448,7 +448,7 @@ class PklModuleUriAndVersionAnnotator : PklAnnotator() {
         projectPklVersion.toString(),
         holder,
         PklProblemGroups.pklVersionMismatch,
-        element
+        element,
       )
     }
   }

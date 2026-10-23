@@ -41,13 +41,12 @@ abstract class PklAnnotationListBase(node: ASTNode) :
         elements.find {
           val resolved = it.typeName?.resolve(enclosingModule?.pklProject)
           resolved != null && resolved === project.pklBaseModule.sourceCodeType.psi
-        }
-          ?: return null
+        } ?: return null
       val body = annotation.objectBody ?: return null
       return SourceCode(
         body.getConstantStringProperty("language") ?: return null,
         body.getConstantStringProperty("prefix"),
-        body.getConstantStringProperty("suffix")
+        body.getConstantStringProperty("suffix"),
       )
     }
 }

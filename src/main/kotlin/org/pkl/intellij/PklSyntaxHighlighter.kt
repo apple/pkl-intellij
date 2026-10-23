@@ -84,7 +84,7 @@ class PklSyntaxHighlighter : SyntaxHighlighterBase() {
         DELETE,
         CASE,
         SWITCH,
-        VARARG
+        VARARG,
       )
 
     val KEYWORD_NAMES: Set<String> = KEYWORDS.types.mapTo(mutableSetOf()) { it.toString() }
@@ -126,7 +126,7 @@ class PklSyntaxHighlighter : SyntaxHighlighterBase() {
         QUESTION,
         UNION,
         SPREAD,
-        QSPREAD
+        QSPREAD,
       )
 
     private val KEYS: Map<IElementType, TextAttributesKey> =

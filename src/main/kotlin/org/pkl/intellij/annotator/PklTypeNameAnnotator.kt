@@ -34,7 +34,7 @@ class PklTypeNameAnnotator : PklAnnotator() {
             holder
               .newAnnotation(
                 HighlightSeverity.ERROR,
-                "Unresolved reference: ${moduleName.identifier.text}"
+                "Unresolved reference: ${moduleName.identifier.text}",
               )
               .range(moduleName)
               .create()
@@ -47,7 +47,7 @@ class PklTypeNameAnnotator : PklAnnotator() {
           holder
             .newAnnotation(
               HighlightSeverity.ERROR,
-              "Unresolved reference: ${typeName.identifier.text}"
+              "Unresolved reference: ${typeName.identifier.text}",
             )
             .range(typeName)
             .create()

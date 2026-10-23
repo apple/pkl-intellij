@@ -52,7 +52,7 @@ abstract class PklObjectBodyBase(node: ASTNode) : PklAstWrapperPsiElement(node),
             }
           CachedValueProvider.Result.createSingleDependency(isConstScope, this)
         },
-        false
+        false,
       )
   }
 }

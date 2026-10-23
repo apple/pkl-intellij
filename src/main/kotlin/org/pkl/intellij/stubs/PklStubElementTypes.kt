@@ -34,14 +34,14 @@ class PklModuleUriStubElementType :
 
   override fun deserialize(
     dataStream: StubInputStream,
-    parentStub: StubElement<*>
+    parentStub: StubElement<*>,
   ): PklModuleUriStub {
     return PklModuleUriStubImpl(parentStub, dataStream.readNameString()!!)
   }
 
   override fun createStub(
     psi: PklModuleUri,
-    parentStub: StubElement<out PsiElement>
+    parentStub: StubElement<out PsiElement>,
   ): PklModuleUriStub {
     return PklModuleUriStubImpl(parentStub, psi.stringConstant.content.escapedText())
   }

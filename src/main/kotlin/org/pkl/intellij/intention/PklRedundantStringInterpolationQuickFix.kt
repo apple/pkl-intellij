@@ -35,7 +35,7 @@ class PklRedundantStringInterpolationQuickFix(stringLiteral: PklStringLiteral) :
     file: PsiFile,
     editor: Editor?,
     startElement: PsiElement,
-    endElement: PsiElement
+    endElement: PsiElement,
   ) {
     val stringLiteral = startElement as PklStringLiteral
     val expr = stringLiteral.content.firstChild.nextSibling as PklExpr

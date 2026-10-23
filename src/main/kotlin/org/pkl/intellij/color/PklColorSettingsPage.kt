@@ -50,73 +50,73 @@ class PklColorSettingsPage : ColorSettingsPage {
    */
   override fun getDemoText(): String {
     return """
-      #!/usr/bin/env pkl
-     
-      <ANNOTATION>@ModuleInfo</ANNOTATION> { <PROPERTY>minPklVersion</PROPERTY> = "0.25.0" }
-      module com.example.MyModule
-      
-      amends "../myParentModule.pkl"
-      
-      import "pkl:math"
-      import "pkl:xml" as <MODULE>xmlModule</MODULE>
-      
-      <PROPERTY>json</PROPERTY> = import("pkl:json")
-      
-      <PROPERTY>pigeon</PROPERTY> {
-        // Set the name to Pigeon
-        <PROPERTY>name</PROPERTY> = "Pigeon"
+    #!/usr/bin/env pkl
+
+    <ANNOTATION>@ModuleInfo</ANNOTATION> { <PROPERTY>minPklVersion</PROPERTY> = "0.25.0" }
+    module com.example.MyModule
+
+    amends "../myParentModule.pkl"
+
+    import "pkl:math"
+    import "pkl:xml" as <MODULE>xmlModule</MODULE>
+
+    <PROPERTY>json</PROPERTY> = import("pkl:json")
+
+    <PROPERTY>pigeon</PROPERTY> {
+      // Set the name to Pigeon
+      <PROPERTY>name</PROPERTY> = "Pigeon"
+    }
+
+    /*
+    Blocked out comment
+    */
+
+    <ANNOTATION>@Deprecated</ANNOTATION>
+    class <CLASS>Person</CLASS> {
+      <PROPERTY>name</PROPERTY>: <CLASS>String</CLASS>
+      <PROPERTY>age</PROPERTY>: <CLASS>Int</CLASS>
+    }
+
+    typealias <TYPE_ALIAS>PersonOrString</TYPE_ALIAS> = <CLASS>Person</CLASS> | <CLASS>String</CLASS>
+
+    <PROPERTY>random</PROPERTY>: <MODULE>math</MODULE>.<CLASS>Random</CLASS> = <MODULE>math</MODULE>.<METHOD>Random</METHOD>(5)
+
+    <PROPERTY>youngParrot</PROPERTY>: <CLASS>Person</CLASS> = new { <PROPERTY>name</PROPERTY> = "Parrot"; <PROPERTY>age</PROPERTY> = 8 }
+
+    /// This is makes a person
+    function <METHOD>makePerson</METHOD>(<PARAMETER>_name</PARAMETER>: <CLASS>String</CLASS>): <CLASS>Person</CLASS> = new {
+      <PROPERTY>name</PROPERTY> = <PARAMETER>_name</PARAMETER>
+    }
+
+    local <PROPERTY>toUpperCase</PROPERTY> = (<PARAMETER>str</PARAMETER>: <CLASS>String</CLASS>) -> <PARAMETER>str</PARAMETER>.<METHOD>toUpperCase</METHOD>()
+
+    <PROPERTY>ten</PROPERTY> = 5 + 5
+
+    <PROPERTY>tenNum</PROPERTY> = <PROPERTY>ten</PROPERTY> as <CLASS>Number</CLASS>
+
+    <PROPERTY>ageStr</PROPERTY> = "My age is \(<PROPERTY>ten</PROPERTY>)"
+
+    <PROPERTY>persons</PROPERTY>: <CLASS>Listing</CLASS><<CLASS>Person</CLASS>>
+
+    <PROPERTY>personsRenamed</PROPERTY> = (<PROPERTY>persons</PROPERTY>) {
+      [[this.<PROPERTY>name</PROPERTY> == "Pigeon"]] {
+        <PROPERTY>name</PROPERTY> = "Dove"
       }
-      
-      /*
-      Blocked out comment
-      */
-      
-      <ANNOTATION>@Deprecated</ANNOTATION>
-      class <CLASS>Person</CLASS> {
-        <PROPERTY>name</PROPERTY>: <CLASS>String</CLASS>
-        <PROPERTY>age</PROPERTY>: <CLASS>Int</CLASS>
+    }
+
+    <PROPERTY>personsCloned</PROPERTY>: <CLASS>Listing</CLASS><<CLASS>Person</CLASS>> = new {
+      for (<LOCAL_VARIABLE>person</LOCAL_VARIABLE> in <PROPERTY>persons</PROPERTY>) {
+        <LOCAL_VARIABLE>person</LOCAL_VARIABLE>
       }
-      
-      typealias <TYPE_ALIAS>PersonOrString</TYPE_ALIAS> = <CLASS>Person</CLASS> | <CLASS>String</CLASS>
-      
-      <PROPERTY>random</PROPERTY>: <MODULE>math</MODULE>.<CLASS>Random</CLASS> = <MODULE>math</MODULE>.<METHOD>Random</METHOD>(5)
-      
-      <PROPERTY>youngParrot</PROPERTY>: <CLASS>Person</CLASS> = new { <PROPERTY>name</PROPERTY> = "Parrot"; <PROPERTY>age</PROPERTY> = 8 }
-      
-      /// This is makes a person
-      function <METHOD>makePerson</METHOD>(<PARAMETER>_name</PARAMETER>: <CLASS>String</CLASS>): <CLASS>Person</CLASS> = new {
-        <PROPERTY>name</PROPERTY> = <PARAMETER>_name</PARAMETER>
-      }
-      
-      local <PROPERTY>toUpperCase</PROPERTY> = (<PARAMETER>str</PARAMETER>: <CLASS>String</CLASS>) -> <PARAMETER>str</PARAMETER>.<METHOD>toUpperCase</METHOD>()
-      
-      <PROPERTY>ten</PROPERTY> = 5 + 5
-      
-      <PROPERTY>tenNum</PROPERTY> = <PROPERTY>ten</PROPERTY> as <CLASS>Number</CLASS>
-      
-      <PROPERTY>ageStr</PROPERTY> = "My age is \(<PROPERTY>ten</PROPERTY>)"
-      
-      <PROPERTY>persons</PROPERTY>: <CLASS>Listing</CLASS><<CLASS>Person</CLASS>>
-      
-      <PROPERTY>personsRenamed</PROPERTY> = (<PROPERTY>persons</PROPERTY>) {
-        [[this.<PROPERTY>name</PROPERTY> == "Pigeon"]] {
-          <PROPERTY>name</PROPERTY> = "Dove"
-        }
-      }
-      
-      <PROPERTY>personsCloned</PROPERTY>: <CLASS>Listing</CLASS><<CLASS>Person</CLASS>> = new {
-        for (<LOCAL_VARIABLE>person</LOCAL_VARIABLE> in <PROPERTY>persons</PROPERTY>) {
-          <LOCAL_VARIABLE>person</LOCAL_VARIABLE>
-        }
-      }
-      
-      <PROPERTY>cities</PROPERTY> = <METHOD>Set</METHOD>("Los Angeles", "San Francisco", "Seattle")
-      
-      <PROPERTY>firstCity</PROPERTY> = <PROPERTY>cities</PROPERTY>[0] ?? "New York"
-      
-      <PROPERTY>myFile</PROPERTY> = read("file:/my-file.txt")
-      
-      <PROPERTY>div</PROPERTY> = <MODULE>xmlModule</MODULE>.<METHOD>Element</METHOD>("div")
+    }
+
+    <PROPERTY>cities</PROPERTY> = <METHOD>Set</METHOD>("Los Angeles", "San Francisco", "Seattle")
+
+    <PROPERTY>firstCity</PROPERTY> = <PROPERTY>cities</PROPERTY>[0] ?? "New York"
+
+    <PROPERTY>myFile</PROPERTY> = read("file:/my-file.txt")
+
+    <PROPERTY>div</PROPERTY> = <MODULE>xmlModule</MODULE>.<METHOD>Element</METHOD>("div")
     """
       .trimIndent()
   }
