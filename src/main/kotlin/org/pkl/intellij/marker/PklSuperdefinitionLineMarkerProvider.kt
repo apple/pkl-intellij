@@ -1,5 +1,5 @@
 /**
- * Copyright © 2024 Apple Inc. and the Pkl project authors. All rights reserved.
+ * Copyright © 2024-2026 Apple Inc. and the Pkl project authors. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -26,7 +26,7 @@ import org.pkl.intellij.psi.*
 class PklSuperdefinitionLineMarkerProvider : RelatedItemLineMarkerProvider() {
   override fun collectNavigationMarkers(
     element: PsiElement,
-    result: MutableCollection<in RelatedItemLineMarkerInfo<*>>
+    result: MutableCollection<in RelatedItemLineMarkerInfo<*>>,
   ) {
 
     // line markers should be added for leaf elements only
@@ -75,7 +75,7 @@ class PklSuperdefinitionLineMarkerProvider : RelatedItemLineMarkerProvider() {
               PklClass::class,
               PklModule::class,
               // stop class
-              PklObjectProperty::class
+              PklObjectProperty::class,
             )
         ) {
           is PklClass -> {
@@ -108,7 +108,7 @@ class PklSuperdefinitionLineMarkerProvider : RelatedItemLineMarkerProvider() {
     nameIdentifier: PsiElement,
     supermethod: PklClassMethod,
     enclosingDef: PklTypeDefOrModule,
-    result: MutableCollection<in RelatedItemLineMarkerInfo<PsiElement>>
+    result: MutableCollection<in RelatedItemLineMarkerInfo<PsiElement>>,
   ) {
 
     val isAbstract = supermethod.isAbstract
@@ -126,7 +126,7 @@ class PklSuperdefinitionLineMarkerProvider : RelatedItemLineMarkerProvider() {
     nameIdentifier: PsiElement,
     superproperty: PklClassProperty,
     enclosingDef: PklTypeDefOrModule,
-    result: MutableCollection<in RelatedItemLineMarkerInfo<PsiElement>>
+    result: MutableCollection<in RelatedItemLineMarkerInfo<PsiElement>>,
   ) {
 
     val isAbstract = superproperty.isAbstract

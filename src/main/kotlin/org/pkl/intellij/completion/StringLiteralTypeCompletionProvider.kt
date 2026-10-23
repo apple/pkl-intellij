@@ -1,5 +1,5 @@
 /**
- * Copyright © 2024 Apple Inc. and the Pkl project authors. All rights reserved.
+ * Copyright © 2024-2026 Apple Inc. and the Pkl project authors. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -31,7 +31,7 @@ class StringLiteralTypeCompletionProvider : PklCompletionProvider() {
   override fun addCompletions(
     parameters: CompletionParameters,
     context: ProcessingContext,
-    result: CompletionResultSet
+    result: CompletionResultSet,
   ) {
 
     val position = parameters.position
@@ -51,7 +51,7 @@ class StringLiteralTypeCompletionProvider : PklCompletionProvider() {
     result: CompletionResultSet,
     originalAlias: Type.Alias?,
     base: PklBaseModule,
-    context: PklProject?
+    context: PklProject?,
   ) {
 
     when (resultType) {
@@ -85,7 +85,7 @@ class StringLiteralTypeCompletionProvider : PklCompletionProvider() {
           result,
           resultType,
           base,
-          context
+          context,
         )
       }
       else -> {}

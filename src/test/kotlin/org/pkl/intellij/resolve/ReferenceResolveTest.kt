@@ -30,18 +30,18 @@ class ReferenceResolveTest : PklTestCase() {
       PklFileType,
       """
       import "pkl:ref"
-      
+
       class Domain extends ref.Domain
-      
+
       class Bird {
         /// The name of the bird
         name: String
       }
-      
+
       r: ref.Reference<Domain, Bird>
-      
+
       res = r.na<caret>me
-    """
+      """
         .trimIndent(),
     )
     val element = myFixture.getReferenceAtCaretPosition()!!

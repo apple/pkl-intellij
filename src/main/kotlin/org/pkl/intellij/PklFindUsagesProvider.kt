@@ -1,5 +1,5 @@
 /**
- * Copyright © 2024 Apple Inc. and the Pkl project authors. All rights reserved.
+ * Copyright © 2024-2026 Apple Inc. and the Pkl project authors. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -35,15 +35,15 @@ class PklFindUsagesProvider : FindUsagesProvider {
       TokenSet.create(
         PklElementTypes.LINE_COMMENT,
         PklElementTypes.BLOCK_COMMENT,
-        PklElementTypes.DOC_COMMENT_LINE
+        PklElementTypes.DOC_COMMENT_LINE,
       ),
       TokenSet.create(
         PklElementTypes.STRING_CHARS,
         PklElementTypes.NUMBER,
         PklElementTypes.TRUE,
         PklElementTypes.FALSE,
-        PklElementTypes.NULL
-      )
+        PklElementTypes.NULL,
+      ),
     )
 
   override fun canFindUsagesFor(element: PsiElement): Boolean =

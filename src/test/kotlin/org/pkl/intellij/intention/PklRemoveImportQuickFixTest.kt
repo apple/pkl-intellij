@@ -37,7 +37,7 @@ class PklRemoveImportQuickFixTest {
       factory
         .createLightFixtureBuilder(
           LightProjectDescriptor.EMPTY_PROJECT_DESCRIPTOR,
-          "sample pkl project"
+          "sample pkl project",
         )
         .fixture
     fixture = factory.createCodeInsightFixture(base)
@@ -74,7 +74,7 @@ class PklRemoveImportQuickFixTest {
           fix,
           fixture.file,
           fixture.editor,
-          0
+          0,
         )
       }
     val content = (info as IntentionPreviewInfo.Html).content().toString()
@@ -95,7 +95,7 @@ class PklRemoveImportQuickFixTest {
           fix,
           fixture.file,
           fixture.editor,
-          0
+          0,
         )
       }
     val content = (info as IntentionPreviewInfo.Html).content().toString()

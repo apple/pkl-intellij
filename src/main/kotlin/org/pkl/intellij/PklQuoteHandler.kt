@@ -1,5 +1,5 @@
 /**
- * Copyright © 2024 Apple Inc. and the Pkl project authors. All rights reserved.
+ * Copyright © 2024-2026 Apple Inc. and the Pkl project authors. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -38,7 +38,7 @@ class PklQuoteHandler : QuoteHandler, MultiCharQuoteHandler {
         STRING_CHARS,
         CHAR_ESCAPE,
         UNICODE_ESCAPE,
-        INVALID_ESCAPE
+        INVALID_ESCAPE,
       )
   }
 
@@ -55,7 +55,7 @@ class PklQuoteHandler : QuoteHandler, MultiCharQuoteHandler {
   override fun hasNonClosedLiteral(
     editor: Editor,
     iterator: HighlighterIterator,
-    offset: Int
+    offset: Int,
   ): Boolean {
     return iterator.tokenType !== STRING_END && iterator.tokenType !== ML_STRING_END
   }

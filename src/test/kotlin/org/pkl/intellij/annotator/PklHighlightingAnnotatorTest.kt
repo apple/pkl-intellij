@@ -61,7 +61,7 @@ internal class PklHighlightingAnnotatorTest {
       fixtureFactory
         .createLightFixtureBuilder(
           LightProjectDescriptor.EMPTY_PROJECT_DESCRIPTOR,
-          "sample pkl project"
+          "sample pkl project",
         )
         .fixture
     codeInsightTestFixture = fixtureFactory.createCodeInsightFixture(fixture)
@@ -70,7 +70,7 @@ internal class PklHighlightingAnnotatorTest {
     val testSeverityProvider = TestSeverityProvider(PklColor.values().map(PklColor::testSeverity))
     SeveritiesProvider.EP_NAME.point.registerExtension(
       testSeverityProvider,
-      fixture.testRootDisposable
+      fixture.testRootDisposable,
     )
   }
 
@@ -95,10 +95,10 @@ internal class PklHighlightingAnnotatorTest {
       <PROPERTY>p6</PROPERTY> = <PROPERTY>p4</PROPERTY>.<PROPERTY>p5</PROPERTY>
       <PROPERTY>p7</PROPERTY> = <PROPERTY>p4</PROPERTY>.<PROPERTY>unresolved</PROPERTY>
       <PROPERTY>p8</PROPERTY> = <PROPERTY>unresolved</PROPERTY>.<PROPERTY>unresolved</PROPERTY>
-      
+
       local <PROPERTY>p9</PROPERTY> = "value"
       local <PROPERTY>p10</PROPERTY> = <PROPERTY>p9</PROPERTY>
-    """
+      """
         .trimIndent()
     )
   }
@@ -114,7 +114,7 @@ internal class PklHighlightingAnnotatorTest {
       <PROPERTY>p2</PROPERTY> = module.<METHOD>m1</METHOD>(42)
       <PROPERTY>p3</PROPERTY> = <METHOD>unresolved</METHOD>(42)
       <PROPERTY>p4</PROPERTY> = <PROPERTY>unresolved</PROPERTY>.<METHOD>unresolved</METHOD>(42)
-    """
+      """
         .trimIndent()
     )
   }
@@ -125,12 +125,12 @@ internal class PklHighlightingAnnotatorTest {
       """
       open class <CLASS>Person</CLASS>
       class <CLASS>Teacher</CLASS> extends <CLASS>Person</CLASS>
-      
+
       <PROPERTY>p1</PROPERTY>: <CLASS>Int</CLASS>
       <PROPERTY>p2</PROPERTY>: <CLASS>Person</CLASS>
       <PROPERTY>p3</PROPERTY>: <CLASS>List</CLASS><<CLASS>Teacher</CLASS>>
       <PROPERTY>p4</PROPERTY>: <CLASS>Unresolved</CLASS>
-    """
+      """
         .trimIndent()
     )
   }
@@ -142,11 +142,11 @@ internal class PklHighlightingAnnotatorTest {
       typealias <TYPE_ALIAS>Integer</TYPE_ALIAS> = <CLASS>Int</CLASS>
       typealias <TYPE_ALIAS>Positive</TYPE_ALIAS> = 
         <TYPE_ALIAS>Integer</TYPE_ALIAS>(<PROPERTY>isPositive</PROPERTY>)
-      
+
       <PROPERTY>p1</PROPERTY>: <TYPE_ALIAS>Int32</TYPE_ALIAS>
       <PROPERTY>p2</PROPERTY>: <TYPE_ALIAS>Integer</TYPE_ALIAS>
       <PROPERTY>p3</PROPERTY>: <CLASS>List</CLASS><<TYPE_ALIAS>Positive</TYPE_ALIAS>>
-    """
+      """
         .trimIndent()
     )
   }
@@ -157,16 +157,16 @@ internal class PklHighlightingAnnotatorTest {
       """
       import "pkl:xml"
       import "pkl:xml" as <MODULE>other</MODULE>
-      
+
       // type use is highlighted as CLASS rather than MODULE
       <PROPERTY>p1</PROPERTY>: <CLASS>xml</CLASS> = <MODULE>xml</MODULE>
-      
+
       <PROPERTY>p2</PROPERTY>: <MODULE>xml</MODULE>.<CLASS>Renderer</CLASS> = 
         new <MODULE>other</MODULE>.<CLASS>Renderer</CLASS> {}
         
         <PROPERTY>p3</PROPERTY>: <MODULE>unresolved</MODULE>.<CLASS>Unresolved</CLASS> = 
         new <MODULE>unresolved</MODULE>.<CLASS>Unresolved</CLASS> {}
-    """
+      """
         .trimIndent()
     )
   }
@@ -176,23 +176,23 @@ internal class PklHighlightingAnnotatorTest {
     checkHighlighting(
       """
       import "pkl:base"
-      
+
       // annotation class name is currently highlighted as CLASS rather than ANNOTATION
       class <CLASS>MyAnn</CLASS> extends <CLASS>Annotation</CLASS>
-      
+
       <ANNOTATION>@</ANNOTATION><ANNOTATION>Deprecated</ANNOTATION>
       <PROPERTY>p1</PROPERTY> = 42
-      
+
       // "base" is highlighted as ANNOTATION rather than MODULE (cf. Kotlin)
       <ANNOTATION>@</ANNOTATION><ANNOTATION>base</ANNOTATION>.<ANNOTATION>Deprecated</ANNOTATION>
       <PROPERTY>p2</PROPERTY> = 42
-      
+
       <ANNOTATION>@</ANNOTATION><ANNOTATION>MyAnn</ANNOTATION>
       <PROPERTY>p3</PROPERTY> = 42
-      
+
       <ANNOTATION>@</ANNOTATION><ANNOTATION>Unresolved</ANNOTATION>
       <PROPERTY>p4</PROPERTY> = 42
-    """
+      """
         .trimIndent()
     )
   }
@@ -210,7 +210,7 @@ internal class PklHighlightingAnnotatorTest {
           <PROPERTY>p4</PROPERTY> = <LOCAL_VARIABLE>y</LOCAL_VARIABLE>
         }
       }
-    """
+      """
         .trimIndent()
     )
   }

@@ -245,14 +245,14 @@ class PklExtendsClauseAnnotatorTest {
       abstract module foo
 
       abstract function bar(): Int
-    """
+      """
         .trimIndent(),
     )
     fixture.configureByText(
       "test.pkl",
       """
       extends "foo.pkl"
-    """
+      """
         .trimIndent(),
     )
     implementMembers()
@@ -262,7 +262,7 @@ class PklExtendsClauseAnnotatorTest {
 
       function bar(): Int = TODO()
 
-    """
+      """
         .trimIndent()
     )
   }
@@ -303,7 +303,7 @@ class PklExtendsClauseAnnotatorTest {
       abstract class Base {
         abstract function bar(): Bar
       }
-    """
+      """
         .trimIndent(),
     )
 
@@ -312,9 +312,9 @@ class PklExtendsClauseAnnotatorTest {
       "test.pkl",
       """
       import "foo.pkl"
-      
+
       class Child extends foo.Base
-    """
+      """
         .trimIndent(),
     )
     implementMembers()
@@ -326,7 +326,7 @@ class PklExtendsClauseAnnotatorTest {
       class Child extends foo.Base {
         function bar(): Bar = TODO()
       }
-    """
+      """
         .trimIndent()
     )
   }
@@ -343,7 +343,7 @@ class PklExtendsClauseAnnotatorTest {
       abstract class Base {
         abstract function bar(): bar.Qux
       }
-    """
+      """
         .trimIndent(),
     )
 
@@ -351,16 +351,16 @@ class PklExtendsClauseAnnotatorTest {
       "bar.pkl",
       """
       class Qux
-    """
+      """
         .trimIndent(),
     )
     fixture.configureByText(
       "test.pkl",
       """
       import "foo.pkl"
-      
+
       class Child extends foo.Base
-    """
+      """
         .trimIndent(),
     )
     implementMembers()
@@ -372,7 +372,7 @@ class PklExtendsClauseAnnotatorTest {
       class Child extends foo.Base {
         function bar(): bar.Qux = TODO()
       }
-    """
+      """
         .trimIndent()
     )
   }
@@ -389,7 +389,7 @@ class PklExtendsClauseAnnotatorTest {
       abstract class Base {
         abstract function bar(): bar.Qux
       }
-    """
+      """
         .trimIndent(),
     )
 
@@ -397,7 +397,7 @@ class PklExtendsClauseAnnotatorTest {
       "bar.pkl",
       """
       class Qux
-    """
+      """
         .trimIndent(),
     )
 
@@ -408,7 +408,7 @@ class PklExtendsClauseAnnotatorTest {
       import "other.pkl" as bar
 
       class Child extends foo.Base
-    """
+      """
         .trimIndent(),
     )
     implementMembers()
@@ -421,7 +421,7 @@ class PklExtendsClauseAnnotatorTest {
       class Child extends foo.Base {
         function bar(): bar2.Qux = TODO()
       }
-    """
+      """
         .trimIndent()
     )
   }
@@ -436,7 +436,7 @@ class PklExtendsClauseAnnotatorTest {
       import "Bar.pkl"
 
       abstract class Base extends Bar
-    """
+      """
         .trimIndent(),
     )
 
@@ -444,7 +444,7 @@ class PklExtendsClauseAnnotatorTest {
       "Bar.pkl",
       """
       abstract function foo(): module
-    """
+      """
         .trimIndent(),
     )
 
@@ -454,19 +454,19 @@ class PklExtendsClauseAnnotatorTest {
       import "foo.pkl"
 
       class Child extends foo.Base
-    """
+      """
         .trimIndent(),
     )
     implementMembers()
     fixture.checkResult(
       """
-        import "Bar.pkl"
-        import "foo.pkl"
+      import "Bar.pkl"
+      import "foo.pkl"
 
-        class Child extends foo.Base {
-          function foo(): Bar = TODO()
-        }
-        """
+      class Child extends foo.Base {
+        function foo(): Bar = TODO()
+      }
+      """
         .trimIndent()
     )
   }
@@ -479,7 +479,7 @@ class PklExtendsClauseAnnotatorTest {
         import "pkl:ref"
 
         class Domain extends ref.Domain
-      """
+        """
           .trimIndent(),
       after =
         """
@@ -488,7 +488,7 @@ class PklExtendsClauseAnnotatorTest {
         class Domain extends ref.Domain {
           function renderReference(reference: ref.Reference<ref.Domain, Any>): String = TODO()
         }
-      """
+        """
           .trimIndent(),
     )
   }

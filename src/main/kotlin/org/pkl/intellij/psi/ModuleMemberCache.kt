@@ -1,5 +1,5 @@
 /**
- * Copyright © 2024 Apple Inc. and the Pkl project authors. All rights reserved.
+ * Copyright © 2024-2026 Apple Inc. and the Pkl project authors. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -35,7 +35,7 @@ private constructor(
    */
   val leafProperties: Map<String, PklClassProperty>,
   val typeDefsAndProperties: Map<String, PklTypeDefOrProperty>,
-  val dependencies: List<Any>
+  val dependencies: List<Any>,
 ) {
 
   val minPklVersion: PklVersion? by lazy { module.minPklVersion }
@@ -55,7 +55,7 @@ private constructor(
   fun visitPropertiesOrMethods(
     isProperty: Boolean,
     visitor: ResolveVisitor<*>,
-    context: PklProject?
+    context: PklProject?,
   ): Boolean {
     return if (isProperty) doVisit(properties, visitor, context)
     else doVisit(methods, visitor, context)
@@ -77,7 +77,7 @@ private constructor(
   private fun doVisit(
     members: Map<String, PklElement>,
     visitor: ResolveVisitor<*>,
-    context: PklProject?
+    context: PklProject?,
   ): Boolean {
     val exactName = visitor.exactName
     if (exactName != null) {
@@ -110,7 +110,7 @@ private constructor(
               pklBaseModuleClassCache.leafProperties,
               // try to be clever and depend on amends clause
               // instead of entire module (which can't define non-local members)
-              pklBaseModuleClassCache.dependencies + module.extendsAmendsClause!!
+              pklBaseModuleClassCache.dependencies + module.extendsAmendsClause!!,
             )
           }
           // has resolvable amends clause ->
@@ -125,7 +125,7 @@ private constructor(
               supercache.typeDefsAndProperties,
               // try to be clever and depend on amends clause
               // instead of entire module (which can't define non-local members)
-              supercache.dependencies + module.extendsAmendsClause!!
+              supercache.dependencies + module.extendsAmendsClause!!,
             )
         }
       }
@@ -200,7 +200,7 @@ private constructor(
         properties,
         leafProperties,
         typesAndProperties,
-        dependencies
+        dependencies,
       )
     }
   }

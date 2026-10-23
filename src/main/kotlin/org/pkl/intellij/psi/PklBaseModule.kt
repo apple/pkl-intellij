@@ -34,7 +34,7 @@ val Project.pklBaseModule: PklBaseModule
         // Aditionally, track changes to the [baseModule] PSI (not sure if this makes a
         // difference).
         ProjectRootManager.getInstance(this),
-        stdLib.baseModule.psi
+        stdLib.baseModule.psi,
       )
     }
 
@@ -150,7 +150,7 @@ class PklBaseModule(private val stdLib: PklStdLib) {
               collectionType.withTypeArguments(elemType),
               listingType.withTypeArguments(elemType),
               dynamicType,
-              intSeqType
+              intSeqType,
             )
           if (bytesType != null) types += bytesType
           Type.union(types, this, null)
@@ -160,7 +160,7 @@ class PklBaseModule(private val stdLib: PklStdLib) {
             listingType.withTypeArguments(elemType),
             dynamicType,
             this,
-            null
+            null,
           )
       }
       enclosingObjectClassType.classEquals(mappingType) -> {
@@ -171,7 +171,7 @@ class PklBaseModule(private val stdLib: PklStdLib) {
           mappingType.withTypeArguments(keyType, elemType),
           dynamicType,
           this,
-          null
+          null,
         )
       }
       enclosingObjectClassType.classEquals(dynamicType) -> iterableType
@@ -382,14 +382,15 @@ class PklBaseModule(private val stdLib: PklStdLib) {
 
   private fun method(name: String): PklClassMethod =
     methods[name]
-    // The only known case where a non-optional pkl.base method or class can legitimately be missing
-    // is when editing pkl.base in the Pkl project (e.g., pkl.base may not fully parse while being
-    // edited).
-    // However, a few users have reported the same problem, and presumably they weren't editing
-    // pkl.base.
-    // Since resolution and (to some extent) cause are unknown, throw an error (with some extra
-    // info) for now.
-    ?: throw AssertionError(
+      // The only known case where a non-optional pkl.base method or class can legitimately be
+      // missing
+      // is when editing pkl.base in the Pkl project (e.g., pkl.base may not fully parse while being
+      // edited).
+      // However, a few users have reported the same problem, and presumably they weren't editing
+      // pkl.base.
+      // Since resolution and (to some extent) cause are unknown, throw an error (with some extra
+      // info) for now.
+      ?: throw AssertionError(
         "Cannot find stdlib method `base.$name`. " +
           "pkl.base path: ${psi.virtualFile.presentableUrl}"
       )
@@ -398,8 +399,8 @@ class PklBaseModule(private val stdLib: PklStdLib) {
 
   private fun classType(name: String): Type.Class =
     types[name] as Type.Class?
-    // see comment for `method()`
-    ?: throw AssertionError(
+      // see comment for `method()`
+      ?: throw AssertionError(
         "Cannot find stdlib class `base.$name`. " +
           "pkl.base path: ${psi.virtualFile.presentableUrl}"
       )

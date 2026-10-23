@@ -28,13 +28,13 @@ class DocCommentMemberLinkResolveTest : PklTestCase() {
     myFixture.configureByText(
       PklFileType,
       """
-        /// This points to [Bar<caret>]
-        foo: String
+      /// This points to [Bar<caret>]
+      foo: String
 
-        /// This is bar
-        class Bar
-        """
-        .trimIndent()
+      /// This is bar
+      class Bar
+      """
+        .trimIndent(),
     )
     val element = myFixture.getReferenceAtCaretPosition()!!
     val resolved = element.resolve()
@@ -47,15 +47,15 @@ class DocCommentMemberLinkResolveTest : PklTestCase() {
     myFixture.configureByText(
       PklFileType,
       """
-        /// This points to [Bar.ba<caret>z]
-        foo: String
+      /// This points to [Bar.ba<caret>z]
+      foo: String
 
-        /// This is bar
-        class Bar {
-          baz: Int = 5
-        }
-        """
-        .trimIndent()
+      /// This is bar
+      class Bar {
+        baz: Int = 5
+      }
+      """
+        .trimIndent(),
     )
     val element = myFixture.getReferenceAtCaretPosition()!!
     val resolved = element.resolve()
@@ -68,17 +68,17 @@ class DocCommentMemberLinkResolveTest : PklTestCase() {
     myFixture.configureByText(
       PklFileType,
       """
-        import ""
+      import ""
 
-        /// This points to [Ba<caret>r.baz]
-        foo: String
+      /// This points to [Ba<caret>r.baz]
+      foo: String
 
-        /// This is bar
-        class Bar {
-          baz: Int = 5
-        }
-        """
-        .trimIndent()
+      /// This is bar
+      class Bar {
+        baz: Int = 5
+      }
+      """
+        .trimIndent(),
     )
     val element = myFixture.getReferenceAtCaretPosition()!!
     val resolved = element.resolve()
@@ -91,17 +91,17 @@ class DocCommentMemberLinkResolveTest : PklTestCase() {
     myFixture.configureByText(
       PklFileType,
       """
-        /// This points to [Bar.ba<caret>z]
-        foo: String
+      /// This points to [Bar.ba<caret>z]
+      foo: String
 
-        /// This is bar
-        class Bar {
-          baz: Int = 5
+      /// This is bar
+      class Bar {
+        baz: Int = 5
 
-          function baz() = 5
-        }
-        """
-        .trimIndent()
+        function baz() = 5
+      }
+      """
+        .trimIndent(),
     )
 
     val element = myFixture.getReferenceAtCaretPosition()!!
@@ -115,17 +115,17 @@ class DocCommentMemberLinkResolveTest : PklTestCase() {
     myFixture.configureByText(
       PklFileType,
       """
-        /// This points to [Bar.ba<caret>z()]
-        foo: String
+      /// This points to [Bar.ba<caret>z()]
+      foo: String
 
-        /// This is bar
-        class Bar {
-          baz: Int = 5
+      /// This is bar
+      class Bar {
+        baz: Int = 5
 
-          function baz() = 5
-        }
-        """
-        .trimIndent()
+        function baz() = 5
+      }
+      """
+        .trimIndent(),
     )
 
     val element = myFixture.getReferenceAtCaretPosition()!!
@@ -143,8 +143,8 @@ class DocCommentMemberLinkResolveTest : PklTestCase() {
 
       /// This is [this<caret>]
       prop1: String
-    """
-        .trimIndent()
+      """
+        .trimIndent(),
     )
     val element = myFixture.getReferenceAtCaretPosition()!!
     val resolved = element.resolve()
@@ -157,8 +157,8 @@ class DocCommentMemberLinkResolveTest : PklTestCase() {
       """
       /// This is [this<caret>]
       class MyClass
-    """
-        .trimIndent()
+      """
+        .trimIndent(),
     )
     val element = myFixture.getReferenceAtCaretPosition()!!
     val resolved = element.resolve()
@@ -173,8 +173,8 @@ class DocCommentMemberLinkResolveTest : PklTestCase() {
 
       /// This is like [module<caret>]
       class MyClass
-    """
-        .trimIndent()
+      """
+        .trimIndent(),
     )
     val element = myFixture.getReferenceAtCaretPosition()!!
     val resolved = element.resolve()
@@ -189,8 +189,8 @@ class DocCommentMemberLinkResolveTest : PklTestCase() {
 
       /// This is like [module.MyClass<caret>]
       class MyClass
-    """
-        .trimIndent()
+      """
+        .trimIndent(),
     )
     val element = myFixture.getReferenceAtCaretPosition()!!
     val resolved = element.resolve()
@@ -213,8 +213,8 @@ class DocCommentMemberLinkResolveTest : PklTestCase() {
         /// The name inside MyClass
         name: String
       }
-    """
-        .trimIndent()
+      """
+        .trimIndent(),
     )
     val element = myFixture.getReferenceAtCaretPosition()!!
     val resolved = element.resolve()
@@ -236,8 +236,8 @@ class DocCommentMemberLinkResolveTest : PklTestCase() {
         /// The name inside MyClass
         name: String
       }
-    """
-        .trimIndent()
+      """
+        .trimIndent(),
     )
     val element = myFixture.getReferenceAtCaretPosition()!!
     val resolved = element.resolve()
@@ -261,8 +261,8 @@ class DocCommentMemberLinkResolveTest : PklTestCase() {
       }
 
       class MyClass extends Base
-    """
-        .trimIndent()
+      """
+        .trimIndent(),
     )
     val element = myFixture.getReferenceAtCaretPosition()!!
     val resolved = element.resolve()

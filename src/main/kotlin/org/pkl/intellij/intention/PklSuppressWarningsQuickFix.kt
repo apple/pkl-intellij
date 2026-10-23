@@ -1,5 +1,5 @@
 /**
- * Copyright © 2024 Apple Inc. and the Pkl project authors. All rights reserved.
+ * Copyright © 2024-2026 Apple Inc. and the Pkl project authors. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -30,7 +30,7 @@ class PklSuppressWarningsQuickFix(
   element: PsiElement,
   private val group: ProblemGroup,
   // IDE warning if not using a pointer
-  private val targetPointer: SmartPsiElementPointer<PklSuppressWarningsTarget>
+  private val targetPointer: SmartPsiElementPointer<PklSuppressWarningsTarget>,
 ) : LocalQuickFixAndIntentionActionOnPsiElement(element), SuppressQuickFix {
 
   override fun getText(): String =
@@ -50,7 +50,7 @@ class PklSuppressWarningsQuickFix(
     file: PsiFile,
     editor: Editor?,
     startElement: PsiElement,
-    endElement: PsiElement
+    endElement: PsiElement,
   ) {
     val target = targetPointer.element ?: return
     val parent = target.parent ?: return
@@ -60,14 +60,14 @@ class PklSuppressWarningsQuickFix(
       val comment =
         PklPsiFactory.createLineComment(
           "${prevSibling.text.replaceFirst(Regex("//\\s*"), "")},${group.problemName}",
-          project
+          project,
         )
       prevSibling.replace(comment)
       // otherwise, create a new comment
     } else {
       parent.addBefore(
         PklPsiFactory.createLineComment("noinspection ${group.problemName}", project),
-        target
+        target,
       )
       parent.addBefore(PklPsiFactory.createToken("\n", project), target)
     }

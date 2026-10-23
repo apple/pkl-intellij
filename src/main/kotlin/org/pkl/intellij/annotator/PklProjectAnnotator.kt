@@ -1,5 +1,5 @@
 /**
- * Copyright © 2024 Apple Inc. and the Pkl project authors. All rights reserved.
+ * Copyright © 2024-2026 Apple Inc. and the Pkl project authors. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -58,7 +58,7 @@ class PklProjectAnnotator : PklAnnotator() {
     val output = findOutput(element)
     return output?.expr?.findOutputValue()
       ?: output?.objectBodyList?.findOutputValue()
-        ?: findOutputValue(element.supermodule(context), context)
+      ?: findOutputValue(element.supermodule(context), context)
   }
 
   private fun findOutput(element: PklModule?): PklClassProperty? {
@@ -78,13 +78,14 @@ class PklProjectAnnotator : PklAnnotator() {
       if (!elementType.isEquivalentTo(projectModule.projectType, baseModule, context)) {
         val textRange =
           element.extendsAmendsClause?.textRange
-            ?: element.declaration?.textRange ?: element.textRange
+            ?: element.declaration?.textRange
+            ?: element.textRange
         buildAnnotation(
             HighlightSeverity.ERROR,
             textRange,
             "Invalid module type",
             "Invalid PklProject module type",
-            holder
+            holder,
           )
           ?.apply { withFix(PklChangeOrAddAmendsClauseQuickFix(element, "pkl:Project")) }
           ?.create()
@@ -102,7 +103,7 @@ class PklProjectAnnotator : PklAnnotator() {
             projectModule.projectType.render(),
             type.render(),
             holder,
-            PklProblemGroups.typeMismatch
+            PklProblemGroups.typeMismatch,
           )
         }
       }

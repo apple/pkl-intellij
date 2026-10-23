@@ -1,5 +1,5 @@
 /**
- * Copyright © 2024 Apple Inc. and the Pkl project authors. All rights reserved.
+ * Copyright © 2024-2026 Apple Inc. and the Pkl project authors. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -42,7 +42,7 @@ internal val jarFs: JarFileSystem =
 data class PackageDependency(
   override val packageUri: PackageUri,
   val pklProject: PklProject?,
-  val checksums: Checksums?
+  val checksums: Checksums?,
 ) : Dependency {
   override fun getRoot(project: Project): VirtualFile? =
     project.pklPackageService.getLibraryRoots(this)?.packageRoot
@@ -50,7 +50,7 @@ data class PackageDependency(
 
 data class LocalProjectDependency(
   override val packageUri: PackageUri,
-  private val projectDir: VirtualFile
+  private val projectDir: VirtualFile,
 ) : Dependency {
   override fun getRoot(project: Project): VirtualFile = projectDir
 }

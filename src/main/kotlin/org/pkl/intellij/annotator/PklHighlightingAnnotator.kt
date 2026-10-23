@@ -40,7 +40,7 @@ class PklHighlightingAnnotator : PklAnnotator() {
 
   private fun annotateDocCommentReference(
     reference: PklDocCommentReference,
-    holder: AnnotationHolder
+    holder: AnnotationHolder,
   ) {
     val color = PklColor.DOC_COMMENT_REFERENCE
     val severity = if (isUnitTestMode) color.testSeverity else HighlightSeverity.INFORMATION

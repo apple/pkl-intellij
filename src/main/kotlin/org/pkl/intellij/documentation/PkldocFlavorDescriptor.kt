@@ -1,5 +1,5 @@
 /**
- * Copyright © 2024 Apple Inc. and the Pkl project authors. All rights reserved.
+ * Copyright © 2024-2026 Apple Inc. and the Pkl project authors. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -30,7 +30,7 @@ object PkldocFlavorDescriptor : CommonMarkFlavourDescriptor() {
 
   override fun createHtmlGeneratingProviders(
     linkMap: LinkMap,
-    baseURI: URI?
+    baseURI: URI?,
   ): Map<IElementType, GeneratingProvider> {
     // `TablesGeneratingProvider` is an internal class, so grab it from `GFMFlavourDescriptor`
     val tablesGeneratingProvider =
@@ -43,7 +43,7 @@ object PkldocFlavorDescriptor : CommonMarkFlavourDescriptor() {
         MarkdownElementTypes.SHORT_REFERENCE_LINK to PkldocLinkGeneratingProvider,
         MarkdownElementTypes.FULL_REFERENCE_LINK to PkldocLinkGeneratingProvider,
         GFMElementTypes.TABLE to tablesGeneratingProvider,
-        GFMTokenTypes.CELL to TrimmingInlineHolderProvider()
+        GFMTokenTypes.CELL to TrimmingInlineHolderProvider(),
       )
   }
 }

@@ -52,7 +52,7 @@ abstract class PklDocCommentBase(node: ASTNode) :
 
   private fun gatherMemberLinks(
     contents: String,
-    node: org.intellij.markdown.ast.ASTNode
+    node: org.intellij.markdown.ast.ASTNode,
   ): List<PklDocCommentReference> {
     return if (
       node.type == MarkdownElementTypes.SHORT_REFERENCE_LINK ||

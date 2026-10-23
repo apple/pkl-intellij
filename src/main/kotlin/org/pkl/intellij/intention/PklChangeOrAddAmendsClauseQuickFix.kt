@@ -1,5 +1,5 @@
 /**
- * Copyright © 2024 Apple Inc. and the Pkl project authors. All rights reserved.
+ * Copyright © 2024-2026 Apple Inc. and the Pkl project authors. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -37,7 +37,7 @@ class PklChangeOrAddAmendsClauseQuickFix(elem: PklModule, private val uri: Strin
     file: PsiFile,
     editor: Editor?,
     startElement: PsiElement,
-    endElement: PsiElement
+    endElement: PsiElement,
   ) {
     startElement as PklModule
     val clause = PklPsiFactory.createAmendsClause(uri, project)

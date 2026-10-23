@@ -30,7 +30,7 @@ class PklUnusedLocalDefinitionsInspection : LocalInspectionTool() {
   override fun checkFile(
     file: PsiFile,
     manager: InspectionManager,
-    isOnTheFly: Boolean
+    isOnTheFly: Boolean,
   ): Array<ProblemDescriptor?> {
     val module = file as? PklModule ?: return arrayOf()
 
@@ -44,7 +44,7 @@ class PklUnusedLocalDefinitionsInspection : LocalInspectionTool() {
     fun report(
       element: PsiElement?,
       message: String,
-      extraFixes: Array<LocalQuickFix> = arrayOf()
+      extraFixes: Array<LocalQuickFix> = arrayOf(),
     ) {
       if (element == null || element.textMatches("_")) return
       val parent = element.parentOfType<PklTypedIdentifier>()
@@ -60,7 +60,7 @@ class PklUnusedLocalDefinitionsInspection : LocalInspectionTool() {
           message,
           isOnTheFly,
           fixes,
-          ProblemHighlightType.LIKE_UNUSED_SYMBOL
+          ProblemHighlightType.LIKE_UNUSED_SYMBOL,
         )
       )
     }

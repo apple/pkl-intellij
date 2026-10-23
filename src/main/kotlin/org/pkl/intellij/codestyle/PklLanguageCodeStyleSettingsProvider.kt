@@ -1,5 +1,5 @@
 /**
- * Copyright © 2024 Apple Inc. and the Pkl project authors. All rights reserved.
+ * Copyright © 2024-2026 Apple Inc. and the Pkl project authors. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -37,14 +37,14 @@ class PklLanguageCodeStyleSettingsProvider : LanguageCodeStyleSettingsProvider()
         "correct"
       else
         "wrong"
-  """
+    """
       .trimIndent()
 
   override fun getIndentOptionsEditor(): IndentOptionsEditor = IndentOptionsEditor()
 
   override fun customizeDefaults(
     commonSettings: CommonCodeStyleSettings,
-    indentOptions: CommonCodeStyleSettings.IndentOptions
+    indentOptions: CommonCodeStyleSettings.IndentOptions,
   ) {
 
     with(indentOptions) {

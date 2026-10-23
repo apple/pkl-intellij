@@ -1,5 +1,5 @@
 /**
- * Copyright © 2024 Apple Inc. and the Pkl project authors. All rights reserved.
+ * Copyright © 2024-2026 Apple Inc. and the Pkl project authors. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -27,7 +27,7 @@ import org.pkl.intellij.util.unexpectedType
 /** Quick fix for replacing usages of deprecated elements that specify `Deprecated.replaceWith`. */
 class PklReplaceDeprecatedQuickFix(
   element: PsiElement /* PklAccessExpr|PklTypeName */,
-  private val deprecated: Deprecated
+  private val deprecated: Deprecated,
 ) : LocalQuickFixAndIntentionActionOnPsiElement(element) {
 
   override fun getText(): String = "Replace with '${deprecated.replaceWith}'"
@@ -39,7 +39,7 @@ class PklReplaceDeprecatedQuickFix(
     file: PsiFile,
     editor: Editor?,
     startElement: PsiElement,
-    endElement: PsiElement
+    endElement: PsiElement,
   ) {
     when (startElement) {
       is PklAccessExpr -> startElement.replaceDeprecated(file as PklModule)

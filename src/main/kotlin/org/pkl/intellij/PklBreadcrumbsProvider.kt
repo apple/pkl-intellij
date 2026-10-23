@@ -125,6 +125,6 @@ class PklBreadcrumbsProvider : BreadcrumbsProvider {
       amendExprHandler,
       ifThenHandler,
       elseHandler,
-      letExprHandler
+      letExprHandler,
     )
 }

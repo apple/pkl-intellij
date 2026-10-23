@@ -1,5 +1,5 @@
 /**
- * Copyright © 2024 Apple Inc. and the Pkl project authors. All rights reserved.
+ * Copyright © 2024-2026 Apple Inc. and the Pkl project authors. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -28,7 +28,7 @@ class PklGoToClassContributor : ChooseByNameContributorEx {
   override fun processNames(
     processor: Processor<in String>,
     scope: GlobalSearchScope,
-    filter: IdFilter?
+    filter: IdFilter?,
   ) {
     if (scope.isSearchInLibraries) {
       val stdlib = scope.project?.pklStdLib ?: return
@@ -43,7 +43,7 @@ class PklGoToClassContributor : ChooseByNameContributorEx {
   override fun processElementsWithName(
     name: String,
     processor: Processor<in NavigationItem>,
-    parameters: FindSymbolParameters
+    parameters: FindSymbolParameters,
   ) {
     if (parameters.searchScope.isSearchInLibraries) {
       val stdlib = parameters.project.pklStdLib

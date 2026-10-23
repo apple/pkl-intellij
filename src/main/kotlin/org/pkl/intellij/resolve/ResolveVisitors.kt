@@ -95,16 +95,15 @@ object ResolveVisitors {
           is PklMethod -> {
             val parameters = element.parameterList?.elements ?: return false
             val effectiveBindings = if (resolveTypeParamsInParamTypes) bindings else mapOf()
-            result =
-              parameters.map {
-                it.type.toType(
-                  base,
-                  effectiveBindings,
-                  context,
-                  !resolveTypeParamsInParamTypes,
-                  receiverType,
-                )
-              }
+            result = parameters.map {
+              it.type.toType(
+                base,
+                effectiveBindings,
+                context,
+                !resolveTypeParamsInParamTypes,
+                receiverType,
+              )
+            }
           }
         }
 
@@ -297,10 +296,9 @@ object ResolveVisitors {
                 if (parameters == null || arguments == null) bindings
                 else {
                   val enhancedBindings = bindings.toMutableMap()
-                  val parameterTypes =
-                    parameters.map {
-                      it.type?.toType(base, bindings, context, true, receiverType) ?: Type.Unknown
-                    }
+                  val parameterTypes = parameters.map {
+                    it.type?.toType(base, bindings, context, true, receiverType) ?: Type.Unknown
+                  }
                   val argumentTypes = arguments.map { it.computeExprType(base, bindings, context) }
                   for (i in 0 until min(parameterTypes.size, argumentTypes.size)) {
                     inferBindings(parameterTypes[i], argumentTypes, i, enhancedBindings, context)

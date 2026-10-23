@@ -32,8 +32,7 @@ class CompletionTest : PklTestCase() {
     return myFixture.lookupElements?.map {
       it.renderElement(presentation)
       presentation.itemText ?: ""
-    }
-      ?: emptyList()
+    } ?: emptyList()
   }
 
   fun `test complete from lexical scope`() {
@@ -43,8 +42,8 @@ class CompletionTest : PklTestCase() {
       bar: Int = 1
 
       foo = bar.<caret>
-    """
-        .trimIndent()
+      """
+        .trimIndent(),
     )
     myFixture.completeBasic()
     val lookupStrings = myFixture.lookupElementStrings
@@ -56,10 +55,10 @@ class CompletionTest : PklTestCase() {
       PklFileType,
       """
       local bar = 1
-      
+
       foo = bar.<caret>
-    """
-        .trimIndent()
+      """
+        .trimIndent(),
     )
     myFixture.completeBasic()
     val lookupStrings = myFixture.lookupElementStrings
@@ -74,12 +73,12 @@ class CompletionTest : PklTestCase() {
         firstName: String
         lastName: String
       }
-      
+
       person: Person = new {
         firstName = <caret>
       }
-    """
-        .trimIndent()
+      """
+        .trimIndent(),
     )
     myFixture.completeBasic()
     val lookupStrings = myFixture.lookupElementStrings
@@ -103,10 +102,10 @@ class CompletionTest : PklTestCase() {
       PklFileType,
       """
       amends "package://pkg.pkl-lang.org/pkl-pantry/k8s.contrib.appEnvCluster@1.0.1#/AppEnvCluster.pkl"
-      
+
       <caret>
-    """
-        .trimIndent()
+      """
+        .trimIndent(),
     )
     myFixture.completeBasic()
     val lookupStrings = myFixture.lookupElementStrings
@@ -117,23 +116,23 @@ class CompletionTest : PklTestCase() {
     myFixture.configureByText(
       PklFileType,
       """
-        /// this is foo
-        class Foo extends ConvertProperty { 
-          /// this is bar
-          bar: String = "bar"
-          baz: String
-          render = (_, _) -> Pair(bar, bar) 
-        }
+      /// this is foo
+      class Foo extends ConvertProperty { 
+        /// this is bar
+        bar: String = "bar"
+        baz: String
+        render = (_, _) -> Pair(bar, bar) 
+      }
 
-        output {
-          renderer {
-            convertPropertyTransformers {
-              [Foo] { b<caret> }
-            }
+      output {
+        renderer {
+          convertPropertyTransformers {
+            [Foo] { b<caret> }
           }
         }
-        """
-        .trimIndent()
+      }
+      """
+        .trimIndent(),
     )
     myFixture.completeBasic()
     val lookupStrings = myFixture.lookupElementStrings
@@ -144,23 +143,23 @@ class CompletionTest : PklTestCase() {
     myFixture.configureByText(
       PklFileType,
       """
-        /// this is foo
-        class Foo extends ConvertProperty { 
-          /// this is bar
-          bar: String = "bar"
-          baz: String
-          render = (_, _) -> Pair(bar, bar) 
-        }
+      /// this is foo
+      class Foo extends ConvertProperty { 
+        /// this is bar
+        bar: String = "bar"
+        baz: String
+        render = (_, _) -> Pair(bar, bar) 
+      }
 
-        output {
-          renderer {
-            convertPropertyTransformers {
-              [Foo] = (it) -> (it) { b<caret> }
-            }
+      output {
+        renderer {
+          convertPropertyTransformers {
+            [Foo] = (it) -> (it) { b<caret> }
           }
         }
-        """
-        .trimIndent()
+      }
+      """
+        .trimIndent(),
     )
     myFixture.completeBasic()
     val lookupStrings = myFixture.lookupElementStrings
@@ -171,15 +170,15 @@ class CompletionTest : PklTestCase() {
     myFixture.configureByText(
       PklFileType,
       """
-        abstract class Base {
-          abstract function someMethod(elems: Listing<String>)
-        }
+      abstract class Base {
+        abstract function someMethod(elems: Listing<String>)
+      }
 
-        class MyClass extends Base {
-          function some<caret>
-        }
-        """
-        .trimIndent()
+      class MyClass extends Base {
+        function some<caret>
+      }
+      """
+        .trimIndent(),
     )
     myFixture.completeBasic()
     assertThat(myFixture.editor.document.text)
@@ -190,16 +189,16 @@ class CompletionTest : PklTestCase() {
     myFixture.configureByText(
       PklFileType,
       """
-        abstract class Base {
-          abstract function method1(): String
-          abstract function method2(x: Int): Boolean
-        }
+      abstract class Base {
+        abstract function method1(): String
+        abstract function method2(x: Int): Boolean
+      }
 
-        class MyClass extends Base {
-          function m<caret>
-        }
-        """
-        .trimIndent()
+      class MyClass extends Base {
+        function m<caret>
+      }
+      """
+        .trimIndent(),
     )
     myFixture.completeBasic()
     val lookupStrings = lookupPresentableStrings()
@@ -211,19 +210,19 @@ class CompletionTest : PklTestCase() {
     myFixture.configureByText(
       PklFileType,
       """
-        abstract class Base {
-          abstract function method1(): String
-          abstract function method2(x: Int): Boolean
-          abstract function method3(x: Int): Boolean
-        }
+      abstract class Base {
+        abstract function method1(): String
+        abstract function method2(x: Int): Boolean
+        abstract function method3(x: Int): Boolean
+      }
 
-        class MyClass extends Base {
-          function method1(): String = "done"
+      class MyClass extends Base {
+        function method1(): String = "done"
 
-          function m<caret>
-        }
-        """
-        .trimIndent()
+        function m<caret>
+      }
+      """
+        .trimIndent(),
     )
     myFixture.completeBasic()
     val lookupStrings = lookupPresentableStrings()
@@ -236,22 +235,22 @@ class CompletionTest : PklTestCase() {
     myFixture.configureByText(
       PklFileType,
       """
-        abstract class Base {
-          abstract function `my fun`(): String
-        }
+      abstract class Base {
+        abstract function `my fun`(): String
+      }
 
-        class MyClass extends Base {
-          function <caret>
-        }
-        """
-        .trimIndent()
+      class MyClass extends Base {
+        function <caret>
+      }
+      """
+        .trimIndent(),
     )
     myFixture.completeBasic()
     val lookupElements = myFixture.lookupElements
     assertThat(lookupElements).hasSize(1)
     (LookupManager.getActiveLookup(editor) as LookupImpl).finishLookup(
       Lookup.NORMAL_SELECT_CHAR,
-      lookupElements!!.first()
+      lookupElements!!.first(),
     )
     assertThat(
       myFixture.editor.document.text ==
@@ -271,7 +270,7 @@ class CompletionTest : PklTestCase() {
   fun `test complete implement member in module`() {
     myFixture.configureByFiles(
       "implement-member/ConcreteModule.pkl",
-      "implement-member/AbstractModule.pkl"
+      "implement-member/AbstractModule.pkl",
     )
     myFixture.completeBasic()
     assertThat(myFixture.editor.document.text).contains("function greet(name: String): String")
@@ -280,7 +279,7 @@ class CompletionTest : PklTestCase() {
   fun `test complete implement member in module excludes already implemented methods`() {
     myFixture.configureByFiles(
       "implement-member/PartiallyImplementedModule.pkl",
-      "implement-member/AbstractModule.pkl"
+      "implement-member/AbstractModule.pkl",
     )
     myFixture.completeBasic()
     assertThat(myFixture.editor.document.text).contains("function greet(name: String): String")
