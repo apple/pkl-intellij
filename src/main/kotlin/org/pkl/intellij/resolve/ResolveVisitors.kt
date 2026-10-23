@@ -98,10 +98,10 @@ object ResolveVisitors {
             val effectiveBindings =
               if (resolveTypeParamsInParamTypes)
                 bindings.enhanceFromTypeArguments(
-                  base,
-                  context,
                   typeArgumentList,
                   element.typeParameterList,
+                  base,
+                  context,
                 )
               else mapOf()
             result = parameters.map {
@@ -290,7 +290,6 @@ object ResolveVisitors {
             }
           }
           base.anyGetClassMethod -> {
-            // TODO remove after `this` type fully implemented
             base.classType.withTypeArguments(
               receiverType.toClassType(base, context) ?: receiverType
             )
@@ -302,10 +301,10 @@ object ResolveVisitors {
                 typeParameterList == null || typeParameterList.elements.isEmpty() -> bindings
                 typeArgumentList != null ->
                   bindings.enhanceFromTypeArguments(
-                    base,
-                    context,
                     typeArgumentList,
                     typeParameterList,
+                    base,
+                    context,
                   )
                 else -> {
                   // try to infer method type parameters from method arguments
@@ -314,11 +313,12 @@ object ResolveVisitors {
                   if (parameters == null || arguments == null) bindings
                   else {
                     val enhancedBindings = bindings.toMutableMap()
-                    val parameterTypes = parameters.map {
-                      it.type?.toType(base, bindings, context, true, receiverType) ?: Type.Unknown
+                    val parameterTypes = parameters.map { param ->
+                      param.type?.toType(base, bindings, context, true, receiverType)
+                        ?: Type.Unknown
                     }
-                    val argumentTypes = arguments.map {
-                      it.computeExprType(base, bindings, context)
+                    val argumentTypes = arguments.map { param ->
+                      param.computeExprType(base, bindings, context)
                     }
                     for (i in 0 until min(parameterTypes.size, argumentTypes.size)) {
                       inferBindings(parameterTypes[i], argumentTypes, i, enhancedBindings, context)

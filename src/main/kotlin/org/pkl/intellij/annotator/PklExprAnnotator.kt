@@ -73,7 +73,7 @@ class PklExprAnnotator : PklAnnotator() {
             is PklMethod -> {
               checkConstAccess(element, target, holder, lookupMode)
               checkArgumentCount(element, target, base, holder)
-              checkTypeArgumentCount(element, target, base, holder)
+              checkTypeArgumentCount(element, target, holder)
             }
             is PklProperty -> {
               checkConstAccess(element, target, holder, lookupMode)
@@ -107,7 +107,7 @@ class PklExprAnnotator : PklAnnotator() {
             is PklMethod -> {
               checkConstQualifiedAccess(element, target, holder)
               checkArgumentCount(element, target, base, holder)
-              checkTypeArgumentCount(element, target, base, holder)
+              checkTypeArgumentCount(element, target, holder)
               when (receiverType) {
                 base.listType -> {
                   when {
@@ -199,7 +199,10 @@ class PklExprAnnotator : PklAnnotator() {
           if (target == null) reportUnresolvedAccess(element, thisType, base, holder, context)
           when (target) {
             is PklProperty -> checkConstAccess(element.memberName, target, holder, null)
-            is PklMethod -> checkConstAccess(element.memberName, target, holder, null)
+            is PklMethod -> {
+              checkConstAccess(element.memberName, target, holder, null)
+              checkTypeArgumentCount(element, target, holder)
+            }
           }
         }
 
@@ -563,10 +566,31 @@ class PklExprAnnotator : PklAnnotator() {
     }
   }
 
+  private fun <T> Appendable.appendList(items: List<T>, each: Appendable.(T) -> Unit) {
+    when (items.size) {
+      1 -> each(items.single())
+      2 -> {
+        each(items[0])
+        append(" and ")
+        each(items[1])
+      }
+      else -> {
+        for ((idx, item) in items.withIndex()) {
+          if (idx > 0) {
+            append(", ")
+            if (idx == items.size - 1) {
+              append("and ")
+            }
+          }
+          each(item)
+        }
+      }
+    }
+  }
+
   private fun checkTypeArgumentCount(
     expr: PklAccessExpr,
     method: PklMethod,
-    base: PklBaseModule,
     holder: AnnotationHolder,
   ) {
     val typeArgList = expr.typeArgumentList ?: return
@@ -577,28 +601,25 @@ class PklExprAnnotator : PklAnnotator() {
     val typeParamCount = typeParams.size
     when {
       typeArgCount < typeParamCount -> {
-        val closingParen = typeArgList.lastChildOfType(PklElementTypes.GT) ?: return
-
-        for (idx in typeArgCount until typeParamCount) {
-          val message = buildString {
-            append("Missing type argument for ")
-            append(typeParams[idx].identifier.text)
-          }
-          val htmlMessage = buildString {
-            append("Missing type argument for ")
-            code { append(typeParams[idx].identifier.text) }
-          }
-
-          holder
-            .newAnnotation(HighlightSeverity.ERROR, message)
-            .range(closingParen.textRange)
-            .tooltip(htmlMessage)
-            .create()
+        val closingBracket = typeArgList.lastChildOfType(PklElementTypes.GT) ?: return
+        val missingParamNames = typeParams.drop(typeArgCount).map { it.name }
+        val plural = if (missingParamNames.size == 1) "" else "s"
+        val message = buildString {
+          append("Missing type argument$plural ")
+          appendList(missingParamNames) { append(it) }
         }
+        val htmlMessage = buildString {
+          append("Missing type argument$plural for ")
+          appendList(missingParamNames) { code { append(it) } }
+        }
+
+        holder
+          .newAnnotation(HighlightSeverity.ERROR, message)
+          .range(closingBracket.textRange)
+          .tooltip(htmlMessage)
+          .create()
       }
       typeArgCount > typeParamCount -> {
-        if (method.isVarArgs(base)) return
-
         val message = buildString {
           append("Too many type arguments for method ")
           append(method.name)

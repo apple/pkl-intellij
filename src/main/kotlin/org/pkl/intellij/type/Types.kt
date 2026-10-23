@@ -1481,18 +1481,18 @@ sealed class Type(val constraints: List<ConstraintExpr> = listOf()) {
 typealias TypeParameterBindings = Map<PklTypeParameter, Type>
 
 fun TypeParameterBindings.enhanceFromTypeArguments(
-  base: PklBaseModule,
-  context: PklProject?,
   typeArgumentList: PklTypeArgumentList?,
   typeParameterList: PklTypeParameterList?,
+  base: PklBaseModule,
+  context: PklProject?,
 ): TypeParameterBindings =
   when {
     typeArgumentList == null || typeParameterList == null -> this
     else -> {
       val enhancedBindings = toMutableMap()
-      for (i in 0 until typeParameterList.elements.size) {
-        enhancedBindings[typeParameterList.elements[i]] =
-          typeArgumentList.elements[i].toType(base, this, context, true)
+      for ((typeArgument, typeParameter) in
+        typeArgumentList.elements.zip(typeParameterList.elements)) {
+        enhancedBindings[typeParameter] = typeArgument.toType(base, this, context, true)
       }
       enhancedBindings
     }
