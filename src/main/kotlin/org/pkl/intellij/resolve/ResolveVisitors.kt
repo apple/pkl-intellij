@@ -544,7 +544,6 @@ object ResolveVisitors {
                 )
                 if (element.typeParameterList?.elements?.isNotEmpty() ?: false) {
                   val suffix = buildString {
-                    append("::")
                     renderTypeParameterList(element.typeParameterList)
                     append(parameterList)
                   }
@@ -552,7 +551,7 @@ object ResolveVisitors {
                     lookupElement.withTailText(suffix, true).withInsertHandler { context, element ->
                       val editor = context.editor
                       val document = editor.document
-                      document.insertString(context.tailOffset, "::<>()")
+                      document.insertString(context.tailOffset, "<>()")
                       editor.caretModel.moveToOffset(context.tailOffset - 3)
                     }
                   )
