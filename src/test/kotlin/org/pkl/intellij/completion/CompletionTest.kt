@@ -299,7 +299,7 @@ class CompletionTest : PklTestCase() {
     val completions = myFixture.completeBasic()
     assertThat(completions).hasSize(2)
     assertThat(completions[0].plainString()).isEqualTo("x(T): String")
-    assertThat(completions[1].plainString()).isEqualTo("x::<T>(T): String")
+    assertThat(completions[1].plainString()).isEqualTo("x<T>(T): String")
   }
 
   fun LookupElement.plainString(): String = buildString {

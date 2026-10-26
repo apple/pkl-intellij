@@ -24,13 +24,9 @@ import com.intellij.psi.PsiDocumentManager
 import com.intellij.psi.PsiElement
 import com.intellij.psi.PsiFile
 import org.pkl.intellij.psi.PklAccessExpr
-import org.pkl.intellij.psi.PklElementTypes
-import org.pkl.intellij.psi.PklQualifiedAccessExpr
-import org.pkl.intellij.psi.PklSuperAccessExpr
-import org.pkl.intellij.psi.PklUnqualifiedAccessExpr
-import org.pkl.intellij.psi.firstChildOfType
+import org.pkl.intellij.psi.memberAccessTextRange
 
-class PklParenthesizeElementQuickFix(element: PklAccessExpr) :
+class PklParenthesizeElementQuickFix(element: PklAccessExpr, private val memberNameText: String) :
   LocalQuickFixAndIntentionActionOnPsiElement(element) {
   override fun invoke(
     project: Project,
@@ -40,15 +36,7 @@ class PklParenthesizeElementQuickFix(element: PklAccessExpr) :
     endElement: PsiElement,
   ) {
     startElement as PklAccessExpr
-    val endingTextRange = startElement.memberName.textRange
-    val textRange =
-      when (startElement) {
-        is PklUnqualifiedAccessExpr -> endingTextRange
-        is PklQualifiedAccessExpr -> startElement.receiverExpr.textRange.union(endingTextRange)
-        is PklSuperAccessExpr ->
-          startElement.firstChildOfType(PklElementTypes.SUPER)!!.textRange.union(endingTextRange)
-        else -> throw IllegalStateException("Unexpected subclass of PklAccessExpr")
-      }
+    val textRange = startElement.memberAccessTextRange
     val document = file.viewProvider.document ?: return
     val psiDocumentManager = PsiDocumentManager.getInstance(project)
     psiDocumentManager.doPostponedOperationsAndUnblockDocument(document)
@@ -58,7 +46,7 @@ class PklParenthesizeElementQuickFix(element: PklAccessExpr) :
     psiDocumentManager.commitDocument(document)
   }
 
-  override fun getText(): @IntentionName String = "Wrap in parantheses"
+  override fun getText(): @IntentionName String = "Wrap in '${memberNameText}' in parentheses"
 
-  override fun getFamilyName(): @IntentionFamilyName String = "QuickFix"
+  override fun getFamilyName(): @IntentionFamilyName String = "Wrap in parentheses"
 }
