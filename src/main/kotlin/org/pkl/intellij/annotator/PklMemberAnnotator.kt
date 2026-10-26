@@ -161,7 +161,6 @@ class PklMemberAnnotator : PklAnnotator() {
         override fun visitClassMethod(element: PklClassMethod) {
           checkModifiers(element, "methods", ModifierSets.CLASS_METHOD_MODIFIERS, module, holder)
           checkAbstractMethod(element, holder)
-          checkTypeParameters(element, module, holder)
         }
 
         override fun visitClass(element: PklClass) {
