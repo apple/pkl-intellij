@@ -302,6 +302,29 @@ class CompletionTest : PklTestCase() {
     assertThat(completions[1].plainString()).isEqualTo("x::<T>(T): String")
   }
 
+  fun `test completion of fixed properties`() {
+    myFixture.configureByText(
+      PklFileType,
+      """
+      class Person { name: String }
+
+      open class Base {
+        fixed person: Person
+      }
+
+      class Child extends Base {
+        fixed person {
+          n<caret>
+        }
+      }
+      """
+        .trimIndent(),
+    )
+    val completions = myFixture.completeBasic()
+    assertThat(completions).isNotEmpty
+    assertThat(completions).anyMatch { it.plainString() == "name = : String" }
+  }
+
   fun LookupElement.plainString(): String = buildString {
     val p = LookupElementPresentation()
     renderElement(p)

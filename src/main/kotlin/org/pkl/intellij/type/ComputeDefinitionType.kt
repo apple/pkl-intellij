@@ -54,7 +54,7 @@ fun PsiElement?.computeResolvedImportType(
             type.toType(base, bindings, context, preserveUnboundTypeVars, receiverType)
           else ->
             when {
-              canInferExprBody && isLocalOrConstOrFixed ->
+              canInferExprBody && isLocalOrConstOrFixed && expr != null ->
                 expr.computeExprType(base, bindings, context)
               isDefinition(context) -> Type.Unknown
               else -> {
