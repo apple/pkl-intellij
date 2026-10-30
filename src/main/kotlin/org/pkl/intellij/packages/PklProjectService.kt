@@ -75,13 +75,14 @@ class PklProjectService(private val project: Project) :
 
     const val PKL_PROJECT_FILENAME = "PklProject"
     const val PKL_PROJECT_DEPS_FILENAME = "PklProject.deps.json"
-    const val UNKNOWN_PACKAGE_URI = "<UNKNOWN>"
+    const val UNKNOWN_PACKAGE_METADATA = "<UNKNOWN>"
 
     private const val DEPENDENCIES_EXPR =
       """
       new JsonRenderer { omitNullProperties = false }
         .renderValue(new Dynamic {
           projectFileUri = module.projectFileUri
+          packageName = module.package?.name
           packageUri = module.package?.uri
           declaredDependencies = module.dependencies.toMap().mapValues((_, value) ->
             if (value is RemoteDependency) value.uri
@@ -211,8 +212,12 @@ class PklProjectService(private val project: Project) :
       val projectElement = Element("pkl-project")
       projectElement.setAttribute("project-file-uri", project.metadata.projectFileUri)
       projectElement.setAttribute(
+        "package-name",
+        project.metadata.packageName ?: UNKNOWN_PACKAGE_METADATA,
+      )
+      projectElement.setAttribute(
         "package-uri",
-        project.metadata.packageUri?.toString() ?: UNKNOWN_PACKAGE_URI,
+        project.metadata.packageUri?.toString() ?: UNKNOWN_PACKAGE_METADATA,
       )
       for ((key, value) in project.metadata.declaredDependencies) {
         val dependency =
@@ -264,15 +269,24 @@ class PklProjectService(private val project: Project) :
   }
 
   private fun loadProjectFromState(elem: Element): PklProject {
-    // attribute package-uri got added to workspace state in pkl-intellij 0.28. If not present, show
-    // as out-of-date,
-    // which causes a banner to appear (see PklSyncProjectNotificationProvider)
+    // if attributes are added to workspace state and are not present in loaded state, show as
+    // out-of-date,
+    // which causes a banner to appear (see PklSyncProjectNotificationProvider):
+    // - package-uri added in pkl-intellij 0.28
+    // - package-name added in pkl-intellij 0.38
+    val packageNameValue = elem.getAttributeValue("package-name")
+    if (packageNameValue == null) {
+      isOutOfDate = true
+    }
+    val packageName = packageNameValue?.let {
+      if (it == UNKNOWN_PACKAGE_METADATA) null else it
+    }
     val packageUriValue = elem.getAttributeValue("package-uri")
     if (packageUriValue == null) {
       isOutOfDate = true
     }
     val packageUri = packageUriValue?.let {
-      if (it == UNKNOWN_PACKAGE_URI) null else PackageUri.create(it)
+      if (it == UNKNOWN_PACKAGE_METADATA) null else PackageUri.create(it)
     }
     val projectFileUri = elem.getAttributeValue("project-file-uri")
     val declaredDependencies =
@@ -312,7 +326,13 @@ class PklProjectService(private val project: Project) :
         PklProject.Companion.EvaluatorSettings(moduleCacheDir)
       } ?: PklProject.Companion.EvaluatorSettings()
     val metadata =
-      DerivedProjectMetadata(projectFileUri, packageUri, declaredDependencies, evaluatorSettings)
+      DerivedProjectMetadata(
+        projectFileUri,
+        packageName,
+        packageUri,
+        declaredDependencies,
+        evaluatorSettings,
+      )
     val projectDeps =
       if (resolvedDependencies.isNotEmpty())
         PklProject.Companion.ProjectDeps(1, resolvedDependencies)

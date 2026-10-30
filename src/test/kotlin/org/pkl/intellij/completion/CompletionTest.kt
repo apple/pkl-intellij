@@ -336,6 +336,26 @@ class CompletionTest : PklTestCase() {
     }
   }
 
+  fun `test completion of module names from filename only, from scratch`() {
+    myFixture.configureByFiles("module-name/filename-only-scratch.pkl")
+    val completions = myFixture.completeBasic()
+    assertThat(completions).hasSize(1)
+    assertThat(completions[0].lookupString).isEqualTo("`filename-only-scratch`")
+  }
+
+  fun `test completion of module names from filename only, with prefix match`() {
+    myFixture.configureByFiles("module-name/filename-only-prefix.pkl")
+    val completions = myFixture.completeBasic()
+    assertThat(completions).hasSize(1)
+    assertThat(completions[0].lookupString).isEqualTo("`filename-only-prefix`")
+  }
+
+  fun `test completion of module names from filename only, with no prefix match`() {
+    myFixture.configureByFiles("module-name/filename-only-noprefix.pkl")
+    val completions = myFixture.completeBasic()
+    assertThat(completions).isEmpty()
+  }
+
   override val fixtureDir: Path?
     get() = Path.of("src/test/resources/completion")
 }
