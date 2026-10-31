@@ -58,8 +58,6 @@ class ModuleNameCompletionProvider : PklCompletionProvider() {
     if (identifiers.isNotEmpty() && identifiers.last() != pos) return
     val completeNames = identifiers.dropLast(1).map { it.text.removeSurrounding("`") }
 
-    result.prefixMatcher.isStartMatch("")
-
     val completions = ArrayList<LookupElement>(2)
     var inRoot = completePackagePath(result.prefixMatcher, completeNames, module, completions)
     if (allowSourceRootCompletion) {
