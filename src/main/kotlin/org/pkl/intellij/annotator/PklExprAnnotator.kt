@@ -68,13 +68,30 @@ class PklExprAnnotator : PklAnnotator() {
               ) {
                 return // don't flag
               }
-              reportUnresolvedAccess(element, thisType, base, holder, context)
+              if (element.typeArgumentList != null) {
+                val (found, _) =
+                  Resolvers.resolveUnqualifiedAccessAndLookupMode(
+                    element,
+                    null,
+                    isProperty = true,
+                    allowClasses = true,
+                    base,
+                    mapOf(),
+                    visitor,
+                    context,
+                  )
+                reportUnresolvedGenericMethodCall(element, thisType, holder, found, base, context)
+              } else {
+                reportUnresolvedAccess(element, thisType, base, holder, context)
+              }
             }
+
             is PklMethod -> {
               checkConstAccess(element, target, holder, lookupMode)
               checkArgumentCount(element, target, base, holder)
               checkTypeArgumentCount(element, target, holder)
             }
+
             is PklProperty -> {
               checkConstAccess(element, target, holder, lookupMode)
               checkRecursivePropertyReference(element, target, holder)
@@ -102,8 +119,22 @@ class PklExprAnnotator : PklAnnotator() {
           val visitor = ResolveVisitors.firstElementNamed(element.memberNameText, base)
           when (val target = element.resolve(base, receiverType, mapOf(), visitor, context)) {
             null -> {
-              reportUnresolvedAccess(element, receiverType, base, holder, context)
+              if (element.typeArgumentList != null) {
+                val found =
+                  Resolvers.resolveQualifiedAccess(receiverType, true, base, visitor, context)
+                reportUnresolvedGenericMethodCall(
+                  element,
+                  receiverType,
+                  holder,
+                  found,
+                  base,
+                  context,
+                )
+              } else {
+                reportUnresolvedAccess(element, receiverType, base, holder, context)
+              }
             }
+
             is PklMethod -> {
               checkConstQualifiedAccess(element, target, holder)
               checkArgumentCount(element, target, base, holder)
@@ -125,6 +156,7 @@ class PklExprAnnotator : PklAnnotator() {
                     }
                   }
                 }
+
                 base.mapType -> {
                   when {
                     target == base.mapContainsKeyMethod ||
@@ -181,6 +213,7 @@ class PklExprAnnotator : PklAnnotator() {
                     }
                   }
                 }
+
                 else -> {}
               }
             }
@@ -196,7 +229,14 @@ class PklExprAnnotator : PklAnnotator() {
 
           val visitor = ResolveVisitors.firstElementNamed(element.memberNameText, base)
           val target = element.resolve(base, thisType, mapOf(), visitor, context)
-          if (target == null) reportUnresolvedAccess(element, thisType, base, holder, context)
+          if (target == null) {
+            if (element.typeArgumentList != null) {
+              val found = Resolvers.resolveQualifiedAccess(thisType, true, base, visitor, context)
+              reportUnresolvedGenericMethodCall(element, thisType, holder, found, base, context)
+            } else {
+              reportUnresolvedAccess(element, thisType, base, holder, context)
+            }
+          }
           when (target) {
             is PklProperty -> checkConstAccess(element.memberName, target, holder, null)
             is PklMethod -> {
@@ -619,6 +659,7 @@ class PklExprAnnotator : PklAnnotator() {
           .tooltip(htmlMessage)
           .create()
       }
+
       typeArgCount > typeParamCount -> {
         val message = buildString {
           append("Too many type arguments for method ")
@@ -678,6 +719,7 @@ class PklExprAnnotator : PklAnnotator() {
             .create()
         }
       }
+
       argCount > paramCount -> {
         if (method.isVarArgs(base)) return
 
@@ -738,6 +780,35 @@ class PklExprAnnotator : PklAnnotator() {
         .newAnnotation(HighlightSeverity.ERROR, "Recursive property reference")
         .range(expr.memberName)
         .create()
+    }
+  }
+
+  private fun reportUnresolvedGenericMethodCall(
+    element: PklAccessExpr,
+    thisType: Type,
+    holder: AnnotationHolder,
+    target: PklElement?,
+    base: PklBaseModule,
+    context: PklProject?,
+  ) {
+    if (target != null) {
+      val textRange = element.memberAccessTextRange
+      val memberNameText = textRange.substring(element.containingFile.text)
+      val annotation =
+        holder
+          .newAnnotation(
+            HighlightSeverity.ERROR,
+            "Cannot call '${element.memberNameText}' because it is not a method. If you meant to write a comparison instead, wrap '${element.memberNameText}' in parentheses.",
+          )
+          .range(textRange)
+          .tooltip(
+            "Cannot call <code>${element.memberNameText.escapeXml()}</code> because it is not a method. If you meant to write a comparison instead, wrap <code>${element.memberNameText}</code> in parentheses."
+          )
+          .problemGroup(PklProblemGroups.unresolvedElement)
+          .withFix(PklParenthesizeElementQuickFix(element, memberNameText))
+      annotation.create()
+    } else {
+      reportUnresolvedAccess(element, thisType, base, holder, context)
     }
   }
 }

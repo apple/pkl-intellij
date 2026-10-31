@@ -19,6 +19,7 @@ import com.intellij.lang.ASTNode
 import com.intellij.openapi.progress.ProgressIndicatorProvider
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.util.Iconable
+import com.intellij.openapi.util.TextRange
 import com.intellij.openapi.vfs.VfsUtilCore
 import com.intellij.psi.PsiElement
 import com.intellij.psi.PsiManager
@@ -1043,3 +1044,15 @@ fun PklTypeDefOrModule.hasDeclaredMethod(name: String?): Boolean {
 
 val PsiElement.pklReference: PklReference?
   get() = reference as? PklReference
+
+val PklAccessExpr.memberAccessTextRange: TextRange
+  get() {
+    val endingTextRange = memberName.textRange
+    return when (this) {
+      is PklUnqualifiedAccessExpr -> endingTextRange
+      is PklQualifiedAccessExpr -> receiverExpr.textRange.union(endingTextRange)
+      is PklSuperAccessExpr ->
+        firstChildOfType(PklElementTypes.SUPER)!!.textRange.union(endingTextRange)
+      else -> throw IllegalStateException("Unexpected subclass of PklAccessExpr")
+    }
+  }
