@@ -95,5 +95,11 @@ class PklCompletionContributor : CompletionContributor() {
       psiElement(PklElementTypes.DOC_COMMENT_LINE),
       PklDocCommentMemberLinkCompletionProvider(),
     )
+
+    extend(
+      BASIC,
+      psiElement(PklElementTypes.IDENTIFIER).withSuperParent(2, PklModuleDeclaration::class.java),
+      ModuleNameCompletionProvider(),
+    )
   }
 }

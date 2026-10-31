@@ -51,6 +51,7 @@ data class PklProject(val metadata: DerivedProjectMetadata, val projectDeps: Pro
     @Serializable
     data class DerivedProjectMetadata(
       val projectFileUri: String,
+      val packageName: String?,
       val packageUri: PackageUri?,
       val declaredDependencies: Map<String, PackageUri>,
       val evaluatorSettings: EvaluatorSettings,
@@ -99,7 +100,7 @@ data class PklProject(val metadata: DerivedProjectMetadata, val projectDeps: Pro
 
   val projectFile: Path by lazy { Path.of(URI(metadata.projectFileUri)) }
 
-  private val projectDir: Path by lazy { projectFile.parent }
+  val projectDir: Path by lazy { projectFile.parent }
 
   // Don't cache this (no `by lazy {}`) because the underlying file can be refreshed/recreated
   // (e.g. deleted then created again).
