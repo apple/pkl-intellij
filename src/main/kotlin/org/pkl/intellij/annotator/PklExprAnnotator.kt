@@ -68,22 +68,7 @@ class PklExprAnnotator : PklAnnotator() {
               ) {
                 return // don't flag
               }
-              if (element.typeArgumentList != null) {
-                val (found, _) =
-                  Resolvers.resolveUnqualifiedAccessAndLookupMode(
-                    element,
-                    null,
-                    isProperty = true,
-                    allowClasses = true,
-                    base,
-                    mapOf(),
-                    visitor,
-                    context,
-                  )
-                reportUnresolvedGenericMethodCall(element, thisType, holder, found, base, context)
-              } else {
-                reportUnresolvedAccess(element, thisType, base, holder, context)
-              }
+              reportUnresolvedAccess(element, thisType, base, holder, context)
             }
 
             is PklMethod -> {
@@ -119,20 +104,7 @@ class PklExprAnnotator : PklAnnotator() {
           val visitor = ResolveVisitors.firstElementNamed(element.memberNameText, base)
           when (val target = element.resolve(base, receiverType, mapOf(), visitor, context)) {
             null -> {
-              if (element.typeArgumentList != null) {
-                val found =
-                  Resolvers.resolveQualifiedAccess(receiverType, true, base, visitor, context)
-                reportUnresolvedGenericMethodCall(
-                  element,
-                  receiverType,
-                  holder,
-                  found,
-                  base,
-                  context,
-                )
-              } else {
-                reportUnresolvedAccess(element, receiverType, base, holder, context)
-              }
+              reportUnresolvedAccess(element, receiverType, base, holder, context)
             }
 
             is PklMethod -> {
@@ -228,20 +200,14 @@ class PklExprAnnotator : PklAnnotator() {
             return // don't flag
 
           val visitor = ResolveVisitors.firstElementNamed(element.memberNameText, base)
-          val target = element.resolve(base, thisType, mapOf(), visitor, context)
-          if (target == null) {
-            if (element.typeArgumentList != null) {
-              val found = Resolvers.resolveQualifiedAccess(thisType, true, base, visitor, context)
-              reportUnresolvedGenericMethodCall(element, thisType, holder, found, base, context)
-            } else {
-              reportUnresolvedAccess(element, thisType, base, holder, context)
-            }
-          }
-          when (target) {
+          when (val target = element.resolve(base, thisType, mapOf(), visitor, context)) {
             is PklProperty -> checkConstAccess(element.memberName, target, holder, null)
             is PklMethod -> {
               checkConstAccess(element.memberName, target, holder, null)
               checkTypeArgumentCount(element, target, holder)
+            }
+            null -> {
+              reportUnresolvedAccess(element, thisType, base, holder, context)
             }
           }
         }
@@ -751,6 +717,47 @@ class PklExprAnnotator : PklAnnotator() {
     holder: AnnotationHolder,
     context: PklProject?,
   ) {
+    if (expr.typeArgumentList != null) {
+      val visitor =
+        ResolveVisitors.firstElementNamed(expr.memberNameText, base, resolveImports = false)
+      val target =
+        when (expr) {
+          is PklQualifiedAccessExpr,
+          is PklSuperAccessExpr ->
+            Resolvers.resolveQualifiedAccess(receiverType, true, base, visitor, context)
+          is PklUnqualifiedAccessExpr ->
+            Resolvers.resolveUnqualifiedAccess(
+              expr,
+              receiverType,
+              true,
+              base,
+              mapOf(),
+              visitor,
+              context,
+            )
+          else ->
+            throw IllegalStateException(
+              "Impossible condition; got an access expression that subclasses PklAccessExpr"
+            )
+        }
+      if (target != null) {
+        val textRange = expr.memberAccessTextRange
+        val annotation =
+          holder
+            .newAnnotation(
+              HighlightSeverity.ERROR,
+              "Cannot call '${expr.memberNameText}' because it is not a method. If you meant to write a comparison instead, wrap the left-hand side in parentheses.",
+            )
+            .range(textRange)
+            .tooltip(
+              "Cannot call <code>${expr.memberNameText.escapeXml()}</code> because it is not a method. If you meant to write a comparison instead, wrap the left-hand side in parentheses."
+            )
+            .problemGroup(PklProblemGroups.unresolvedElement)
+            .withFix(PklParenthesizeComparisonQuickFix(expr))
+        annotation.create()
+        return
+      }
+    }
     createAnnotation(
       if (receiverType.isUnresolvedMemberFatal(base, context)) HighlightSeverity.ERROR
       else HighlightSeverity.WARNING,
@@ -780,35 +787,6 @@ class PklExprAnnotator : PklAnnotator() {
         .newAnnotation(HighlightSeverity.ERROR, "Recursive property reference")
         .range(expr.memberName)
         .create()
-    }
-  }
-
-  private fun reportUnresolvedGenericMethodCall(
-    element: PklAccessExpr,
-    thisType: Type,
-    holder: AnnotationHolder,
-    target: PklElement?,
-    base: PklBaseModule,
-    context: PklProject?,
-  ) {
-    if (target != null) {
-      val textRange = element.memberAccessTextRange
-      val memberNameText = textRange.substring(element.containingFile.text)
-      val annotation =
-        holder
-          .newAnnotation(
-            HighlightSeverity.ERROR,
-            "Cannot call '${element.memberNameText}' because it is not a method. If you meant to write a comparison instead, wrap '${element.memberNameText}' in parentheses.",
-          )
-          .range(textRange)
-          .tooltip(
-            "Cannot call <code>${element.memberNameText.escapeXml()}</code> because it is not a method. If you meant to write a comparison instead, wrap <code>${element.memberNameText}</code> in parentheses."
-          )
-          .problemGroup(PklProblemGroups.unresolvedElement)
-          .withFix(PklParenthesizeElementQuickFix(element, memberNameText))
-      annotation.create()
-    } else {
-      reportUnresolvedAccess(element, thisType, base, holder, context)
     }
   }
 }

@@ -25,7 +25,7 @@ import org.junit.Test
 import org.pkl.intellij.annotator.PklAnnotator
 import org.pkl.intellij.annotator.PklExprAnnotator
 
-class PklParenthesizeElementQuickFixTest {
+class PklParenthesizeComparisonQuickFixTest {
   private lateinit var fixture: CodeInsightTestFixture
 
   @Before
@@ -50,13 +50,13 @@ class PklParenthesizeElementQuickFixTest {
   }
 
   private fun applyFix(source: String, expected: String) {
-    fixture.configureByText("test.pkl", source.trimIndent())
+    fixture.configureByText("test.pkl", source)
     val fixes = fixture.getAllQuickFixes()
     val fix =
       fixes.firstOrNull { it.familyName == "Wrap in parentheses" }
         ?: throw AssertionError("Expected to find a quickfix, but did not find any")
     fixture.launchAction(fix)
-    fixture.checkResult(expected.trimIndent())
+    fixture.checkResult(expected)
   }
 
   @Test
@@ -67,13 +67,15 @@ class PklParenthesizeElementQuickFixTest {
       bar = 2
       baz = 3
       res = fo<caret>o < bar > (baz)
-      """,
+      """
+        .trimIndent(),
       """
       foo = 1
       bar = 2
       baz = 3
       res = (foo) < bar > (baz)
-      """,
+      """
+        .trimIndent(),
     )
   }
 
@@ -85,13 +87,15 @@ class PklParenthesizeElementQuickFixTest {
       bar = 2
       baz = 3
       res = module.fo<caret>o < bar > (baz)
-      """,
+      """
+        .trimIndent(),
       """
       foo = 1
       bar = 2
       baz = 3
       res = (module.foo) < bar > (baz)
-      """,
+      """
+        .trimIndent(),
     )
   }
 
@@ -103,13 +107,15 @@ class PklParenthesizeElementQuickFixTest {
       bar = 2
       baz = 3
       class B extends A { y = super.<caret>x < bar > (baz) }
-      """,
+      """
+        .trimIndent(),
       """
       open class A { x = 1 }
       bar = 2
       baz = 3
       class B extends A { y = (super.x) < bar > (baz) }
-      """,
+      """
+        .trimIndent(),
     )
   }
 

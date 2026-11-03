@@ -26,7 +26,8 @@ import com.intellij.psi.PsiFile
 import org.pkl.intellij.psi.PklAccessExpr
 import org.pkl.intellij.psi.memberAccessTextRange
 
-class PklParenthesizeElementQuickFix(element: PklAccessExpr, private val memberNameText: String) :
+/** Wraps `foo` in parentheses in `foo < bar > (qux)` */
+class PklParenthesizeComparisonQuickFix(element: PklAccessExpr) :
   LocalQuickFixAndIntentionActionOnPsiElement(element) {
   override fun invoke(
     project: Project,
@@ -46,7 +47,7 @@ class PklParenthesizeElementQuickFix(element: PklAccessExpr, private val memberN
     psiDocumentManager.commitDocument(document)
   }
 
-  override fun getText(): @IntentionName String = "Wrap in '${memberNameText}' in parentheses"
+  override fun getText(): @IntentionName String = "Wrap left-hand side with parentheses"
 
   override fun getFamilyName(): @IntentionFamilyName String = "Wrap in parentheses"
 }
