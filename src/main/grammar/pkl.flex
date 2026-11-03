@@ -316,7 +316,6 @@ INTERPOLATION_START = {ESCAPE_PREFIX} "("
 ">"  { return GT; }
 "!"  { return NOT; }
 "?"  { return QUESTION; }
-"::" { return DCOLON; }
 ":"  { return COLON; }
 "->" { return ARROW; }
 "==" { return EQUAL; }

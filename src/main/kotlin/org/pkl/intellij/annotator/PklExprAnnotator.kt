@@ -70,11 +70,13 @@ class PklExprAnnotator : PklAnnotator() {
               }
               reportUnresolvedAccess(element, thisType, base, holder, context)
             }
+
             is PklMethod -> {
               checkConstAccess(element, target, holder, lookupMode)
               checkArgumentCount(element, target, base, holder)
               checkTypeArgumentCount(element, target, holder)
             }
+
             is PklProperty -> {
               checkConstAccess(element, target, holder, lookupMode)
               checkRecursivePropertyReference(element, target, holder)
@@ -104,6 +106,7 @@ class PklExprAnnotator : PklAnnotator() {
             null -> {
               reportUnresolvedAccess(element, receiverType, base, holder, context)
             }
+
             is PklMethod -> {
               checkConstQualifiedAccess(element, target, holder)
               checkArgumentCount(element, target, base, holder)
@@ -125,6 +128,7 @@ class PklExprAnnotator : PklAnnotator() {
                     }
                   }
                 }
+
                 base.mapType -> {
                   when {
                     target == base.mapContainsKeyMethod ||
@@ -181,6 +185,7 @@ class PklExprAnnotator : PklAnnotator() {
                     }
                   }
                 }
+
                 else -> {}
               }
             }
@@ -195,13 +200,14 @@ class PklExprAnnotator : PklAnnotator() {
             return // don't flag
 
           val visitor = ResolveVisitors.firstElementNamed(element.memberNameText, base)
-          val target = element.resolve(base, thisType, mapOf(), visitor, context)
-          if (target == null) reportUnresolvedAccess(element, thisType, base, holder, context)
-          when (target) {
+          when (val target = element.resolve(base, thisType, mapOf(), visitor, context)) {
             is PklProperty -> checkConstAccess(element.memberName, target, holder, null)
             is PklMethod -> {
               checkConstAccess(element.memberName, target, holder, null)
               checkTypeArgumentCount(element, target, holder)
+            }
+            null -> {
+              reportUnresolvedAccess(element, thisType, base, holder, context)
             }
           }
         }
@@ -619,6 +625,7 @@ class PklExprAnnotator : PklAnnotator() {
           .tooltip(htmlMessage)
           .create()
       }
+
       typeArgCount > typeParamCount -> {
         val message = buildString {
           append("Too many type arguments for method ")
@@ -678,6 +685,7 @@ class PklExprAnnotator : PklAnnotator() {
             .create()
         }
       }
+
       argCount > paramCount -> {
         if (method.isVarArgs(base)) return
 
@@ -709,6 +717,47 @@ class PklExprAnnotator : PklAnnotator() {
     holder: AnnotationHolder,
     context: PklProject?,
   ) {
+    if (expr.typeArgumentList != null) {
+      val visitor =
+        ResolveVisitors.firstElementNamed(expr.memberNameText, base, resolveImports = false)
+      val target =
+        when (expr) {
+          is PklQualifiedAccessExpr,
+          is PklSuperAccessExpr ->
+            Resolvers.resolveQualifiedAccess(receiverType, true, base, visitor, context)
+          is PklUnqualifiedAccessExpr ->
+            Resolvers.resolveUnqualifiedAccess(
+              expr,
+              receiverType,
+              true,
+              base,
+              mapOf(),
+              visitor,
+              context,
+            )
+          else ->
+            throw IllegalStateException(
+              "Impossible condition; got an access expression that subclasses PklAccessExpr"
+            )
+        }
+      if (target != null) {
+        val textRange = expr.memberAccessTextRange
+        val annotation =
+          holder
+            .newAnnotation(
+              HighlightSeverity.ERROR,
+              "Cannot call '${expr.memberNameText}' because it is not a method. If you meant to write a comparison instead, wrap the left-hand side in parentheses.",
+            )
+            .range(textRange)
+            .tooltip(
+              "Cannot call <code>${expr.memberNameText.escapeXml()}</code> because it is not a method. If you meant to write a comparison instead, wrap the left-hand side in parentheses."
+            )
+            .problemGroup(PklProblemGroups.unresolvedElement)
+            .withFix(PklParenthesizeComparisonQuickFix(expr))
+        annotation.create()
+        return
+      }
+    }
     createAnnotation(
       if (receiverType.isUnresolvedMemberFatal(base, context)) HighlightSeverity.ERROR
       else HighlightSeverity.WARNING,
