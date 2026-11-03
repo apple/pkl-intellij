@@ -297,6 +297,9 @@ class PklBaseModule(private val stdLib: PklStdLib) {
   val stringIsEmptyProperty: PklClassProperty by lazy {
     stringType.psi.cache(null).properties.getValue("isEmpty")
   }
+  val stringIsNotEmptyProperty: PklClassProperty? by lazy {
+    stringType.psi.cache(null).properties["isNotEmpty"]
+  }
   val stringIsRegexProperty: PklClassProperty by lazy {
     stringType.psi.cache(null).properties.getValue("isRegex")
   }
@@ -325,6 +328,9 @@ class PklBaseModule(private val stdLib: PklStdLib) {
   val listIsEmptyProperty: PklClassProperty by lazy {
     listType.psi.cache(null).properties.getValue("isEmpty")
   }
+  val listIsNotEmptyProperty: PklClassProperty? by lazy {
+    listType.psi.cache(null).properties["isNotEmpty"]
+  }
   val listFoldMethod: PklClassMethod? by lazy { listType.psi.cache(null).methods["fold"] }
   val listFoldIndexedMethod: PklClassMethod? by lazy {
     listType.psi.cache(null).methods["foldIndexed"]
@@ -344,6 +350,9 @@ class PklBaseModule(private val stdLib: PklStdLib) {
   val setIsEmptyProperty: PklClassProperty by lazy {
     setType.psi.cache(null).properties.getValue("isEmpty")
   }
+  val setIsNotEmptyProperty: PklClassProperty? by lazy {
+    setType.psi.cache(null).properties["isNotEmpty"]
+  }
   val setLengthProperty: PklClassProperty by lazy {
     setType.psi.cache(null).properties.getValue("length")
   }
@@ -357,6 +366,9 @@ class PklBaseModule(private val stdLib: PklStdLib) {
   }
   val mapIsEmptyProperty: PklClassProperty by lazy {
     mapType.psi.cache(null).properties.getValue("isEmpty")
+  }
+  val mapIsNotEmptyProperty: PklClassProperty? by lazy {
+    mapType.psi.cache(null).properties["isNotEmpty"]
   }
   val mapKeysProperty: PklClassProperty by lazy {
     mapType.psi.cache(null).properties.getValue("keys")
