@@ -24,20 +24,24 @@ import org.pkl.intellij.psi.PklClass
 import org.pkl.intellij.psi.PklClassExtendsClause
 import org.pkl.intellij.psi.PklDeclaredType
 import org.pkl.intellij.psi.PklDefaultType
+import org.pkl.intellij.psi.PklForGenerator
 import org.pkl.intellij.psi.PklMemberPredicate
 import org.pkl.intellij.psi.PklMethod
 import org.pkl.intellij.psi.PklModuleType
 import org.pkl.intellij.psi.PklObjectBody
+import org.pkl.intellij.psi.PklObjectEntry
 import org.pkl.intellij.psi.PklProperty
 import org.pkl.intellij.psi.PklThisType
 import org.pkl.intellij.psi.PklType
 import org.pkl.intellij.psi.PklTypeAlias
 import org.pkl.intellij.psi.PklTypeConstraintList
 import org.pkl.intellij.psi.PklUnionType
+import org.pkl.intellij.psi.PklWhenGenerator
 import org.pkl.intellij.psi.pklBaseModule
 import org.pkl.intellij.type.Type
 import org.pkl.intellij.type.toType
 import org.pkl.intellij.util.currentModule
+import org.pkl.intellij.util.escapeXml
 
 /**
  * Validate types:
@@ -127,7 +131,7 @@ class PklTypeAnnotator : PklAnnotator() {
         }
         // not allowed in typealias bodies
         parent is PklTypeAlias -> {
-          annotationLocation = "within a type alias body"
+          annotationLocation = "within a typealias body"
           break
         }
         // not allowed in annotation bodies
@@ -162,30 +166,61 @@ class PklTypeAnnotator : PklAnnotator() {
   }
 
   private fun validateThisType(thiz: PklThisType, holder: AnnotationHolder) {
+    var annotationLocation: Pair<String, String>? = null
     var prev: PsiElement = thiz
     var parent = thiz.parent
+    var skipNextObjectBody = false
     while (parent != null) {
-      when {
+      when (parent) {
+        is PklForGenerator,
+        is PklWhenGenerator -> {
+          skipNextObjectBody = true
+        }
+        is PklObjectEntry if prev == parent.keyExpr -> {
+          skipNextObjectBody = true
+        }
         // always allowed in object bodies
-        parent is PklObjectBody -> break
+        is PklObjectBody -> {
+          if (skipNextObjectBody) {
+            skipNextObjectBody = false
+          } else {
+            break
+          }
+        }
         // always allowed in custom this scopes
-        parent is PklTypeConstraintList -> break
-        parent is PklMemberPredicate && parent.conditionExpr == prev -> break
+        is PklTypeConstraintList -> break
+        is PklMemberPredicate if prev == parent.conditionExpr -> break
         // not allowed in type alias bodies
-        parent is PklTypeAlias -> {
-          holder
-            .newAnnotation(
-              HighlightSeverity.ERROR,
-              "Cannot reference `this` type within a type alias body",
-            )
-            .tooltip("Cannot reference <code>this</code> type within a type alias body")
-            .range(thiz)
-            .create()
+        is PklTypeAlias -> {
+          val msg = "from a typealias body"
+          annotationLocation = msg to msg
           break
         }
+
+        // don't break from these; an enclosing object body might still allow it
+        is PklProperty if parent.isConst ->
+          annotationLocation =
+            "from const property `${parent.name}`" to
+              "from const property <code>${parent.name.escapeXml()}</code>"
+        // not allowed in const methods
+        is PklMethod if parent.isConst ->
+          annotationLocation =
+            "from const method `${parent.name}`" to
+              "from const method <code>${parent.name?.escapeXml()}</code>"
       }
       prev = parent
       parent = parent.parent
+    }
+
+    if (annotationLocation != null) {
+      holder
+        .newAnnotation(
+          HighlightSeverity.ERROR,
+          "Cannot reference `this` type ${annotationLocation.first}",
+        )
+        .tooltip("Cannot reference <code>this</code> type ${annotationLocation.second}")
+        .range(thiz)
+        .create()
     }
   }
 }

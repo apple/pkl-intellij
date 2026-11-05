@@ -257,7 +257,9 @@ class PklDocumentationProvider : AbstractDocumentationProvider() {
         // (e.g. they aren't param declarations or class properties)
         element.isPhysical && originalElement?.isAncestor(element) == false -> {
           val accessExpr = originalElement.parentOfType<PklAccessExpr>()
-          val receiverType = accessExpr?.inferReceiverType(base, emptyMap(), context)
+          val receiverType =
+            accessExpr?.inferReceiverType(base, emptyMap(), context)
+              ?: element.computeThisType(base, emptyMap(), context)
           val computedType =
             if (resolveByName) {
               val visitor =
