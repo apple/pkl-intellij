@@ -475,6 +475,10 @@ private class TypeNameHandler(
     }
   }
 
+  override fun visitThisType(o: PklThisType) {
+    sb.append("this")
+  }
+
   override fun visitNothingType(o: PklNothingType) {
     sb.append("nothing")
   }
