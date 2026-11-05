@@ -55,7 +55,84 @@ class PklTypeAnnotatorTest {
   fun `this - not allowed in typealias bodies`() {
     checkHighlighting(
       """
-      typealias Foo = <error descr="Cannot reference `this` type within a type alias body">this</error>
+      typealias Foo = <error descr="Cannot reference `this` type from a typealias body">this</error>
+      """
+        .trimIndent()
+    )
+  }
+
+  @Test
+  fun `this - not allowed in const property`() {
+    checkHighlighting(
+      """
+      const foo: <error descr="Cannot reference `this` type from const property `foo`">this</error>
+      """
+        .trimIndent()
+    )
+  }
+
+  @Test
+  fun `this - not allowed in const method`() {
+    checkHighlighting(
+      """
+      const function foo(bar: <error descr="Cannot reference `this` type from const method `foo`">this</error>) = 1
+      """
+        .trimIndent()
+    )
+  }
+
+  @Test
+  fun `this - not allowed in eager scope of const property`() {
+    checkHighlighting(
+      """
+      qux = "qux"
+
+      const foo = new {
+        [let (myself: <error descr="Cannot reference `this` type from const property `foo`">this</error> = this) myself.qux] = 5
+      }
+      """
+        .trimIndent()
+    )
+  }
+
+  @Test
+  fun `this - okay to use if it doesn't break the const scope`() {
+    checkHighlighting(
+      """
+      // okay to use `this` if it doesn't break the const scope
+      const function myFunc() = new {
+        local myself: this = this
+        result = myself.bar
+        bar = 3
+      }
+
+      const res1 = new {
+        local myself: this = this
+        result = myself.bar
+        bar = 3
+      }
+
+      res2 = myFunc()
+      """
+        .trimIndent()
+    )
+  }
+
+  @Test
+  fun `this - cannot use in const property 2`() {
+    checkHighlighting(
+      """
+      const func = (elem: <error descr="Cannot reference `this` type from const property `func`">this</error>) -> elem
+      """
+        .trimIndent()
+    )
+  }
+
+  @Test
+  fun `this - okay to use inside custom this scope`() {
+    checkHighlighting(
+      """
+      const foo: String(this is this) = "x"
       """
         .trimIndent()
     )
@@ -65,7 +142,7 @@ class PklTypeAnnotatorTest {
   fun `module - not allowed in typealias bodies`() {
     checkHighlighting(
       """
-      typealias Foo = <warning descr="Cannot reference `module` type within a type alias body; this will be an error in a future release">module</warning>
+      typealias Foo = <warning descr="Cannot reference `module` type within a typealias body; this will be an error in a future release">module</warning>
       """
         .trimIndent()
     )
