@@ -22,7 +22,7 @@ kotlinSerialization = "2.4.20"
 kotlinx = "1.11.0"
 ktfmt = "0.64"
 # fallback if stdlib isn't found in IntelliJ project dependencies
-pkl = "0.32.0"
+pkl = "0.33.0"
 pkl-cli = "0.28.2"
 spotless = "8.10.2"
 intellijTestPlatform = "243.21565.193"

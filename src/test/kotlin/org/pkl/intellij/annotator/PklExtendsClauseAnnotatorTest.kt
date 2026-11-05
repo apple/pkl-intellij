@@ -478,15 +478,15 @@ class PklExtendsClauseAnnotatorTest {
         """
         import "pkl:ref"
 
-        class Domain extends ref.Domain
+        class Domain extends ref.AbstractDomain
         """
           .trimIndent(),
       after =
         """
         import "pkl:ref"
 
-        class Domain extends ref.Domain {
-          function renderReference(reference: ref.Reference<ref.Domain, Any>): String = TODO()
+        class Domain extends ref.AbstractDomain {
+          function renderReference(reference: ref.Reference<this, Any>): String = TODO()
         }
         """
           .trimIndent(),
