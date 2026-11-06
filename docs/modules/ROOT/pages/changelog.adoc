@@ -1,5 +1,42 @@
 = Changelog
 
+[[release-0.38.0]]
+== 0.38.0 (2026-11-06)
+
+=== Additions
+
+* Add support for `this` as a type (https://github.com/apple/pkl-intellij/pull/235[#235], https://github.com/apple/pkl-intellij/pull/289[#289]).
+* Add support for expanded generic methods (https://github.com/apple/pkl-intellij/pull/259[#259], https://github.com/apple/pkl-intellij/pull/284[#284]).
+* Add completions for module names (https://github.com/apple/pkl-intellij/pull/286[#286]).
+* Add support for `String/List/Set/Map.isNotEmpty` constraints (https://github.com/apple/pkl-intellij/pull/288[#288]).
+* Add support for new XDG style paths in Pkl 0.33 (https://github.com/apple/pkl-intellij/pull/291[#291]).
+
+=== Changes
+
+* Update diagnostics for abstract elements (https://github.com/apple/pkl-intellij/pull/261[#261]).
+* Update fallback standard library to Pkl 0.33.0 (https://github.com/apple/pkl-intellij/pull/290[#290]).
+
+=== Fixes
+
+* Fix stale cache after downloading dependencies (https://github.com/apple/pkl-intellij/pull/257[#257]).
+* Fix `CachedValue` error caused by missing dependencies (https://github.com/apple/pkl-intellij/pull/263[#263]).
+* Fix resolving of transitive modulepath imports (https://github.com/apple/pkl-intellij/pull/276[#276]).
+* Fix Pkl CLI download URLs (https://github.com/apple/pkl-intellij/pull/278[#278]).
+* Fix Pkl CLI download URLs for x86-64 and Windows (https://github.com/apple/pkl-intellij/pull/278[#278]).
+* Fix resolution of quoted identifiers (https://github.com/apple/pkl-intellij/pull/280[#280]).
+* Fix parsing of chained amends that start with `new` (https://github.com/apple/pkl-intellij/pull/281[#281]).
+* Fix resolution of amended fixed properties (https://github.com/apple/pkl-intellij/pull/285[#285]).
+
+=== Contributors ❤️
+
+We would like to thank the contributors to this release (in alphabetical order):
+
+* https://github.com/bioball[@bioball]
+* https://github.com/EliasFeiner[@EliasFeiner]
+* https://github.com/HT154[@HT154]
+* https://github.com/rksharma-owg[@rksharma-owg]
+* https://github.com/stackoverflow[@stackoverflow]
+
 [[release-0.37.1]]
 == 0.37.1 (2026-09-14)
 
