@@ -34,7 +34,6 @@ import io.ktor.client.request.get
 import java.net.URI
 import java.nio.file.Files
 import java.nio.file.Path
-import java.nio.file.Paths
 import java.nio.file.attribute.PosixFilePermission
 import java.util.concurrent.CompletableFuture
 import javax.swing.DefaultComboBoxModel
@@ -44,6 +43,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
+import org.pkl.intellij.util.SystemDirs
 import org.pkl.intellij.util.copyToWithIndicator
 import org.pkl.intellij.util.handleOnEdt
 
@@ -203,14 +203,7 @@ class PklDownloadPklCliAction(
       if (System.getProperty("os.name").lowercase().startsWith("windows")) "pkl.exe" else "pkl"
 
     private fun suggestedDownloadPath(): String =
-      Paths.get(
-          System.getProperty("user.home"),
-          ".pkl",
-          "editor-support",
-          "bin",
-          defaultExecutableName(),
-        )
-        .toString()
+      SystemDirs.pklDataDir.resolve("editor-support/bin/${defaultExecutableName()}").toString()
   }
 }
 

@@ -46,8 +46,8 @@ import org.pkl.intellij.psi.PklModuleUri
 import org.pkl.intellij.stubs.PklModuleUriIndex
 import org.pkl.intellij.toolchain.pklCli
 import org.pkl.intellij.util.noCacheResult
-import org.pkl.intellij.util.pklCacheDir
 import org.pkl.intellij.util.pklCacheDirPath
+import org.pkl.intellij.util.pklCacheDirs
 import org.pkl.intellij.util.refreshCacheDir
 
 val Project.pklPackageService: PklPackageService
@@ -187,7 +187,7 @@ class PklPackageService(val project: Project) : Disposable, UserDataHolderBase()
         try {
           val cacheDir = pklCacheDirPath()
           project.pklCli.downloadPackage(packages, cacheDir = cacheDir)
-          cacheDir?.let(::refreshCacheDir)
+          refreshCacheDir(cacheDir)
           complete(Unit)
         } catch (e: Throwable) {
           completeExceptionally(e)
@@ -202,7 +202,7 @@ class PklPackageService(val project: Project) : Disposable, UserDataHolderBase()
         try {
           val cacheDir = pklCacheDirPath()
           project.pklCli.downloadPackage(listOf(packageUri), cacheDir = cacheDir)
-          cacheDir?.let(::refreshCacheDir)
+          refreshCacheDir(cacheDir)
           complete(Unit)
         } catch (e: Throwable) {
           completeExceptionally(e)
@@ -300,23 +300,27 @@ class PklPackageService(val project: Project) : Disposable, UserDataHolderBase()
 
   private fun doGetRoots(dependency: PackageDependency): PackageLibraryRoots? {
     thisLogger().info("Getting library roots for ${dependency.packageUri}")
-    val cacheDir = pklCacheDir?.toNioPath() ?: return null
+    val cacheDirs = pklCacheDirs.map { it.toNioPath() }
     val metadataFile =
       dependency.packageUri.relativeMetadataFiles.firstNotNullOfOrNull { path ->
-        localFs.findFileByNioFile(cacheDir.resolve(path))
+        cacheDirs.firstNotNullOfOrNull { localFs.findFileByNioFile(it.resolve(path)) }
       }
         ?: run {
-          val paths = dependency.packageUri.relativeMetadataFiles.map(cacheDir::resolve)
+          val paths = cacheDirs.flatMap { dir ->
+            dependency.packageUri.relativeMetadataFiles.map(dir::resolve)
+          }
           thisLogger()
             .info("Missing metadata file at paths ${paths.joinToString(", ") { "`$it`" }}")
           return null
         }
     val zipFile =
       dependency.packageUri.relativeZipFiles.firstNotNullOfOrNull { path ->
-        localFs.findFileByNioFile(cacheDir.resolve(path))
+        cacheDirs.firstNotNullOfOrNull { localFs.findFileByNioFile(it.resolve(path)) }
       }
         ?: run {
-          val paths = dependency.packageUri.relativeZipFiles.map(cacheDir::resolve)
+          val paths = cacheDirs.flatMap { dir ->
+            dependency.packageUri.relativeZipFiles.map(dir::resolve)
+          }
           thisLogger().info("Missing zip file at paths ${paths.joinToString(", ") { "`$it`" }}")
           return null
         }
