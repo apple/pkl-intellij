@@ -84,6 +84,68 @@ class TypeTest : BasePlatformTestCase() {
     assertTrue(base.intType.isSubtypeOf(stringOrIntType, base, null))
   }
 
+  fun testNumberIsSubtypeOfNumericUnion() {
+    val base = project.pklBaseModule
+    val numeric = Type.union(base.intType, base.floatType, base, null)
+    val reversed = Type.union(base.floatType, base.intType, base, null)
+
+    assertTrue(base.numberType.isSubtypeOf(numeric, base, null))
+    assertTrue(base.numberType.isSubtypeOf(reversed, base, null))
+    assertTrue(numeric.isSubtypeOf(base.numberType, base, null))
+    assertTrue(
+      base.listType
+        .withTypeArguments(base.numberType)
+        .isSubtypeOf(base.listType.withTypeArguments(numeric), base, null)
+    )
+  }
+
+  fun testNumberMatchesAliasedAndNullableNumericUnion() {
+    val base = project.pklBaseModule
+    val alias = PklPsiFactory.createTypeAlias("Numeric", "Int|Float", project)
+    val numeric = Type.alias(alias, null)
+
+    assertTrue(base.numberType.isSubtypeOf(numeric, base, null))
+    assertTrue(
+      base.numberType.nullable(base, null).isSubtypeOf(numeric.nullable(base, null), base, null)
+    )
+    assertFalse(base.numberType.nullable(base, null).isSubtypeOf(numeric, base, null))
+  }
+
+  fun testNumberUnionSubtypingPreservesStrictConstraints() {
+    val base = project.pklBaseModule
+    val constraints = listOf(ConstraintValue.False)
+    val constrainedUnion =
+      Type.union(
+        base.intType.withConstraints(constraints),
+        base.floatType.withConstraints(constraints),
+        base,
+        null,
+      )
+
+    assertTrue(base.numberType.isSubtypeOf(constrainedUnion, base, null))
+    assertFalse(base.numberType.isSubtypeOf(constrainedUnion, base, null, true))
+    assertTrue(
+      base.numberType.withConstraints(constraints).isSubtypeOf(constrainedUnion, base, null, true)
+    )
+  }
+
+  fun testNumberRejectsIncompleteNumericUnions() {
+    val base = project.pklBaseModule
+
+    assertFalse(base.numberType.isSubtypeOf(base.intType, base, null))
+    assertFalse(base.numberType.isSubtypeOf(base.floatType, base, null))
+    assertFalse(
+      base.numberType.isSubtypeOf(Type.union(base.intType, base.stringType, base, null), base, null)
+    )
+    assertFalse(
+      base.numberType.isSubtypeOf(
+        Type.union(base.floatType, base.stringType, base, null),
+        base,
+        null,
+      )
+    )
+  }
+
   fun testGenericType() {
     val base = project.pklBaseModule
 
