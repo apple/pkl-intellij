@@ -8,7 +8,7 @@
 * Add support for `this` as a type (https://github.com/apple/pkl-intellij/pull/235[#235], https://github.com/apple/pkl-intellij/pull/289[#289]).
 * Add support for expanded generic methods (https://github.com/apple/pkl-intellij/pull/259[#259], https://github.com/apple/pkl-intellij/pull/284[#284]).
 * Add completions for module names (https://github.com/apple/pkl-intellij/pull/286[#286]).
-* Add support for `String/List/Set/Map.isNotEmpty` constraints (https://github.com/apple/pkl-intellij/pull/288[#288]).
+* Add support for `String`/`List`/`Set`/`Map.isNotEmpty` constraints (https://github.com/apple/pkl-intellij/pull/288[#288]).
 * Add support for new XDG style paths in Pkl 0.33 (https://github.com/apple/pkl-intellij/pull/291[#291]).
 
 === Changes
