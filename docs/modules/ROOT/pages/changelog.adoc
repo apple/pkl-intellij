@@ -33,6 +33,7 @@ We would like to thank the contributors to this release (in alphabetical order):
 
 * https://github.com/bioball[@bioball]
 * https://github.com/EliasFeiner[@EliasFeiner]
+* https://github.com/florinungur[@florinungur]
 * https://github.com/HT154[@HT154]
 * https://github.com/rksharma-owg[@rksharma-owg]
 * https://github.com/stackoverflow[@stackoverflow]
