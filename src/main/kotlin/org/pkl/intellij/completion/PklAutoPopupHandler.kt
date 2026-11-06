@@ -38,27 +38,29 @@ class PklAutoPopupHandler : TypedHandlerDelegate() {
 
     if (file !is PklModule) return CONTINUE
 
-    if (charTyped == '"') {
-      // trigger auto popup for string literals (module URIs, string literal types)
-      // only takes effect if completion candidates are found
-      AutoPopupController.getInstance(project).scheduleAutoPopup(editor, CompletionType.BASIC) {
-        pklModule ->
-        val offset = editor.caretModel.offset
-        val token = pklModule.findElementAt(offset - 1)
-        token?.elementType == PklElementTypes.STRING_START
+    when (charTyped) {
+      '"' -> {
+        // trigger auto popup for string literals (module URIs, string literal types)
+        // only takes effect if completion candidates are found
+        AutoPopupController.getInstance(project).scheduleAutoPopup(editor, CompletionType.BASIC) {
+          pklModule ->
+          val offset = editor.caretModel.offset
+          val token = pklModule.findElementAt(offset - 1)
+          token?.elementType == PklElementTypes.STRING_START
+        }
+        return STOP
       }
-      return STOP
-    } else if (charTyped == '/') {
-      AutoPopupController.getInstance(project).scheduleAutoPopup(editor, CompletionType.BASIC) {
-        pklModule ->
-        val offset = editor.caretModel.offset
-        val token = pklModule.findElementAt(offset - 1) ?: return@scheduleAutoPopup false
-        token.elementType == PklElementTypes.STRING_CHARS &&
-          token.parent.parent.parent is PklModuleUri
+      '/' -> {
+        AutoPopupController.getInstance(project).scheduleAutoPopup(editor, CompletionType.BASIC) {
+          pklModule ->
+          val offset = editor.caretModel.offset
+          val token = pklModule.findElementAt(offset - 1) ?: return@scheduleAutoPopup false
+          token.elementType == PklElementTypes.STRING_CHARS &&
+            token.parent.parent.parent is PklModuleUri
+        }
+        return STOP
       }
-      return STOP
+      else -> return CONTINUE
     }
-
-    return CONTINUE
   }
 }
