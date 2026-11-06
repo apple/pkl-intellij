@@ -82,12 +82,9 @@ private const val SIGNIFICAND_BITS = 52
 
 private const val IMPLICIT_BIT: Long = SIGNIFICAND_MASK + 1
 
-val pklDir: VirtualFile?
-  get() = VfsUtil.getUserHomeDir()?.findChild(".pkl")
-
 /**
  * Overrides the location of [pklCacheDir]. Used by tests to point at an isolated, per-run cache
- * directory instead of the real `~/.pkl/cache`.
+ * directory instead of the real cache. When set, [legacyPklCacheDir] is ignored.
  */
 val pklCacheDirOverride: String?
   get() = System.getProperty("org.pkl.intellij.pklCacheDir")
@@ -95,7 +92,17 @@ val pklCacheDirOverride: String?
 val pklCacheDir: VirtualFile?
   get() =
     pklCacheDirOverride?.let { LocalFileSystem.getInstance().refreshAndFindFileByPath(it) }
-      ?: pklDir?.findChild("cache")
+      ?: LocalFileSystem.getInstance().findFileByNioFile(SystemDirs.pklCacheDir)
+
+/** The legacy `~/.pkl/cache` directory, consulted after [pklCacheDir] when looking up packages. */
+val legacyPklCacheDir: VirtualFile?
+  get() =
+    if (pklCacheDirOverride != null) null
+    else LocalFileSystem.getInstance().findFileByNioFile(SystemDirs.legacyPklCacheDir)
+
+/** [pklCacheDir] followed by [legacyPklCacheDir], in lookup order. */
+val pklCacheDirs: List<VirtualFile>
+  get() = listOfNotNull(pklCacheDir, legacyPklCacheDir)
 
 /**
  * The on-disk location of [pklCacheDir], regardless of whether it currently exists.
@@ -103,9 +110,7 @@ val pklCacheDir: VirtualFile?
  * Unlike [pklCacheDir], this does not depend on the directory already having been discovered by the
  * VFS, so it is safe to use as the target of a fresh `pkl download-package` invocation.
  */
-fun pklCacheDirPath(): Path? =
-  pklCacheDirOverride?.let(Path::of)
-    ?: VfsUtil.getUserHomeDir()?.toNioPath()?.resolve(".pkl")?.resolve("cache")
+fun pklCacheDirPath(): Path = pklCacheDirOverride?.let(Path::of) ?: SystemDirs.pklCacheDir
 
 /**
  * Forces the VFS to pick up files written to [path] by an external process (e.g. the `pkl` CLI),
@@ -138,8 +143,11 @@ data class Package1CacheDir(override val file: VirtualFile) : CacheDir {
 val packages2CacheDir: CacheDir?
   get() = pklCacheDir?.findChild("package-2")?.let { Package2CacheDir(it) }
 
-val packages1CacheDir: CacheDir?
-  get() = pklCacheDir?.findChild("package-1")?.let { Package1CacheDir(it) }
+val legacyPackages2CacheDir: CacheDir?
+  get() = legacyPklCacheDir?.findChild("package-2")?.let { Package2CacheDir(it) }
+
+val legacyPackages1CacheDir: CacheDir?
+  get() = legacyPklCacheDir?.findChild("package-1")?.let { Package1CacheDir(it) }
 
 @Suppress("UNUSED_PARAMETER")
 fun escapeString(content: String, startDelimiter: String = "\""): String {

@@ -236,8 +236,13 @@ class ModuleUriCompletionProvider(private val packageUriOnly: Boolean = false) :
     val basePath = path.substringBeforeLast('/')
     val packageName = path.substringAfterLast('/')
     val packages = buildSet {
-      packages1CacheDir?.resolve(basePath)?.children?.map { it.name }?.let(::addAll)
       packages2CacheDir?.resolve(basePath)?.children?.map { decodePath(it.name) }?.let(::addAll)
+      legacyPackages2CacheDir
+        ?.resolve(basePath)
+        ?.children
+        ?.map { decodePath(it.name) }
+        ?.let(::addAll)
+      legacyPackages1CacheDir?.resolve(basePath)?.children?.map { it.name }?.let(::addAll)
     }
     for (pkg in packages) {
       if (pkg.startsWith(packageName)) {
@@ -252,8 +257,11 @@ class ModuleUriCompletionProvider(private val packageUriOnly: Boolean = false) :
 
   private fun completePackageBaseUris(collector: MutableList<LookupElement>) {
     val packages = buildSet {
-      packages1CacheDir?.let { addAll(collectPackages(it.file.toNioPath())) }
       packages2CacheDir?.let { addAll(collectPackages(it.file.toNioPath()).map(::decodePath)) }
+      legacyPackages2CacheDir?.let {
+        addAll(collectPackages(it.file.toNioPath()).map(::decodePath))
+      }
+      legacyPackages1CacheDir?.let { addAll(collectPackages(it.file.toNioPath())) }
     }
     if (packages.isEmpty()) return
     for (pkg in packages) {
