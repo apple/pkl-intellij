@@ -174,4 +174,32 @@ class ReferenceResolveTest : PklTestCase() {
     val resolved = myFixture.getReferenceAtCaretPosition()!!.resolve()
     assertThat(resolved).isInstanceOf(PklClassProperty::class.java)
   }
+
+  fun `test resolve reference subscript through typealias`() {
+    myFixture.configureByText(
+      PklFileType,
+      """
+      import "pkl:ref"
+
+      typealias MyReference<T> = ref.Reference<Domain, T>
+
+      class Domain extends ref.Domain
+
+      class Bird {
+        /// The name of the bird
+        name: String
+      }
+
+      r: MyReference<Listing<Bird>>
+
+      res = r[0].na<caret>me
+      """
+        .trimIndent(),
+    )
+    val element = myFixture.getReferenceAtCaretPosition()!!
+    val resolved = element.resolve()
+    assertThat(resolved).isInstanceOf(PklClassProperty::class.java)
+    resolved as PklClassProperty
+    assertThat(resolved.name).isEqualTo("name")
+  }
 }
