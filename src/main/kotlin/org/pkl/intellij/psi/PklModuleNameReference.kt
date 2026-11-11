@@ -39,4 +39,6 @@ class PklModuleNameReference(private val moduleName: PklModuleName) :
   }
 
   override fun resolve(): PklModule? = resolveContextual(null)
+
+  override fun bindToElement(newTarget: PsiElement): PsiElement = element
 }

@@ -18,6 +18,7 @@ package org.pkl.intellij.psi
 import com.intellij.openapi.util.TextRange
 import com.intellij.psi.*
 import com.intellij.psi.util.parentOfType
+import com.intellij.util.IncorrectOperationException
 import org.pkl.intellij.packages.dto.PklProject
 import org.pkl.intellij.resolve.ResolveVisitors
 import org.pkl.intellij.resolve.Resolvers
@@ -54,4 +55,6 @@ class PklSimpleTypeNameReference(private val simpleTypeName: PklSimpleTypeName) 
   override fun resolve(): PklElement? {
     return resolveContextual(simpleTypeName.enclosingModule?.pklProject)
   }
+
+  override fun bindToElement(newTarget: PsiElement): PsiElement = element
 }
