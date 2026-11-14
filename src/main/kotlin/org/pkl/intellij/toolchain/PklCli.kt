@@ -29,6 +29,7 @@ import com.intellij.execution.runners.ExecutionEnvironment
 import com.intellij.execution.runners.ExecutionEnvironmentBuilder
 import com.intellij.openapi.application.runInEdt
 import com.intellij.openapi.progress.runBackgroundableTask
+import com.intellij.openapi.progress.util.ProgressIndicatorUtils
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.util.Disposer
 import com.intellij.openapi.util.Key
@@ -111,6 +112,7 @@ class PklCli(private val proj: Project) {
     val profile = PklRunProfile(command, title ?: command.commandLineString)
     val executor = ExecutorRegistry.getInstance().getExecutorById(DefaultRunExecutor.EXECUTOR_ID)!!
     val environment = ExecutionEnvironmentBuilder.create(proj, executor, profile).build()
+    var processHandler: ProcessHandler? = null
     proj.messageBus
       .connect(disposable)
       .subscribe(
@@ -122,6 +124,7 @@ class PklCli(private val proj: Project) {
             handler: ProcessHandler,
           ) {
             if (env !== environment) return
+            processHandler = handler
             handler.addProcessListener(
               object : ProcessAdapter() {
                 override fun onTextAvailable(event: ProcessEvent, outputType: Key<*>) {
@@ -132,6 +135,23 @@ class PklCli(private val proj: Project) {
                 }
               }
             )
+          }
+
+          override fun processNotStarted(
+            executorId: String,
+            env: ExecutionEnvironment,
+          ) {
+            if (env !== environment) return
+            fut.completeExceptionally(ExecutionException("Process failed to start"))
+          }
+
+          override fun processNotStarted(
+            executorId: String,
+            env: ExecutionEnvironment,
+            cause: Throwable,
+          ) {
+            if (env !== environment) return
+            fut.completeExceptionally(cause)
           }
 
           override fun processTerminated(
@@ -153,12 +173,16 @@ class PklCli(private val proj: Project) {
       }
     }
     try {
-      val exitCode = fut.get()
+      val exitCode = ProgressIndicatorUtils.awaitWithCheckCanceled(fut)
       return if (exitCode == 0) stdout.toString()
       else throw PklEvalException(command.commandLineString, stderr.toString())
     } catch (e: java.util.concurrent.ExecutionException) {
-      throw e.cause!!
+      throw e.cause ?: e
     } finally {
+      if (!fut.isDone) {
+        fut.cancel(true)
+        processHandler?.destroyProcess()
+      }
       Disposer.dispose(disposable)
     }
   }
