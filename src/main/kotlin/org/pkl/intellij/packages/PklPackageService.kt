@@ -183,7 +183,7 @@ class PklPackageService(val project: Project) : Disposable, UserDataHolderBase()
 
   fun downloadPackage(packages: List<PackageUri>): CompletableFuture<Unit> {
     return CompletableFuture<Unit>().apply {
-      runBackgroundableTask("Download packages") {
+      runBackgroundableTask("Download packages", project) {
         try {
           val cacheDir = pklCacheDirPath()
           project.pklCli.downloadPackage(packages, cacheDir = cacheDir)
@@ -198,7 +198,7 @@ class PklPackageService(val project: Project) : Disposable, UserDataHolderBase()
 
   fun downloadPackage(packageUri: PackageUri): CompletableFuture<Unit> {
     return CompletableFuture<Unit>().apply {
-      runBackgroundableTask("download $packageUri") {
+      runBackgroundableTask("download $packageUri", project) {
         try {
           val cacheDir = pklCacheDirPath()
           project.pklCli.downloadPackage(listOf(packageUri), cacheDir = cacheDir)
