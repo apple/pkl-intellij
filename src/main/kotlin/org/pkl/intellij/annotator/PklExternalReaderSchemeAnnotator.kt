@@ -21,7 +21,10 @@ import com.intellij.lang.annotation.HighlightSeverity
 import com.intellij.openapi.editor.Editor
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.util.TextRange
+import com.intellij.psi.PsiElement
 import com.intellij.psi.PsiFile
+import com.intellij.psi.SmartPointerManager
+import com.intellij.psi.SmartPsiElementPointer
 import com.intellij.psi.util.PsiTreeUtil
 import org.pkl.intellij.externalreader.ReaderKind
 import org.pkl.intellij.externalreader.pklExternalReaderService
@@ -51,9 +54,18 @@ class PklExternalReaderSchemeAnnotator :
     val declarations: List<Declaration>,
   )
 
-  class Declaration(val scheme: String, val kind: ReaderKind, val range: TextRange)
+  class Declaration(
+    val scheme: String,
+    val kind: ReaderKind,
+    val range: TextRange,
+    val key: SmartPsiElementPointer<PsiElement>,
+  )
 
-  class Problem(val range: TextRange, val message: String)
+  class Problem(
+    val range: TextRange,
+    val message: String,
+    val key: SmartPsiElementPointer<PsiElement>,
+  )
 
   override fun collectInformation(file: PsiFile, editor: Editor, hasErrors: Boolean): Info? =
     collectInformation(file)
@@ -73,13 +85,24 @@ class PklExternalReaderSchemeAnnotator :
       service
         .checkProjectReader(declaration.scheme, declaration.kind, info.pklProject)
         ?.problem(declaration.scheme)
-        ?.let { Problem(declaration.range, it) }
+        ?.let { Problem(declaration.range, it, declaration.key) }
     }
   }
 
   override fun apply(file: PsiFile, result: List<Problem>, holder: AnnotationHolder) {
     for (problem in result) {
-      holder.newAnnotation(HighlightSeverity.WARNING, problem.message).range(problem.range).create()
+      holder
+        .newAnnotation(HighlightSeverity.WARNING, problem.message)
+        .range(problem.range)
+        .problemGroup(PklProblemGroups.externalReaderError)
+        .apply {
+          val key = problem.key.element ?: return@apply
+          for (fix in
+            PklProblemGroups.externalReaderError.getSuppressQuickFixes(key, file)) {
+            withFix(fix)
+          }
+        }
+        .create()
     }
   }
 
@@ -103,7 +126,13 @@ class PklExternalReaderSchemeAnnotator :
           val key = entry.keyExpr ?: continue
           val scheme = key.text.removeSurrounding("\"")
           if (scheme.isEmpty() || scheme == key.text) continue // not a plain string literal
-          result.add(Declaration(scheme, kind, key.textRange))
+          // Checking whether the reader works is expensive, so skip it if the warning is
+          // suppressed anyway.
+          if (PklAnnotator.isSuppressedByComment(key, PklProblemGroups.externalReaderError)) continue
+          val pointer =
+            SmartPointerManager.getInstance(module.project)
+              .createSmartPsiElementPointer(key as PsiElement)
+          result.add(Declaration(scheme, kind, key.textRange, pointer))
         }
       }
     }

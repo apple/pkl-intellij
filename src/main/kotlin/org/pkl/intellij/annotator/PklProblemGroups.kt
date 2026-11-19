@@ -40,6 +40,8 @@ object PklProblemGroups {
   val unsupportedFeature: PklProblemGroup = PklProblemGroup("UnsupportedFeature")
 
   val missingDefaultValue: PklProblemGroup = PklProblemGroup("MissingDefaultValue")
+
+  val externalReaderError: PklProblemGroup = PklProblemGroup("ExternalReaderError")
 }
 
 // implementing `SuppressableProblemGroup` doesn't seem to do anything

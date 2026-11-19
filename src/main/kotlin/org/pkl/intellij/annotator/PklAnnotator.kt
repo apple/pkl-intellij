@@ -45,6 +45,27 @@ abstract class PklAnnotator : Annotator {
   companion object {
     val suppressRegex = Regex(SuppressionUtil.COMMON_SUPPRESS_REGEXP)
 
+    /**
+     * Tells if [group] is suppressed for [element] by a `// noinspection` comment on [element] or
+     * one of its parents.
+     */
+    fun isSuppressedByComment(element: PsiElement, group: ProblemGroup): Boolean {
+      val problemName = group.problemName ?: return false
+
+      for (member in element.parentsOfType<PklSuppressWarningsTarget>()) {
+        val comment = member.prevSibling?.skipWhitespaceBack()
+        if (comment !is PsiComment || comment.tokenType != PklElementTypes.LINE_COMMENT) continue
+        val result = suppressRegex.find(comment.text, 2)
+        if (
+          result != null &&
+            SuppressionUtil.isInspectionToolIdMentioned(result.groupValues[1], problemName)
+        ) {
+          return true
+        }
+      }
+      return false
+    }
+
     @TestOnly var enabledTestAnnotator: KClass<out PklAnnotator>? = null
   }
 
@@ -438,20 +459,6 @@ abstract class PklAnnotator : Annotator {
     )
   }
 
-  protected fun isSuppressed(element: PsiElement, group: ProblemGroup): Boolean {
-    val problemName = group.problemName ?: return false
-
-    for (member in element.parentsOfType<PklSuppressWarningsTarget>()) {
-      val comment = member.prevSibling?.skipWhitespaceBack()
-      if (comment !is PsiComment || comment.tokenType != PklElementTypes.LINE_COMMENT) continue
-      val result = suppressRegex.find(comment.text, 2)
-      if (
-        result != null &&
-          SuppressionUtil.isInspectionToolIdMentioned(result.groupValues[1], problemName)
-      ) {
-        return true
-      }
-    }
-    return false
-  }
+  protected fun isSuppressed(element: PsiElement, group: ProblemGroup): Boolean =
+    isSuppressedByComment(element, group)
 }

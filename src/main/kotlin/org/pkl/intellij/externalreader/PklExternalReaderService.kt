@@ -175,9 +175,15 @@ class PklExternalReaderService(private val project: Project) : Disposable {
   fun invalidate() {
     doAndRefresh {
       val oldProcesses = processes.values.toList()
+      val oldStates = states.values.toList()
       processes.clear()
       states.clear()
       statesByDir.clear()
+      // Work that was queued for these states mustn't start processes or write to the cache that's
+      // deleted below.
+      for (state in oldStates) {
+        state.close()
+      }
       for (process in oldProcesses) {
         runCatching { process.close() }
       }
@@ -194,6 +200,9 @@ class PklExternalReaderService(private val project: Project) : Disposable {
   }
 
   override fun dispose() {
+    for (state in states.values) {
+      state.close()
+    }
     for (process in processes.values) {
       runCatching { process.close() }
     }

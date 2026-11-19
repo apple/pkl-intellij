@@ -52,8 +52,22 @@ internal class ReaderState(
   /** `<cacheDir>/<reader id>/<scheme>` */
   val schemeDir: Path = cacheDir.resolve(id).resolve(scheme)
 
+  @Volatile private var closed = false
+
   val process: ExternalReaderProcess
-    get() = processes.computeIfAbsent(reader) { ExternalReaderProcess.of(it) }
+    get() {
+      if (closed) throw IOException("The external reader for $scheme was invalidated")
+      return processes.computeIfAbsent(reader) { ExternalReaderProcess.of(it) }
+    }
+
+  fun close() {
+    closed = true
+    cachedSpec = null
+    wasChildrenListed.clear()
+    listings.clear()
+    urisByCachePath.clear()
+    failed.clear()
+  }
 
   @Volatile private var cachedSpec: ModuleReaderSpec? = null
   val wasChildrenListed: MutableSet<URI> = newSetFromMap(ConcurrentHashMap())
@@ -66,6 +80,7 @@ internal class ReaderState(
 
   /** Talks to the reader process, so don't call this in time-sensitive places. */
   fun spec(): ModuleReaderSpec? {
+    if (closed) return null
     cachedSpec?.let {
       return it
     }
@@ -97,6 +112,7 @@ internal class ReaderState(
    * time.
    */
   fun listElements(baseUri: URI): List<PathElement> {
+    if (closed) return emptyList()
     listings[baseUri]?.let {
       return it
     }
@@ -116,6 +132,7 @@ internal class ReaderState(
   }
 
   private fun failListing(baseUri: URI, e: Exception): List<PathElement> {
+    if (closed) return emptyList()
     thisLogger()
       .warn("Failed to list elements of $baseUri (won't retry until cleared): ${e.message}")
     listings[baseUri] = emptyList()
@@ -137,7 +154,7 @@ internal class ReaderState(
    * caller and the module will be tried again next time it's needed.
    */
   fun fetch(uri: URI) {
-    if (uri in failed) {
+    if (closed || uri in failed) {
       inFlight.remove(uri)
       return
     }
@@ -156,6 +173,7 @@ internal class ReaderState(
   }
 
   private fun failFetch(uri: URI, e: Exception) {
+    if (closed) return
     failed.add(uri)
     thisLogger()
       .warn("Failed to read $uri from external reader (won't retry until cleared): ${e.message}")
@@ -163,6 +181,7 @@ internal class ReaderState(
 
   private fun writeToCache(path: Path, text: String): VirtualFile =
     WriteAction.computeAndWait<VirtualFile, IOException> {
+      if (closed) throw IOException("The external reader for $scheme was invalidated")
       val directory =
         VfsUtil.createDirectoryIfMissing(localFs, path.parent.absolutePathString())
           ?: throw IOException("Failed to create directory ${path.parent}")
