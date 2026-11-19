@@ -24,6 +24,7 @@ import com.intellij.psi.stubs.StubElement
 import com.intellij.psi.util.CachedValueProvider
 import com.intellij.psi.util.CachedValuesManager
 import org.pkl.intellij.PklLanguage
+import org.pkl.intellij.externalreader.pklExternalReaderService
 import org.pkl.intellij.stubs.PklModuleUriStub
 import org.pkl.intellij.stubs.PklStubElementTypes
 
@@ -43,39 +44,27 @@ abstract class PklModuleUriBase : PklStubBasedPsiElementBase<PklModuleUriStub>, 
 
   override fun getReferences(): Array<PsiReference> {
     val psiManager = PsiManager.getInstance(project)
+    val externalReaderService = project.pklExternalReaderService
     return CachedValuesManager.getManager(project).getCachedValue(this) {
       val content = stringConstant.content
       val contentText = content.text
       val contentOffset = stringConstant.stringStart.textLength
+      val scheme = if (contentText.contains(":")) contentText.substringBefore(":") else null
       val result: Array<PsiReference> =
         when {
-          isModulePathOrFileUri(contentText) -> createReferences(contentText, contentOffset)
-          isPackageUri(contentText) -> createPackageReferences(contentText, contentOffset)
+          scheme?.equals("modulepath", true) == true -> createReferences(contentText, contentOffset)
+          scheme?.equals("file", ignoreCase = true) == true ->
+            createReferences(contentText, contentOffset)
+          scheme?.equals("package", ignoreCase = true) == true ->
+            createPackageReferences(contentText, contentOffset)
+          scheme?.let { externalReaderService.handlesScheme(it, enclosingModule?.pklProject) } ==
+            true -> createReferences(contentText, contentOffset)
           else -> arrayOf(PklModuleUriReference(this, content.textRangeInParent))
         }
       CachedValueProvider.Result.create(
         result,
         psiManager.modificationTracker.forLanguage(PklLanguage),
       )
-    }
-  }
-
-  private fun isModulePathOrFileUri(uri: String): Boolean {
-    return when {
-      uri.startsWith("modulepath:", ignoreCase = true) -> true
-      uri.startsWith("file:", ignoreCase = true) -> true
-      uri.contains(":") -> false
-      else ->
-        // `.originalFile` because IntelliJ's code completion mechanism
-        // creates PsiFile copy which returns `null` for `.virtualFile`
-        !containingFile.originalFile.virtualFile.url.startsWith("https:", ignoreCase = true)
-    }
-  }
-
-  private fun isPackageUri(uri: String): Boolean {
-    return when {
-      uri.startsWith("package:", ignoreCase = true) -> true
-      else -> enclosingModule?.isInPackage == true && uri.startsWith('@')
     }
   }
 

@@ -89,6 +89,11 @@ class PklProjectService(private val project: Project) :
             else value.package.uri
           )
           evaluatorSettings = module.evaluatorSettings
+          resolvedEvaluatorSettings =
+            if (module.hasProperty("resolvedEvaluatorSettings"))
+              module.resolvedEvaluatorSettings
+            else
+              null
         })
       """
 
@@ -244,13 +249,12 @@ class PklProjectService(private val project: Project) :
           projectElement.addContent(elem)
         }
       }
-      val evaluatorSettings =
-        Element("evaluator-settings").apply {
-          project.metadata.evaluatorSettings.moduleCacheDir?.let {
-            setAttribute("module-cache-dir", it)
-          }
-        }
-      projectElement.addContent(evaluatorSettings)
+      projectElement.addContent(
+        evaluatorSettingsToElement("evaluator-settings", project.metadata.evaluatorSettings)
+      )
+      project.metadata.resolvedEvaluatorSettings?.let {
+        projectElement.addContent(evaluatorSettingsToElement("resolved-evaluator-settings", it))
+      }
       state.addContent(projectElement)
     }
     return state
@@ -321,10 +325,11 @@ class PklProjectService(private val project: Project) :
         }
       }
     val evaluatorSettings =
-      elem.getChild("evaluator-settings")?.let { settings ->
-        val moduleCacheDir = settings.getAttributeValue("module-cache-dir")
-        PklProject.Companion.EvaluatorSettings(moduleCacheDir)
-      } ?: PklProject.Companion.EvaluatorSettings()
+      elem.getChild("evaluator-settings")?.let(::evaluatorSettingsFromElement)
+        ?: PklProject.Companion.EvaluatorSettings()
+    // absent if the project was synced with Pkl < 0.32 (or by an older version of this plugin)
+    val resolvedEvaluatorSettings =
+      elem.getChild("resolved-evaluator-settings")?.let(::evaluatorSettingsFromElement)
     val metadata =
       DerivedProjectMetadata(
         projectFileUri,
@@ -332,12 +337,79 @@ class PklProjectService(private val project: Project) :
         packageUri,
         declaredDependencies,
         evaluatorSettings,
+        resolvedEvaluatorSettings,
       )
     val projectDeps =
       if (resolvedDependencies.isNotEmpty())
         PklProject.Companion.ProjectDeps(1, resolvedDependencies)
       else null
     return PklProject(metadata, projectDeps)
+  }
+
+  private fun evaluatorSettingsToElement(
+    name: String,
+    settings: PklProject.Companion.EvaluatorSettings,
+  ): Element =
+    Element(name).apply {
+      settings.moduleCacheDir?.let { setAttribute("module-cache-dir", it) }
+      settings.externalModuleReaders?.let { addExternalReaders("external-module-reader", it) }
+      settings.externalResourceReaders?.let { addExternalReaders("external-resource-reader", it) }
+    }
+
+  private fun Element.addExternalReaders(
+    elementName: String,
+    readers: Map<String, PklProject.Companion.ExternalReader>,
+  ) {
+    for ((scheme, readerSpec) in readers) {
+      val elem =
+        Element(elementName).apply {
+          setAttribute("scheme", scheme)
+          setAttribute("executable", readerSpec.executable)
+          for (arg in readerSpec.arguments ?: listOf()) {
+            addContent(Element("argument").apply { setAttribute("value", arg) })
+          }
+          if (readerSpec.workingDir != null) {
+            setAttribute("working-dir", readerSpec.workingDir)
+          }
+        }
+      addContent(elem)
+    }
+  }
+
+  private fun evaluatorSettingsFromElement(
+    settings: Element
+  ): PklProject.Companion.EvaluatorSettings {
+    val moduleCacheDir = settings.getAttributeValue("module-cache-dir")
+    return PklProject.Companion.EvaluatorSettings(
+      moduleCacheDir,
+      readExternalReaders(settings, "external-module-reader").ifEmpty { null },
+      readExternalReaders(settings, "external-resource-reader").ifEmpty { null },
+    )
+  }
+
+  private fun readExternalReaders(
+    settings: Element,
+    elementName: String,
+  ): Map<String, PklProject.Companion.ExternalReader> = buildMap {
+    for (readerElem in settings.getChildren(elementName)) {
+      val scheme = readerElem.getAttributeValue("scheme")
+      val executable = readerElem.getAttributeValue("executable")
+      if (scheme == null || executable == null) {
+        LOG.warn("Invalid external reader from state: missing scheme or executable")
+        continue
+      }
+      val arguments =
+        readerElem.getChildren("argument").mapNotNull { it.getAttributeValue("value") }
+      put(
+        scheme,
+        PklProject.Companion.ExternalReader(
+          executable,
+          // an absent argument list and an empty one are stored identically
+          arguments.ifEmpty { null },
+          readerElem.getAttributeValue("working-dir"),
+        ),
+      )
+    }
   }
 
   private fun discoverProjectFiles(): List<VirtualFile> {

@@ -21,20 +21,32 @@ kotlinSerialization = "2.4.20"
 # bump when kotlin version bumps
 kotlinx = "1.11.0"
 ktfmt = "0.64"
+
 # fallback if stdlib isn't found in IntelliJ project dependencies
 pkl = "0.33.0"
-pkl-cli = "0.28.2"
+pkl-cli = "0.33.1"
 spotless = "8.10.2"
 intellijTestPlatform = "243.21565.193"
+
+# dependencies of pkl-messaging (delete me after pkl-messaging is published as its own artifact)
+errorProne = "2.50.0"
+msgpack = "0.9.12"
 
 [libraries] # ordered alphabetically
 assertj = { group = "org.assertj", name = "assertj-core", version.ref = "assertj" }
 junit = { group = "junit", name = "junit", version.ref = "junit" }
 kotlinxJson = { group = "org.jetbrains.kotlinx", name = "kotlinx-serialization-json", version.ref = "kotlinx" }
 kotlinReflect = { group = "org.jetbrains.kotlin", name = "kotlin-reflect", version.ref = "kotlin" }
-pklCli = { group = "org.pkl-lang", name = "pkl-cli-java", version.ref = "pkl-cli" }
+pklCliMacOsAarch64 = { group = "org.pkl-lang", name = "pkl-cli-macos-aarch64", version.ref = "pkl-cli" }
+pklCliLinuxAarch64 = { group = "org.pkl-lang", name = "pkl-cli-linux-aarch64", version.ref = "pkl-cli" }
+pklCliLinuxAmd64 = { group = "org.pkl-lang", name = "pkl-cli-linux-amd64", version.ref = "pkl-cli" }
+pklCliWindowsAmd64 = { group = "org.pkl-lang", name = "pkl-cli-windows-amd64", version.ref = "pkl-cli" }
 pklFormatter = { group = "org.pkl-lang", name = "pkl-formatter", version.ref = "pkl" }
 pklStdLib = { group = "org.pkl-lang", name = "pkl-stdlib", version.ref = "pkl" }
+
+# dependencies of pkl-messaging (delete me after pkl-messaging is published as its own artifact)
+errorProneAnnotations = { group = "com.google.errorprone", name = "error_prone_annotations", version.ref = "errorProne" }
+msgpack = { group = "org.msgpack", name = "msgpack-core", version.ref = "msgpack" }
 
 [plugins] # ordered alphabetically
 intelliJ = { id = "org.jetbrains.intellij.platform", version.ref = "intellijPlugin" }

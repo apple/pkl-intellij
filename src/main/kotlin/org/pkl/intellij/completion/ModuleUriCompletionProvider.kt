@@ -30,11 +30,14 @@ import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.psi.util.parentOfType
 import com.intellij.util.ProcessingContext
 import java.net.URI
+import java.net.URISyntaxException
 import java.nio.file.Files
 import java.nio.file.Path
 import javax.swing.Icon
 import kotlin.io.path.name
 import org.pkl.intellij.PklIcons
+import org.pkl.intellij.externalreader.PklExternalReaderService
+import org.pkl.intellij.externalreader.pklExternalReaderService
 import org.pkl.intellij.packages.dto.PackageAssetUri
 import org.pkl.intellij.packages.pklPackageService
 import org.pkl.intellij.psi.*
@@ -140,6 +143,7 @@ class ModuleUriCompletionProvider(private val packageUriOnly: Boolean = false) :
     // collect lookup elements before adding them to result set
     // (according to docs, batch insert is preferable)
     val collector = mutableListOf<LookupElement>()
+    val externalReaderService = project.pklExternalReaderService
 
     when {
       targetUri.startsWith(PKL_SCHEME) && !isGlobImport && !packageUriOnly -> {
@@ -208,12 +212,90 @@ class ModuleUriCompletionProvider(private val packageUriOnly: Boolean = false) :
       !targetUri.contains(':') -> {
         if (!targetUri.contains('/')) {
           collector.addAll(if (isGlobImport) GLOBBABLE_SCHEME_ELEMENTS else SCHEME_ELEMENTS)
+          for ((scheme, spec) in externalReaderService.readerSpecs(sourceModule.pklProject)) {
+            if (isGlobImport && !spec.isGlobbable) continue
+            if (spec.hasHierarchicalUris) {
+              collector.add(LookupElementBuilder.create("$scheme:/").completeAgain())
+            } else {
+              collector.add(LookupElementBuilder.create("$scheme:").completeAgain())
+            }
+          }
         }
-        completeRelativeUri(targetUri, sourceModule, isGlobImport, collector)
+        completeRelativeUri(
+          targetUri,
+          sourceModule,
+          isGlobImport,
+          collector,
+          project.pklExternalReaderService,
+        )
+      }
+      else -> {
+        val scheme = targetUri.substringBefore(":")
+        val externalReaderService = project.pklExternalReaderService
+        if (externalReaderService.handlesScheme(scheme, sourceModule.pklProject)) {
+          if (externalReaderService.isOpaqueScheme(scheme, sourceModule.pklProject)) {
+            completeOpaqueExternalUri(
+              sourceModule,
+              scheme,
+              targetUri,
+              externalReaderService,
+              resultSet,
+            )
+          } else {
+            completeExternalUri(sourceModule, targetUri, externalReaderService, collector)
+          }
+        }
       }
     }
 
     resultSet.addAllElements(collector)
+  }
+
+  private fun completeExternalUri(
+    sourceModule: PklModule,
+    targetUri: String,
+    externalReaderService: PklExternalReaderService,
+    collector: MutableList<LookupElement>,
+  ) {
+    if (!targetUri.contains('/')) return
+    val dirUri =
+      try {
+        URI(targetUri.substringBeforeLast('/') + "/")
+      } catch (_: URISyntaxException) {
+        return
+      }
+    for (element in externalReaderService.listElements(dirUri, sourceModule.pklProject)) {
+      val name = element.name
+      if (name.startsWith('.')) continue
+      collector.add(
+        LookupElementBuilder.create(name)
+          .withIcon(getIcon(element.isDirectory, false))
+          .withInsertHandler(ImportInsertHandler)
+      )
+    }
+  }
+
+  /**
+   * Completes URIs of a reader with non-hierarchical URIs (e.g. `mylib:foo.bar`). Like `pkl:`, the
+   * reader lists *every* module it has, and the completion framework narrows them down by what's
+   * been typed after the scheme.
+   */
+  private fun completeOpaqueExternalUri(
+    sourceModule: PklModule,
+    scheme: String,
+    targetUri: String,
+    externalReaderService: PklExternalReaderService,
+    resultSet: CompletionResultSet,
+  ) {
+    // Module names can contain `.`, which the default prefix matcher treats as a word boundary.
+    val matcher = resultSet.withPrefixMatcher(targetUri.substring(scheme.length + 1))
+    for (uri in externalReaderService.listOpaqueModules(scheme, sourceModule.pklProject)) {
+      matcher.addElement(
+        LookupElementBuilder.create(uri.schemeSpecificPart)
+          .withIcon(getIcon(false, false))
+          .withInsertHandler(ImportInsertHandler)
+      )
+    }
   }
 
   private fun collectPackages(basePath: Path, nameParts: List<String> = emptyList()): Set<String> {
@@ -283,6 +365,7 @@ class ModuleUriCompletionProvider(private val packageUriOnly: Boolean = false) :
     relativeTargetFilePath: String,
     isModulePath: Boolean,
     collector: MutableList<LookupElement>,
+    listChildren: (VirtualFile) -> List<VirtualFile>? = { it.children.toList() },
   ) {
     val relativeTargetDirPath = relativeTargetFilePath.substringBeforeLast('/', ".")
     val isTripleDotDirPath = relativeTargetDirPath.startsWith("...")
@@ -297,7 +380,7 @@ class ModuleUriCompletionProvider(private val packageUriOnly: Boolean = false) :
         }
 
       for (dir in dirs) {
-        dir.children?.forEach { child ->
+        listChildren(dir)?.forEach { child ->
           val isDirectory = child.isDirectory
           val extension = child.extension
           val name = child.name
@@ -361,6 +444,7 @@ class ModuleUriCompletionProvider(private val packageUriOnly: Boolean = false) :
     sourceModule: PklModule,
     isGlobImport: Boolean,
     collector: MutableList<LookupElement>,
+    pklExternalReaderService: PklExternalReaderService,
   ) {
 
     val projectRootManager = ProjectRootManager.getInstance(sourceModule.project)
@@ -373,34 +457,60 @@ class ModuleUriCompletionProvider(private val packageUriOnly: Boolean = false) :
       return
     }
 
-    if (sourceRoot != null) {
-      // interpret as modulepath: URI
-      val roots = sourceModule.findSourceAndClassesRoots()
-      val relativeSourceDirPath =
-        if (isAbsoluteTargetFilePath) {
-          "."
-        } else {
-          VfsUtilCore.findRelativePath(sourceRoot, sourceDir, '/') ?: "."
-        }
-      completeHierarchicalUri(roots, relativeSourceDirPath, relativeTargetFilePath, true, collector)
-    } else {
-      // Assertion: [sourceFile] is not under a source or classes root.
-      // (Files under a classes root are read-only and can't trigger completion.)
-      // An example is a Pkl file in an IDE module's root directory.
-      // interpret as file: URI
-      val relativeSourceDirPath =
-        if (isAbsoluteTargetFilePath) {
-          "."
-        } else {
-          VfsUtilCore.findRelativePath(LOCAL_FILE_SYSTEM_ROOT, sourceDir, '/') ?: "."
-        }
-      completeHierarchicalUri(
-        arrayOf(LOCAL_FILE_SYSTEM_ROOT),
-        relativeSourceDirPath,
-        relativeTargetFilePath,
-        false,
-        collector,
-      )
+    when {
+      sourceRoot != null -> {
+        // interpret as modulepath: URI
+        val roots = sourceModule.findSourceAndClassesRoots()
+        val relativeSourceDirPath =
+          if (isAbsoluteTargetFilePath) {
+            "."
+          } else {
+            VfsUtilCore.findRelativePath(sourceRoot, sourceDir, '/') ?: "."
+          }
+        completeHierarchicalUri(
+          roots,
+          relativeSourceDirPath,
+          relativeTargetFilePath,
+          true,
+          collector,
+        )
+      }
+      // should be rare (if at all) that we need to complete these
+      pklExternalReaderService.handlesFile(sourceFile) -> {
+        val root = pklExternalReaderService.root(sourceFile) ?: return
+        val relativeSourceDirPath =
+          if (isAbsoluteTargetFilePath) {
+            "."
+          } else {
+            VfsUtilCore.findRelativePath(root, sourceDir, '/') ?: "."
+          }
+        completeHierarchicalUri(
+          arrayOf(root),
+          relativeSourceDirPath,
+          relativeTargetFilePath,
+          false,
+          collector,
+        )
+      }
+      else -> {
+        // Assertion: [sourceFile] is not under a source or classes root.
+        // (Files under a classes root are read-only and can't trigger completion.)
+        // An example is a Pkl file in an IDE module's root directory.
+        // interpret as file: URI
+        val relativeSourceDirPath =
+          if (isAbsoluteTargetFilePath) {
+            "."
+          } else {
+            VfsUtilCore.findRelativePath(LOCAL_FILE_SYSTEM_ROOT, sourceDir, '/') ?: "."
+          }
+        completeHierarchicalUri(
+          arrayOf(LOCAL_FILE_SYSTEM_ROOT),
+          relativeSourceDirPath,
+          relativeTargetFilePath,
+          false,
+          collector,
+        )
+      }
     }
   }
 }

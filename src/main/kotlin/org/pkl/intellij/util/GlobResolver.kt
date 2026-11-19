@@ -270,7 +270,7 @@ object GlobResolver {
         listElementCallCount,
       )
     }
-    return baseFile.children
+    return listChildren(baseFile)
       .filter { file ->
         val matches = pattern.matcher(file.name).matches()
         if (isPartial) matches && file.isDirectory else matches

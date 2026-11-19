@@ -15,23 +15,38 @@
  */
 package org.pkl.intellij.settings
 
+import com.intellij.icons.AllIcons
+import com.intellij.openapi.application.ApplicationManager
+import com.intellij.openapi.application.ModalityState
 import com.intellij.openapi.fileChooser.FileChooser
 import com.intellij.openapi.fileChooser.FileChooserDescriptorFactory
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.ui.DialogPanel
 import com.intellij.openapi.ui.Messages
 import com.intellij.ui.AnimatedIcon
+import com.intellij.ui.CollectionListModel
+import com.intellij.ui.SimpleListCellRenderer
 import com.intellij.ui.ToolbarDecorator
 import com.intellij.ui.components.JBLabel
+import com.intellij.ui.components.JBList
 import com.intellij.ui.dsl.builder.*
 import com.intellij.ui.table.TableView
+import com.intellij.util.concurrency.AppExecutorUtil
+import com.intellij.util.execution.ParametersListUtil
 import com.intellij.util.messages.Topic
 import com.intellij.util.ui.ColumnInfo
+import com.intellij.util.ui.JBUI
 import com.intellij.util.ui.ListTableModel
+import java.awt.event.MouseEvent
 import java.nio.file.Files
+import java.util.concurrent.ConcurrentHashMap
+import javax.swing.ToolTipManager
 import org.pkl.formatter.GrammarVersion
 import org.pkl.intellij.action.PklDownloadPklCliAction
+import org.pkl.intellij.externalreader.ReaderKind
+import org.pkl.intellij.externalreader.pklExternalReaderService
 import org.pkl.intellij.packages.localFs
+import org.pkl.messaging.externalreader.ExternalReader
 
 fun interface PklSettingsChangedListener {
   fun settingsChanged()
@@ -39,6 +54,8 @@ fun interface PklSettingsChangedListener {
 
 class PklSettingsComponent(private val project: Project) {
   companion object {
+    const val DEFAULT_WORKING_DIR = $$"$PROJECT_DIR$"
+
     val PKL_SETTINGS_CHANGED_TOPIC: Topic<PklSettingsChangedListener> =
       Topic.create("PklSettingsChanged", PklSettingsChangedListener::class.java)
   }
@@ -64,6 +81,93 @@ class PklSettingsComponent(private val project: Project) {
       ),
       mutableListOf(),
     )
+  }
+
+  private fun Row.readersList(
+    kind: ReaderKind,
+    getReaders: () -> Map<String, ExternalReader>,
+    setReaders: (Map<String, ExternalReader>) -> Unit,
+  ) {
+    val model = CollectionListModel<ReaderEntry>()
+    // entries with a problem (found by starting the reader), and what the problem is
+    val problems: MutableMap<ReaderEntry, String> = ConcurrentHashMap()
+    val warningIcon = AllIcons.General.Warning
+    val list =
+      object : JBList<ReaderEntry>(model) {
+        // Shows the problem when hovering over the icon of an entry that has one.
+        override fun getToolTipText(event: MouseEvent): String? {
+          val index = locationToIndex(event.point)
+          if (index < 0) return null
+          val bounds = getCellBounds(index, index) ?: return null
+          if (!bounds.contains(event.point)) return null
+          val isOverIcon = event.x < bounds.x + warningIcon.iconWidth + JBUI.scale(8)
+          return if (isOverIcon) problems[model.getElementAt(index)] else null
+        }
+      }
+    ToolTipManager.sharedInstance().registerComponent(list)
+    list.cellRenderer = SimpleListCellRenderer.create { label, entry, _ ->
+      val args = ParametersListUtil.join(entry.reader.arguments() ?: emptyList())
+      label.text = "${entry.scheme}: ${entry.reader.executable()} $args".trim()
+      label.icon = if (entry in problems) warningIcon else null
+    }
+
+    // Starts the reader to find out if it works and supports the scheme; this takes a moment, so it
+    // happens in the background after the entry was added or changed.
+    fun checkEntry(entry: ReaderEntry) {
+      problems.remove(entry)
+      AppExecutorUtil.getAppExecutorService().execute {
+        val problem =
+          project.pklExternalReaderService
+            .checkReader(entry.reader, entry.scheme, kind)
+            .problem(entry.scheme)
+        if (problem != null) {
+          ApplicationManager.getApplication()
+            .invokeLater(
+              {
+                problems[entry] = problem
+                list.repaint()
+              },
+              ModalityState.stateForComponent(list),
+            )
+        }
+      }
+    }
+
+    fun currentReaders(): Map<String, ExternalReader> =
+      model.items.associate { it.scheme to it.reader }
+
+    val decorator =
+      ToolbarDecorator.createDecorator(list)
+        .setAddAction {
+          val dialog = PklAddReaderDialog(project, null)
+          if (dialog.showAndGet()) {
+            model.add(dialog.entry)
+            checkEntry(dialog.entry)
+          }
+        }
+        .setEditAction {
+          val index = list.selectedIndex
+          if (index >= 0) {
+            val dialog = PklAddReaderDialog(project, model.getElementAt(index))
+            if (dialog.showAndGet()) {
+              model.setElementAt(dialog.entry, index)
+              checkEntry(dialog.entry)
+            }
+          }
+        }
+        .setRemoveAction { list.selectedIndices.sortedDescending().forEach { model.remove(it) } }
+        .disableUpDownActions()
+
+    cell(decorator.createPanel())
+      .align(AlignX.FILL)
+      .onReset {
+        model.replaceAll(getReaders().map { (scheme, reader) -> ReaderEntry(scheme, reader) })
+      }
+      .onApply {
+        setReaders(currentReaders())
+        project.messageBus.syncPublisher(PKL_SETTINGS_CHANGED_TOPIC).settingsChanged()
+      }
+      .onIsModified { currentReaders() != getReaders() }
   }
 
   fun createPanel(): DialogPanel {
@@ -195,6 +299,17 @@ class PklSettingsComponent(private val project: Project) {
             }
         }
         .rowComment("Directory paths to exclude from the \"Sync Projects\" action.")
+
+      row("External module readers") {
+          readersList(
+            ReaderKind.MODULE,
+            { project.pklSettings.state.externalModuleReaders.toExternalReaders() },
+            { project.pklSettings.state.externalModuleReaders = it.toReaderStates() },
+          )
+        }
+        .rowComment(
+          "External readers for resolving modules. Each entry maps a URI scheme to an external reader process."
+        )
     }
   }
 }

@@ -65,7 +65,74 @@ java {
 
 sourceSets { main { java { srcDir("generated") } } }
 
+val externalReaderFixture: SourceSet =
+  sourceSets.create("externalReaderFixture") {
+    compileClasspath += sourceSets.main.get().output
+    runtimeClasspath += sourceSets.main.get().output
+  }
+
+configurations.named(externalReaderFixture.implementationConfigurationName) {
+  // msgpack, the Kotlin standard library, etc.
+  extendsFrom(configurations.implementation.get())
+}
+
+val externalReaderFixtureArgfile = layout.buildDirectory.file("externalReaderFixture/java.argfile")
+
+val buildExternalReaderFixture =
+  tasks.register("buildExternalReaderFixture") {
+    group = "build"
+    description = "Builds the external reader fixture, and writes the java argfile that runs it."
+    dependsOn(externalReaderFixture.classesTaskName)
+    inputs.files(externalReaderFixture.runtimeClasspath)
+    outputs.file(externalReaderFixtureArgfile)
+    doLast {
+      // Argfile syntax: arguments are separated by whitespace; quoted values can contain spaces,
+      // and use `\` as the escape character.
+      fun quote(value: String) = "\"" + value.replace("\\", "\\\\").replace("\"", "\\\"") + "\""
+      val argfile = externalReaderFixtureArgfile.get().asFile
+      argfile.parentFile.mkdirs()
+      argfile.writeText(
+        listOf(
+            "-cp",
+            quote(externalReaderFixture.runtimeClasspath.asPath),
+            "org.pkl.intellij.externalreader.fixture.ExternalReaderFixtureKt",
+          )
+          .joinToString("\n", postfix = "\n")
+      )
+    }
+  }
+
 val pklCli: Configuration = configurations.create("pklCli")
+
+val nativePklCli: Pair<Provider<MinimalExternalModuleDependency>, String>? = run {
+  val os = System.getProperty("os.name").lowercase()
+  val arch =
+    when (System.getProperty("os.arch").lowercase()) {
+      "aarch64",
+      "arm64" -> "aarch64"
+      "amd64",
+      "x86_64" -> "amd64"
+      else -> null
+    }
+  when {
+    os.startsWith("mac") && arch == "aarch64" -> libs.pklCliMacOsAarch64 to "bin"
+    os.startsWith("linux") && arch == "aarch64" -> libs.pklCliLinuxAarch64 to "bin"
+    os.startsWith("linux") && arch == "amd64" -> libs.pklCliLinuxAmd64 to "bin"
+    os.startsWith("windows") && arch == "amd64" -> libs.pklCliWindowsAmd64 to "exe"
+    else -> null
+  }
+}
+
+fun pklExecutable(): File {
+  if (nativePklCli == null) {
+    throw GradleException(
+      "There is no native Pkl CLI for this machine (os.name=${System.getProperty("os.name")}, " +
+        "os.arch=${System.getProperty("os.arch")}); tests need one. Supported: macOS aarch64, " +
+        "Linux aarch64, Linux amd64, Windows amd64."
+    )
+  }
+  return pklCli.singleFile
+}
 
 val pklStdlib: Configuration = configurations.create("pklStdlib")
 
@@ -75,11 +142,16 @@ dependencies {
   // needed for kotlin ui dsl:
   // https://plugins.jetbrains.com/docs/intellij/kotlin-ui-dsl-version-2.html
   implementation(libs.kotlinReflect)
-
   implementation(libs.pklFormatter)
 
+  // dependencies of pkl-messaging (delete me after pkl-messaging is published as its own artifact)
+  implementation(libs.msgpack)
+  compileOnly(libs.errorProneAnnotations)
+
   testImplementation(libs.assertj)
-  pklCli(libs.pklCli)
+  nativePklCli?.let { (library, extension) ->
+    pklCli(variantOf(library) { artifactType(extension) })
+  }
 
   testImplementation(libs.junit)
 
@@ -180,14 +252,19 @@ tasks.clean { delete("generated") }
 tasks.compileKotlin { dependsOn(generateLexer, generateParser) }
 
 val configurePklCliExecutable =
-  tasks.register("configurePklCliExecutable") { doLast { pklCli.singleFile.setExecutable(true) } }
+  tasks.register("configurePklCliExecutable") { doLast { pklExecutable().setExecutable(true) } }
 
 tasks.test {
   dependsOn(configurePklCliExecutable)
+  dependsOn(buildExternalReaderFixture)
   val pklCacheDir = layout.buildDirectory.dir("pklTestCache").get()
-  systemProperties["org.pkl.intellij.pklExecutable"] = pklCli.singleFile.absolutePath
   systemProperties["org.pkl.intellij.pklCacheDir"] = pklCacheDir.asFile.absolutePath
-  doFirst { pklCacheDir.asFile.deleteRecursively() }
+  doFirst {
+    // (resolved here, not when configuring, so that other tasks work on machines without a native
+    // CLI)
+    systemProperty("org.pkl.intellij.pklExecutable", pklExecutable().absolutePath)
+    pklCacheDir.asFile.deleteRecursively()
+  }
 }
 
 tasks.withType<KotlinCompile>().configureEach {
@@ -273,7 +350,7 @@ private val licenseHeader =
    * See the License for the specific language governing permissions and
    * limitations under the License.
    */
-"""
+  """
     .trimIndent()
 
 val originalRemoteName = System.getenv("PKL_ORIGINAL_REMOTE_NAME") ?: "origin"
