@@ -97,8 +97,7 @@ class PklExternalReaderSchemeAnnotator :
         .problemGroup(PklProblemGroups.externalReaderError)
         .apply {
           val key = problem.key.element ?: return@apply
-          for (fix in
-            PklProblemGroups.externalReaderError.getSuppressQuickFixes(key, file)) {
+          for (fix in PklProblemGroups.externalReaderError.getSuppressQuickFixes(key, file)) {
             withFix(fix)
           }
         }
@@ -128,7 +127,8 @@ class PklExternalReaderSchemeAnnotator :
           if (scheme.isEmpty() || scheme == key.text) continue // not a plain string literal
           // Checking whether the reader works is expensive, so skip it if the warning is
           // suppressed anyway.
-          if (PklAnnotator.isSuppressedByComment(key, PklProblemGroups.externalReaderError)) continue
+          if (PklAnnotator.isSuppressedByComment(key, PklProblemGroups.externalReaderError))
+            continue
           val pointer =
             SmartPointerManager.getInstance(module.project)
               .createSmartPsiElementPointer(key as PsiElement)
