@@ -165,6 +165,20 @@ class ExternalReaderModuleResolveTest : PklTestCase() {
     assertThat(originalUriOf(dog as PklModule)).isEqualTo("fixture:/animals/dog.pkl")
   }
 
+  fun `test settings - resolves triple-dot import from a module of the reader`() {
+    configureSettingsReader()
+    myFixture.configureByText("main.pkl", """import "fixture:/animals/wild/f<caret>ox.pkl"""")
+    awaitFetched("fixture:/animals/wild/fox.pkl")
+
+    // fox.pkl is `extends ".../dog.pkl"`; dog.pkl is in the parent directory, and isn't cached yet
+    val fox = resolveAtCaret()
+    val extendsReference = fox.extendsAmendsClause!!.moduleUri!!.references.last()
+    val dog = await(".../dog.pkl to resolve") { extendsReference.resolve() }
+
+    assertThat(dog).isInstanceOf(PklModule::class.java)
+    assertThat(originalUriOf(dog as PklModule)).isEqualTo("fixture:/animals/dog.pkl")
+  }
+
   fun `test settings - resolves glob import to all matching modules`() {
     configureSettingsReader()
     myFixture.configureByText(

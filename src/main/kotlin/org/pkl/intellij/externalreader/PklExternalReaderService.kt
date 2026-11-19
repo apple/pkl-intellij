@@ -508,7 +508,43 @@ class PklExternalReaderService(private val project: Project) : Disposable {
     val base = originalUri(sourceFile) ?: return null
     // opaque URIs have no hierarchy to resolve against
     if (base.isOpaque) return null
+    val path = target.path
+    if (target.scheme == null && path != null && path.startsWith(".../")) {
+      return resolveTripleDot(state, base, path.removePrefix(".../"))
+    }
     return resolve(state, base.resolve(target))
+  }
+
+  /**
+   * Resolves `.../[rest]` that's imported from the module that was read from [base].
+   *
+   * Like for other schemes, this is the closest ancestor directory of the module's directory that
+   * has [rest], which is not the module itself.
+   *
+   * Which candidates exist is only known after asking the reader, which happens in the background.
+   * The candidates are looked at from the nearest to the farthest; one that's unknown is fetched
+   * and has to be answered first (this is resolved again when it is), because a nearer module takes
+   * precedence over one that's farther away.
+   */
+  private fun resolveTripleDot(state: ReaderState, base: URI, rest: String): VirtualFile? {
+    // the directory of a module is `.`, its parent is `..`
+    fun parentDirectory(dir: URI): URI = dir.resolve("..")
+    var directory: URI = parentDirectory(base.resolve("."))
+    while (true) {
+      val candidate = directory.resolve(rest)
+      if (candidate != base) {
+        val cached = localFs.findFileByNioFile(state.cachePath(candidate))
+        if (cached != null) return cached
+        if (candidate !in state.failed) {
+          if (state.inFlight.add(candidate)) doAndRefresh { state.fetch(candidate) }
+          return null
+        }
+      }
+      val next = parentDirectory(directory)
+      // the parent of the root directory is the root directory
+      if (next == directory) return null
+      directory = next
+    }
   }
 
   private fun resolve(state: ReaderState, uri: URI): VirtualFile? {
