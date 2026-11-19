@@ -17,14 +17,16 @@ package org.pkl.intellij.psi
 
 import com.intellij.lang.ASTNode
 import com.intellij.psi.PsiElement
-import com.intellij.util.IncorrectOperationException
 
 abstract class PklModuleDeclarationBase(node: ASTNode) :
   PklAstWrapperPsiElement(node), PklModuleDeclaration {
   override fun getName(): String? = nameIdentifier?.text?.removeSurrounding("`")
 
   override fun setName(name: String): PsiElement {
-    throw IncorrectOperationException()
+    val oldIdentifier = nameIdentifier ?: return this
+    val newIdentifier = PklPsiFactory.createIdentifier(name, project)
+    oldIdentifier.node.treeParent.replaceChild(oldIdentifier.node, newIdentifier.node)
+    return this
   }
 
   override fun getQualifiedName(): String? = qualifiedIdentifier?.text

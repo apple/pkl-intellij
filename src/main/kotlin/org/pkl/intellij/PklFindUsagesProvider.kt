@@ -49,6 +49,7 @@ class PklFindUsagesProvider : FindUsagesProvider {
   override fun canFindUsagesFor(element: PsiElement): Boolean =
     when (element) {
       is PklModule -> true
+      is PklModuleDeclaration -> true
       is PklClass -> true
       is PklTypeAlias -> true
       is PklMethod -> true
@@ -63,6 +64,7 @@ class PklFindUsagesProvider : FindUsagesProvider {
   override fun getType(element: PsiElement): String =
     when (element) {
       is PklModule -> "module"
+      is PklModuleDeclaration -> "module"
       is PklClass -> "class"
       is PklTypeAlias -> "type alias"
       is PklMethod -> "method"
@@ -83,6 +85,7 @@ class PklFindUsagesProvider : FindUsagesProvider {
   override fun getDescriptiveName(element: PsiElement): String =
     when (element) {
       is PklModule -> element.name
+      is PklModuleDeclaration -> element.qualifiedName ?: "<module>"
       is PklClass -> {
         val moduleName = element.enclosingModule?.displayName ?: "<module>"
         val className = element.name ?: "<class>"
@@ -125,6 +128,7 @@ class PklFindUsagesProvider : FindUsagesProvider {
     } else {
       when (element) {
         is PklModule -> element.name
+        is PklModuleDeclaration -> element.name ?: "<module>"
         is PklClass -> element.name ?: "<class>"
         is PklTypeAlias -> element.name ?: "<class>"
         is PklMethod -> (element.name ?: "<method>") + "()"
