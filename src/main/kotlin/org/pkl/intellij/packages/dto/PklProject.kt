@@ -55,9 +55,22 @@ data class PklProject(val metadata: DerivedProjectMetadata, val projectDeps: Pro
       val packageUri: PackageUri?,
       val declaredDependencies: Map<String, PackageUri>,
       val evaluatorSettings: EvaluatorSettings,
+      val resolvedEvaluatorSettings: EvaluatorSettings? = null,
     )
 
-    @Serializable data class EvaluatorSettings(val moduleCacheDir: String? = null)
+    @Serializable
+    data class ExternalReader(
+      val executable: String,
+      val arguments: List<String>?,
+      val workingDir: String?,
+    )
+
+    @Serializable
+    data class EvaluatorSettings(
+      val moduleCacheDir: String? = null,
+      val externalModuleReaders: Map<String, ExternalReader>? = null,
+      val externalResourceReaders: Map<String, ExternalReader>? = null,
+    )
 
     @Serializable
     data class ProjectDeps(
@@ -136,6 +149,7 @@ data class PklProject(val metadata: DerivedProjectMetadata, val projectDeps: Pro
           projectDirVirtualFile?.findFileByRelativePath(path)?.let {
             LocalProjectDependency(uri, it)
           }
+
         else -> {
           this as RemoteDependency
           PackageDependency(uri, self, checksums)

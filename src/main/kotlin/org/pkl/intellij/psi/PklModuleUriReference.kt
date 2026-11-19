@@ -34,9 +34,12 @@ import java.net.URI
 import java.net.URISyntaxException
 import org.pkl.intellij.PklLanguage
 import org.pkl.intellij.cacheKeyService
+import org.pkl.intellij.externalreader.PklExternalReaderService
+import org.pkl.intellij.externalreader.pklExternalReaderService
 import org.pkl.intellij.packages.dto.PackageUri
 import org.pkl.intellij.packages.dto.PklProject
 import org.pkl.intellij.packages.pklProjectService
+import org.pkl.intellij.settings.pklSettings
 import org.pkl.intellij.util.*
 
 /** A reference within a module URI. May reference a package/directory or file. */
@@ -195,6 +198,18 @@ class PklModuleUriReference(uri: PklModuleUri, rangeInElement: TextRange) :
             ?: return@ParameterizedCachedValueProvider noCacheResult()
         val dependencies = buildList {
           add(PsiModificationTracker.getInstance(element.project).forLanguage(PklLanguage))
+          // external reader modules are fetched asynchronously; re-resolve once more have arrived
+          val projectReaders =
+            (element.enclosingModule?.pklProject ?: context)
+              ?.metadata
+              ?.evaluatorSettings
+              ?.externalModuleReaders
+          if (
+            element.project.pklSettings.state.externalModuleReaders.isNotEmpty() ||
+              !projectReaders.isNullOrEmpty()
+          ) {
+            add(element.project.pklExternalReaderService.modificationTracker)
+          }
           if (context != null) {
             add(element.project.pklProjectService)
           }
@@ -286,7 +301,13 @@ class PklModuleUriReference(uri: PklModuleUri, rangeInElement: TextRange) :
                   targetUriString,
                   isPartialUri,
                   project,
-                  listChildren,
+                  if (virtualFile.isFromExternalReader()) {
+                    // make the reader's children show up as the glob walks the directories
+                    { dir: VirtualFile ->
+                      project.pklExternalReaderService.ensureListed(dir)
+                      dir.children
+                    }
+                  } else listChildren,
                 )
             }
           resolved
@@ -331,7 +352,18 @@ class PklModuleUriReference(uri: PklModuleUri, rangeInElement: TextRange) :
             listChildren,
           )
         }
-        else -> null
+        else -> {
+          val externalReaderService = project.pklExternalReaderService
+          val readerContext = element.enclosingModule?.pklProject ?: context
+          if (
+            effectiveScheme != null &&
+              externalReaderService.handlesScheme(effectiveScheme, readerContext)
+          ) {
+            externalReaderService.resolveGlob(targetUri, isPartialUri, readerContext)
+          } else {
+            null
+          }
+        }
       }
     }
 
@@ -431,6 +463,13 @@ class PklModuleUriReference(uri: PklModuleUri, rangeInElement: TextRange) :
             }
           }
 
+          // If [sourceFile] was read by an external reader, interpret [targetUri] relative to the
+          // URI
+          // it was read from (which fetches it from the reader if needed).
+          if (sourceVirtualFile.isFromExternalReader()) {
+            return project.pklExternalReaderService.resolveRelative(sourceVirtualFile, targetUri)
+          }
+
           val projectRootManager = ProjectRootManager.getInstance(sourcePsiFile.project)
           val fileIndex = projectRootManager.fileIndex
 
@@ -470,10 +509,19 @@ class PklModuleUriReference(uri: PklModuleUri, rangeInElement: TextRange) :
           return findOnFileSystem(sourceVirtualFile, targetUriStr)
         }
 
-        // unsupported scheme
-        else -> return null
+        else ->
+          return project.pklExternalReaderService.resolve(
+            targetUri,
+            enclosingModule?.pklProject ?: context,
+          )
       }
     }
+
+    /**
+     * Cheap check (it doesn't create the external reader service) for files cached from readers.
+     */
+    private fun VirtualFile.isFromExternalReader(): Boolean =
+      fileSystem.getNioPath(this)?.startsWith(PklExternalReaderService.cacheDirBase) == true
 
     private fun resolveVirtualHttp(
       moduleUrl: String,

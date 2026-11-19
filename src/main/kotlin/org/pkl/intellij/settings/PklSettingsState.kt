@@ -18,11 +18,12 @@ package org.pkl.intellij.settings
 import com.intellij.openapi.components.*
 import com.intellij.openapi.project.Project
 import org.pkl.formatter.GrammarVersion
+import org.pkl.messaging.externalreader.ExternalReader
 
 val Project.pklSettings: PklSettingsService
   get() = PklSettingsService.getInstance(this)
 
-@Service
+@Service(Service.Level.PROJECT)
 @State(name = "PklSettings", storages = [Storage("pklSettings.xml")])
 class PklSettingsService : PersistentStateComponent<PklSettingsService.State> {
   companion object {
@@ -43,5 +44,25 @@ class PklSettingsService : PersistentStateComponent<PklSettingsService.State> {
     var pklPath: String = "",
     var formatterGrammarVersion: GrammarVersion? = null,
     var excludedProjectPaths: MutableSet<String> = mutableSetOf(),
+    var externalModuleReaders: MutableMap<String, ExternalReaderState> = mutableMapOf(),
   )
 }
+
+data class ExternalReaderState(
+  var executable: String = "",
+  var arguments: MutableList<String> = mutableListOf(),
+  var workingDir: String? = null,
+) {
+  fun toExternalReader(): ExternalReader =
+    ExternalReader(executable, arguments.ifEmpty { null }?.toList(), workingDir)
+}
+
+fun ExternalReader.toState(): ExternalReaderState =
+  ExternalReaderState(executable(), arguments()?.toMutableList() ?: mutableListOf(), workingDir())
+
+fun Map<String, ExternalReaderState>.toExternalReaders(): Map<String, ExternalReader> = mapValues {
+  it.value.toExternalReader()
+}
+
+fun Map<String, ExternalReader>.toReaderStates(): MutableMap<String, ExternalReaderState> =
+  mapValuesTo(LinkedHashMap()) { it.value.toState() }

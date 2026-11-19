@@ -29,11 +29,13 @@ import com.intellij.psi.PsiElement
 import com.intellij.psi.util.*
 import javax.swing.Icon
 import org.pkl.intellij.*
+import org.pkl.intellij.externalreader.pklExternalReaderService
 import org.pkl.intellij.packages.*
 import org.pkl.intellij.packages.PklProjectService.Companion.PKL_PROJECT_FILENAME
 import org.pkl.intellij.packages.dto.PackageAssetUri
 import org.pkl.intellij.packages.dto.PackageMetadata
 import org.pkl.intellij.packages.dto.PklProject
+import org.pkl.intellij.settings.pklSettings
 import org.pkl.intellij.type.Type
 import org.pkl.intellij.type.TypeParameterBindings
 
@@ -126,6 +128,12 @@ class PklModuleImpl(viewProvider: FileViewProvider) :
         declaredName?.text?.substringAfterLast('.') ?: viewProvider.virtualFile.name
 
       override fun getLocationString(): String? {
+        // modules from external readers live in a cache dir; show the URI they were read from
+        if (project.pklSettings.state.externalModuleReaders.isNotEmpty()) {
+          project.pklExternalReaderService.originalUri(viewProvider.virtualFile)?.let {
+            return it.toString()
+          }
+        }
         val file: VirtualFile? = viewProvider.virtualFile.parent
         return if (file != null && file.isValid && file.isDirectory)
           project.basePath?.let { file.presentableUrl.substringAfter("$it/") }
@@ -301,7 +309,9 @@ class PklModuleImpl(viewProvider: FileViewProvider) :
       return when {
         `package` != null ->
           PackageAssetUri(`package`!!.packageUri, virtualFile.path.substringAfter("!/")).toString()
-        isStdLibModule -> "pkl:${name}"
+        isStdLibModule -> "pkl:${name.substringBeforeLast(".pkl")}"
+        project.pklExternalReaderService.handlesFile(virtualFile) ->
+          project.pklExternalReaderService.originalUri(virtualFile).toString()
         else -> virtualFile?.url
       }
     }

@@ -218,6 +218,7 @@
     <annotator language="Pkl" implementationClass="org.pkl.intellij.annotator.PklTypeAnnotator"/>
     <annotator language="Pkl" implementationClass="org.pkl.intellij.annotator.PklProjectAnnotator"/>
     <annotator language="Pkl" implementationClass="org.pkl.intellij.annotator.PklDocCommentAnnotator"/>
+    <externalAnnotator language="Pkl" implementationClass="org.pkl.intellij.annotator.PklExternalReaderSchemeAnnotator"/>
     <completion.contributor language="Pkl"
                             implementationClass="org.pkl.intellij.completion.PklCompletionContributor"/>
     <completion.confidence language="Pkl"
@@ -260,6 +261,10 @@
                      implementationClass="org.pkl.intellij.PklUnusedLocalDefinitionsInspection"/>
     <internalFileTemplate name="Pkl File"/>
     <internalFileTemplate name="Pkl Template"/>
+    <writingAccessProvider implementation="org.pkl.intellij.PklWritingAccessProvider"/>
+    <editorTabTitleProvider implementation="org.pkl.intellij.PklEditorTabTitleProvider"/>
+    <fileTypeOverrider implementation="org.pkl.intellij.externalreader.PklExternalReaderFileTypeOverrider"/>
+    <navbar implementation="org.pkl.intellij.externalreader.PklExternalReaderNavBarModelExtension"/>
   </extensions>
 
   <actions>
@@ -284,6 +289,12 @@
         text="Unsync Projects"
         description="Clears all IntelliJ metadata related to projects"
         icon="AllIcons.Actions.ForceRefresh"/>
+      <action
+        id="Pkl.ClearExternalReaderCaches"
+        class="org.pkl.intellij.action.PklClearExternalReaderCachesAction"
+        text="Clear External Reader Caches"
+        description="Discards modules cached from external readers, so that they're read again"
+        icon="AllIcons.Actions.GC"/>
       <add-to-group group-id="ToolsMenu" anchor="last"/>
     </group>
   </actions>
