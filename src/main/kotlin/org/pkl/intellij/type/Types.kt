@@ -909,6 +909,16 @@ sealed class Type(val constraints: List<ConstraintExpr> = listOf()) {
     ): Boolean =
       when (type) {
         is Module -> psi.isSubclassOf(type.psi, context)
+        is Union ->
+          if (classEquals(base.numberType)) {
+            // Number is sealed: both numeric subclasses must fit the union.
+            base.intType
+              .withConstraints(constraints)
+              .isSubtypeOf(type, base, context, strictConstraints) &&
+              base.floatType
+                .withConstraints(constraints)
+                .isSubtypeOf(type, base, context, strictConstraints)
+          } else doIsSubtypeOf(type, base, context, strictConstraints)
         else -> doIsSubtypeOf(type, base, context, strictConstraints)
       }
 

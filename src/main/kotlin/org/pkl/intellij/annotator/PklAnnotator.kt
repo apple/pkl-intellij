@@ -170,6 +170,7 @@ abstract class PklAnnotator : Annotator {
     base: PklBaseModule,
     context: PklProject?,
   ): Boolean {
+    if (!memberType.hasConstraints) return exprType.isSubtypeOf(memberType, base, context)
 
     return when {
       exprType is Type.Alias -> {
@@ -187,6 +188,11 @@ abstract class PklAnnotator : Annotator {
         // To avoid this, constraint check results could be cached while this method runs.
         isTypeMatch(exprType.leftType, exprValue, memberType, failedConstraints, base, context) &&
           isTypeMatch(exprType.rightType, exprValue, memberType, failedConstraints, base, context)
+      }
+      exprType is Type.Class && exprType.classEquals(base.numberType) -> {
+        // Constrained unions need their constraints checked for each possible numeric subclass.
+        isTypeMatch(base.intType, exprValue, memberType, failedConstraints, base, context) &&
+          isTypeMatch(base.floatType, exprValue, memberType, failedConstraints, base, context)
       }
       memberType is Type.Alias -> {
         isTypeMatch(
