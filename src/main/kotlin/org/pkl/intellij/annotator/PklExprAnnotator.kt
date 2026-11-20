@@ -251,10 +251,10 @@ class PklExprAnnotator : PklAnnotator() {
         override fun visitTypeTestExpr(element: PklTypeTestExpr) {
           val exprType = element.expr.computeExprType(base, mapOf(), context)
           val testedType = element.type.toType(base, mapOf(), context)
-          if (testedType.hasConstraints) return
-          if (exprType != Type.Unknown && exprType.isSubtypeOf(testedType, base, context)) {
+          if (testedType.hasConstraints && exprType !is Type.StringLiteral) return
+          if (exprType != Type.Unknown && exprType.isSubtypeOf(testedType, base, context, true)) {
             holder.newAnnotation(HighlightSeverity.WARNING, "Expression is always 'true'").create()
-          } else if (!testedType.isSubtypeOf(exprType, base, context)) {
+          } else if (!testedType.isSubtypeOf(exprType, base, context, true)) {
             holder.newAnnotation(HighlightSeverity.WARNING, "Expression is always 'false'").create()
           }
         }
@@ -263,7 +263,7 @@ class PklExprAnnotator : PklAnnotator() {
           val exprType = element.expr.computeExprType(base, mapOf(), context)
           val testedType = element.type.toType(base, mapOf(), context)
           if (
-            !testedType.hasConstraints &&
+            (!testedType.hasConstraints || exprType is Type.StringLiteral) &&
               exprType != Type.Unknown &&
               exprType.isSubtypeOf(testedType, base, context)
           ) {
